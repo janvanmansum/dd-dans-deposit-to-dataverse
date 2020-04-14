@@ -16,12 +16,9 @@
 package nl.knaw.dans.easy.s2d
 
 import better.files.File
-import nl.knaw.dans.lib.error._
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
 import scala.language.reflectiveCalls
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Try }
 
 object Command extends App with DebugEnhancedLogging {
   type FeedBackMessage = String
@@ -42,5 +39,4 @@ object Command extends App with DebugEnhancedLogging {
     }
   })
   Thread.currentThread().join()
-
 }

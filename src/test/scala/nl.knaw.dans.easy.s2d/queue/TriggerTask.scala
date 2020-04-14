@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 package nl.knaw.dans.easy.s2d.queue
+
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
 import scala.util.Try

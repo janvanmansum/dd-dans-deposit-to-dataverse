@@ -13,13 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d
+package nl.knaw.dans.easy.s2d.dataverse.json
 
-trait Dataverse {
+case class DatasetJson(
 
-
-
-
-
-
-}
+                      )

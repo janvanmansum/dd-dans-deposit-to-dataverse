@@ -15,22 +15,6 @@
  */
 package nl.knaw.dans.easy.s2d
 
-import java.io.PrintStream
-
-import nl.knaw.dans.easy.s2d.dataverse.DataverseInstance
-
-import scala.util.Try
-
-class EasySword2ToDataverseApp(configuration: Configuration) {
-  private implicit val resultOutput: PrintStream = Console.out
-
-  private val inboxMonitor = new InboxMonitor(configuration.inboxDir, new DataverseInstance(configuration.dataverse))
-
-  def start(): Try[Unit] = Try {
-    inboxMonitor.start()
-  }
-
-  def stop(): Try[Unit] = Try {
-    inboxMonitor.stop()
-  }
+package object dataverse {
+  case class CommandFailedException(status: Int, msg: String, body: String) extends Exception(s"Command could not be executed. Server returned: $msg")
 }

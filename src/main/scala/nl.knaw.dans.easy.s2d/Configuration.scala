@@ -15,13 +15,16 @@
  */
 package nl.knaw.dans.easy.s2d
 
+import java.net.URI
+
 import better.files.File
 import better.files.File.root
+import nl.knaw.dans.easy.s2d.dataverse.DataverseInstanceConfig
 import org.apache.commons.configuration.PropertiesConfiguration
 
 case class Configuration(version: String,
                          inboxDir: File,
-                         dataverse: Dataverse,
+                         dataverse: DataverseInstanceConfig,
                         )
 
 object Configuration {
@@ -40,7 +43,12 @@ object Configuration {
     new Configuration(
       version = (home / "bin" / "version").contentAsString.stripLineEnd,
       inboxDir = File(properties.getString("deposits.inbox")),
-      dataverse = new Dataverse {}
+      dataverse = new DataverseInstanceConfig(
+        connectionTimeout = properties.getInt("dataverse.connection-timeout-ms"),
+        readTimeout = properties.getInt("dataverse.read-timeout-ms"),
+        baseUrl = new URI(properties.getString("dataverse.base-url")),
+        apiToken = properties.getString("dataverse.api-key"),
+        apiVersion = properties.getString("dataverse.api-version"))
     )
   }
 }

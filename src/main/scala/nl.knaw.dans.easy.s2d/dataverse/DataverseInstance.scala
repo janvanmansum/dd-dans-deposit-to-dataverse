@@ -13,24 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d
+package nl.knaw.dans.easy.s2d.dataverse
 
 import java.io.PrintStream
 
-import nl.knaw.dans.easy.s2d.dataverse.DataverseInstance
-
-import scala.util.Try
-
-class EasySword2ToDataverseApp(configuration: Configuration) {
-  private implicit val resultOutput: PrintStream = Console.out
-
-  private val inboxMonitor = new InboxMonitor(configuration.inboxDir, new DataverseInstance(configuration.dataverse))
-
-  def start(): Try[Unit] = Try {
-    inboxMonitor.start()
+class DataverseInstance(config: DataverseInstanceConfig)(implicit resultOutputStream: PrintStream) {
+  def dataverse(dvId: String): Dataverse = {
+    new Dataverse(dvId: String, config)
   }
 
-  def stop(): Try[Unit] = Try {
-    inboxMonitor.stop()
+  def dataset(id: String, isPersistentId: Boolean): Dataset = {
+    new Dataset(id, isPersistentId, config)
+  }
+
+  def file(id: String, isPersistentId: Boolean): FileCommand = {
+    new FileCommand(id, isPersistentId, config)
   }
 }

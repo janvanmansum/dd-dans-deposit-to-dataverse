@@ -15,23 +15,106 @@
  */
 package nl.knaw.dans.easy.s2d
 
+import nl.knaw.dans.easy.s2d.dataverse.DataverseInstance
 import nl.knaw.dans.easy.s2d.queue.Task
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
 import scala.util.Try
 
-case class DepositIngestTask(deposit: Deposit, dataverse: Dataverse) extends Task with DebugEnhancedLogging {
-  override def run(): Try[Unit] = Try {
+case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance) extends Task with DebugEnhancedLogging {
+  override def run(): Try[Unit] = {
     trace(())
     debug(s"Ingesting $deposit into Dataverse")
 
     // TODO: validate directory. Is it really a deposit?
 
     // Read title from metadata
+    val title = "My title"
 
+    // Create dataset
 
-    //
+    // Assemble a quick-and-dirty JSON
+    val json =
+      s"""
+         |{
+         |  "datasetVersion": {
+         |    "metadataBlocks": {
+         |      "citation": {
+         |        "fields": [
+         |          {
+         |            "value": "$title",
+         |            "typeClass": "primitive",
+         |            "multiple": false,
+         |            "typeName": "title"
+         |          },
+         |          {
+         |            "value": [
+         |              {
+         |                "authorName": {
+         |                  "value": "Finch, Fiona",
+         |                  "typeClass": "primitive",
+         |                  "multiple": false,
+         |                  "typeName": "authorName"
+         |                },
+         |                "authorAffiliation": {
+         |                  "value": "Birds Inc.",
+         |                  "typeClass": "primitive",
+         |                  "multiple": false,
+         |                  "typeName": "authorAffiliation"
+         |                }
+         |              }
+         |            ],
+         |            "typeClass": "compound",
+         |            "multiple": true,
+         |            "typeName": "author"
+         |          },
+         |          {
+         |            "value": [
+         |              { "datasetContactEmail" : {
+         |                "typeClass": "primitive",
+         |                "multiple": false,
+         |                "typeName": "datasetContactEmail",
+         |                "value" : "finch@mailinator.com"
+         |              },
+         |                "datasetContactName" : {
+         |                  "typeClass": "primitive",
+         |                  "multiple": false,
+         |                  "typeName": "datasetContactName",
+         |                  "value": "Finch, Fiona"
+         |                }
+         |              }],
+         |            "typeClass": "compound",
+         |            "multiple": true,
+         |            "typeName": "datasetContact"
+         |          },
+         |          {
+         |            "value": [ {
+         |              "dsDescriptionValue":{
+         |                "value":   "Darwin's finches (also known as the Galápagos finches) are a group of about fifteen species of passerine birds.",
+         |                "multiple":false,
+         |                "typeClass": "primitive",
+         |                "typeName": "dsDescriptionValue"
+         |              }}],
+         |            "typeClass": "compound",
+         |            "multiple": true,
+         |            "typeName": "dsDescription"
+         |          },
+         |          {
+         |            "value": [
+         |              "Medicine, Health and Life Sciences"
+         |            ],
+         |            "typeClass": "controlledVocabulary",
+         |            "multiple": true,
+         |            "typeName": "subject"
+         |          }
+         |        ],
+         |        "displayName": "Citation Metadata"
+         |      }
+         |    }
+         |  }
+         |}
+         |""".stripMargin
 
-
+    dataverse.dataverse("root").createDataset(json).map(_ => ())
   }
 }

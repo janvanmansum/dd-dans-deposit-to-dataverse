@@ -18,5 +18,4 @@ package nl.knaw.dans.easy
 package object s2d {
 
   type DepositName = String
-
 }
