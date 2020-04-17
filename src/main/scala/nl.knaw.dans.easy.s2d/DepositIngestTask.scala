@@ -15,13 +15,18 @@
  */
 package nl.knaw.dans.easy.s2d
 
+import nl.knaw.dans.easy.s2d.Test.ds
 import nl.knaw.dans.easy.s2d.dataverse.DataverseInstance
+import nl.knaw.dans.easy.s2d.dataverse.json.{ DatasetVersion, DataverseDataset, MetadataBlock, PrimitiveField }
 import nl.knaw.dans.easy.s2d.queue.Task
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
+import org.json4s.{ DefaultFormats, Formats }
+import org.json4s.native.Serialization
 
 import scala.util.Try
 
-case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance) extends Task with DebugEnhancedLogging {
+case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(implicit jsonFormats: Formats) extends Task with DebugEnhancedLogging {
+
   override def run(): Try[Unit] = {
     trace(())
     debug(s"Ingesting $deposit into Dataverse")
@@ -115,6 +120,21 @@ case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance) ext
          |}
          |""".stripMargin
 
-    dataverse.dataverse("root").createDataset(json).map(_ => ())
+    val json2 = DataverseDataset(
+      DatasetVersion(
+        Map(
+          "citation" -> MetadataBlock(
+            fields = List(
+              PrimitiveField(
+                typeName = "title",
+                value = title,
+                multiple = false)
+            ),
+            displayName = "Citation Metadata"
+          )
+        )
+      )
+    )
+    dataverse.dataverse("root").createDataset(Serialization.writePretty(json2)).map(_ => ())
   }
 }

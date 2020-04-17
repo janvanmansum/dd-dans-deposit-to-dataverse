@@ -21,11 +21,13 @@ import better.files.{ File, FileMonitor }
 import nl.knaw.dans.easy.s2d.dataverse.DataverseInstance
 import nl.knaw.dans.easy.s2d.queue.ActiveTaskQueue
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
+import org.json4s.{ DefaultFormats, Formats }
 
 import scala.concurrent.ExecutionContext
 
 class InboxMonitor(inbox: File, dataverse: DataverseInstance) extends DebugEnhancedLogging {
   private implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
+  private implicit val jsonFormats: Formats = new DefaultFormats {}
   private val ingestTasks = new ActiveTaskQueue()
   private val watcher = new FileMonitor(inbox, maxDepth = 1) {
     override def onCreate(d: File, count: Int): Unit = {
