@@ -36,7 +36,9 @@ class ActiveTaskQueue(capacity: Int = 200) extends DebugEnhancedLogging {
    * @param t the task to add
    */
   def add(t: Task): Unit = {
+    trace(t)
     tasks.put(Some(t))
+    debug("Task added to queue")
   }
 
   /**

@@ -16,12 +16,49 @@
 package nl.knaw.dans.easy.s2d
 
 import better.files.File
+import gov.loc.repository.bagit.domain.Bag
+import gov.loc.repository.bagit.reader.BagReader
+import nl.knaw.dans.lib.logging.DebugEnhancedLogging
+
+import scala.util.{ Failure, Try }
+import scala.xml.{ Node, Utility, XML }
 
 /**
+ * Represents a deposit directory and provides access to the files and metadata in it.
  *
- * @param dir
+ * @param dir the deposit directory
  */
-case class Deposit(dir: File) {
+case class Deposit(dir: File) extends DebugEnhancedLogging {
+  trace(dir)
+  val bagDir: File = {
+    val dirs = dir.list(_.isDirectory, maxDepth = 1).filter(_ != dir).toList
+    debug(s"dirs = $dirs")
+    if (dirs.size != 1) throw new IllegalArgumentException(s"$dir is not a valid deposit. Found ${dirs.size} subdirectories instead of 1")
+    dirs.head
+  }
+  debug(s"bagDir = $bagDir")
+
+  private val bagReader = new BagReader()
+  private val ddmPath = bagDir / "metadata" / "dataset.xml"
+  private val filesXmlPath = bagDir / "metadata" / "files.xml"
+
+  lazy val tryBag: Try[Bag] = Try { bagReader.read(bagDir.path) }
+
+  lazy val tryDdm: Try[Node] = Try {
+    Utility.trim {
+      XML.loadFile((bagDir / ddmPath.toString).toJava)
+    }
+  }.recoverWith {
+    case t: Throwable => Failure(new IllegalArgumentException(s"Unparseable XML: ${ t.getMessage }"))
+  }
+
+  lazy val tryFilesXml: Try[Node] = Try {
+    Utility.trim {
+      XML.loadFile((bagDir / filesXmlPath.toString).toJava)
+    }
+  }.recoverWith {
+    case t: Throwable => Failure(new IllegalArgumentException(s"Unparseable XML: ${ t.getMessage }"))
+  }
 
   override def toString: String = s"Deposit at $dir"
 }

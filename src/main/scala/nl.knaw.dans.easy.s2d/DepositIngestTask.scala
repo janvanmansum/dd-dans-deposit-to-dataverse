@@ -15,17 +15,18 @@
  */
 package nl.knaw.dans.easy.s2d
 
-import nl.knaw.dans.easy.s2d.Test.ds
 import nl.knaw.dans.easy.s2d.dataverse.DataverseInstance
 import nl.knaw.dans.easy.s2d.dataverse.json.{ DatasetVersion, DataverseDataset, MetadataBlock, PrimitiveField }
 import nl.knaw.dans.easy.s2d.queue.Task
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
-import org.json4s.{ DefaultFormats, Formats }
+import org.json4s.Formats
 import org.json4s.native.Serialization
+import scala.xml._
 
 import scala.util.Try
 
 case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(implicit jsonFormats: Formats) extends Task with DebugEnhancedLogging {
+  trace(deposit, dataverse)
 
   override def run(): Try[Unit] = {
     trace(())
@@ -33,94 +34,16 @@ case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(imp
 
     // TODO: validate directory. Is it really a deposit?
 
-    // Read title from metadata
-    val title = "My title"
+    // TODO: make this more robust
+    val maybeTitle = deposit.tryDdm map {
+      ddm =>
+        (ddm \ "profile" \ "title").toList.head.text
+    }
+
+    val title = maybeTitle.get
 
     // Create dataset
-
-    // Assemble a quick-and-dirty JSON
-    val json =
-      s"""
-         |{
-         |  "datasetVersion": {
-         |    "metadataBlocks": {
-         |      "citation": {
-         |        "fields": [
-         |          {
-         |            "value": "$title",
-         |            "typeClass": "primitive",
-         |            "multiple": false,
-         |            "typeName": "title"
-         |          },
-         |          {
-         |            "value": [
-         |              {
-         |                "authorName": {
-         |                  "value": "Finch, Fiona",
-         |                  "typeClass": "primitive",
-         |                  "multiple": false,
-         |                  "typeName": "authorName"
-         |                },
-         |                "authorAffiliation": {
-         |                  "value": "Birds Inc.",
-         |                  "typeClass": "primitive",
-         |                  "multiple": false,
-         |                  "typeName": "authorAffiliation"
-         |                }
-         |              }
-         |            ],
-         |            "typeClass": "compound",
-         |            "multiple": true,
-         |            "typeName": "author"
-         |          },
-         |          {
-         |            "value": [
-         |              { "datasetContactEmail" : {
-         |                "typeClass": "primitive",
-         |                "multiple": false,
-         |                "typeName": "datasetContactEmail",
-         |                "value" : "finch@mailinator.com"
-         |              },
-         |                "datasetContactName" : {
-         |                  "typeClass": "primitive",
-         |                  "multiple": false,
-         |                  "typeName": "datasetContactName",
-         |                  "value": "Finch, Fiona"
-         |                }
-         |              }],
-         |            "typeClass": "compound",
-         |            "multiple": true,
-         |            "typeName": "datasetContact"
-         |          },
-         |          {
-         |            "value": [ {
-         |              "dsDescriptionValue":{
-         |                "value":   "Darwin's finches (also known as the Galápagos finches) are a group of about fifteen species of passerine birds.",
-         |                "multiple":false,
-         |                "typeClass": "primitive",
-         |                "typeName": "dsDescriptionValue"
-         |              }}],
-         |            "typeClass": "compound",
-         |            "multiple": true,
-         |            "typeName": "dsDescription"
-         |          },
-         |          {
-         |            "value": [
-         |              "Medicine, Health and Life Sciences"
-         |            ],
-         |            "typeClass": "controlledVocabulary",
-         |            "multiple": true,
-         |            "typeName": "subject"
-         |          }
-         |        ],
-         |        "displayName": "Citation Metadata"
-         |      }
-         |    }
-         |  }
-         |}
-         |""".stripMargin
-
-    val json2 = DataverseDataset(
+    val ds = DataverseDataset(
       DatasetVersion(
         Map(
           "citation" -> MetadataBlock(
@@ -135,6 +58,6 @@ case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(imp
         )
       )
     )
-    dataverse.dataverse("root").createDataset(Serialization.writePretty(json2)).map(_ => ())
+    dataverse.dataverse("root").createDataset(Serialization.writePretty(ds)).map(_ => ())
   }
 }

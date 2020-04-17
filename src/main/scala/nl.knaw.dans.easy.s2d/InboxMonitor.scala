@@ -32,6 +32,7 @@ class InboxMonitor(inbox: File, dataverse: DataverseInstance) extends DebugEnhan
   private val watcher = new FileMonitor(inbox, maxDepth = 1) {
     override def onCreate(d: File, count: Int): Unit = {
       if (d.isDirectory) {
+        logger.debug("Detected new subdirectory in inbox. Adding $d")
         ingestTasks.add(DepositIngestTask(Deposit(d), dataverse))
       }
     }
@@ -39,8 +40,9 @@ class InboxMonitor(inbox: File, dataverse: DataverseInstance) extends DebugEnhan
 
   def start(): Unit = {
     trace(())
-    logger.info("Queueing existing directories...")
-    inbox.list(_.isDirectory).filterNot(_ == inbox).foreach {
+    val dirs = inbox.list(_.isDirectory, maxDepth = 1).filterNot(_ == inbox).toList
+    logger.info(s"Queueing existing directories: $dirs")
+    dirs.foreach {
       d => {
         debug(s"Adding $d")
         ingestTasks.add(DepositIngestTask(Deposit(d), dataverse))
