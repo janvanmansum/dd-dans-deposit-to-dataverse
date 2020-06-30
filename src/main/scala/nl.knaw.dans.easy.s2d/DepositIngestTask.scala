@@ -30,7 +30,7 @@ import scala.util.Try
  *
  * @param deposit the deposit to ingest
  * @param dataverse the Dataverse instance to ingest in
- * @param jsonFormats
+ * @param jsonFormats implicit necessary for pretty-printing JSON
  */
 case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(implicit jsonFormats: Formats) extends Task with DebugEnhancedLogging {
   trace(deposit, dataverse)
@@ -39,7 +39,7 @@ case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(imp
     trace(())
     debug(s"Ingesting $deposit into Dataverse")
 
-    // TODO: validate directory. Is it really a deposit?
+    // TODO: validate: is this a deposit can does it contain a bag that conforms to DANS BagIt Profile? (call easy-validate-dans-bag)
 
     // TODO: make this more robust
     val maybeTitle = deposit.tryDdm map {

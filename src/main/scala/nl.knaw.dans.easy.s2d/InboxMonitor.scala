@@ -25,6 +25,14 @@ import org.json4s.{ DefaultFormats, Formats }
 
 import scala.concurrent.ExecutionContext
 
+/**
+ * Object that monitors `inbox` directory for new sub-directories to appear. For each new subdirectory
+ * it schedules an DepositIngestTask on an ActiveTaskQueue. This task ingests the deposit to the
+ * the Dataverse instance represented by `dataverse`.
+ *
+ * @param inbox the inbox directory to monitor
+ * @param dataverse the Dataverse instance to ingest to
+ */
 class InboxMonitor(inbox: File, dataverse: DataverseInstance) extends DebugEnhancedLogging {
   private implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
   private implicit val jsonFormats: Formats = new DefaultFormats {}
