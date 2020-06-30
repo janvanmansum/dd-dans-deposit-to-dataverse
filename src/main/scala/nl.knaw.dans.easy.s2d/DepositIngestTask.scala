@@ -25,6 +25,13 @@ import scala.xml._
 
 import scala.util.Try
 
+/**
+ * Checks one deposit and then ingests it into Dataverse.
+ *
+ * @param deposit the deposit to ingest
+ * @param dataverse the Dataverse instance to ingest in
+ * @param jsonFormats
+ */
 case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(implicit jsonFormats: Formats) extends Task with DebugEnhancedLogging {
   trace(deposit, dataverse)
 

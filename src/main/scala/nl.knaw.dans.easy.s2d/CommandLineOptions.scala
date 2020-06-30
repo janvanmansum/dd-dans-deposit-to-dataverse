@@ -20,14 +20,14 @@ import org.rogach.scallop.{ ScallopConf, Subcommand }
 class CommandLineOptions(args: Array[String], configuration: Configuration) extends ScallopConf(args) {
   appendDefaultToDescription = true
   editBuilder(_.setHelpWidth(110))
-  printedName = "easy-sword2-to-dataverse"
+  printedName = "dd-easy-sword2-to-dataverse"
   version(configuration.version)
   private val SUBCOMMAND_SEPARATOR = "---\n"
-  val description: String = s"""Test"""
+  val description: String = s"""Transforms EASY SWORD2 deposit directories into Dataverse datasets."""
   val synopsis: String =
     s"""
-       |  $printedName (synopsis of command line parameters)
-       |  $printedName (... possibly multiple lines for subcommands)""".stripMargin
+       |  $printedName run-service
+       |  """.stripMargin
 
   version(s"$printedName v${ configuration.version }")
   banner(
@@ -40,11 +40,10 @@ class CommandLineOptions(args: Array[String], configuration: Configuration) exte
        |
        |Options:
        |""".stripMargin)
-  //val url = opt[String]("someOption", noshort = true, descr = "Description of the option", default = app.someProperty)
 
   val runService = new Subcommand("run-service") {
     descr(
-      "Starts EASY Sword2 To Dataverse as a daemon that services HTTP requests")
+      "Starts EASY SWORD2 To Dataverse as a daemon that services HTTP requests")
     footer(SUBCOMMAND_SEPARATOR)
   }
   addSubcommand(runService)

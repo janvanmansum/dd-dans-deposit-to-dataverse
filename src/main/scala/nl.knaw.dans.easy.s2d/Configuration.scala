@@ -31,7 +31,7 @@ object Configuration {
 
   def apply(home: File): Configuration = {
     val cfgPath = Seq(
-      root / "etc" / "opt" / "dans.knaw.nl" / "easy-sword2-to-dataverse",
+      root / "etc" / "opt" / "dans.knaw.nl" / "dd-easy-sword2-to-dataverse",
       home / "cfg")
       .find(_.exists)
       .getOrElse { throw new IllegalStateException("No configuration directory found") }
