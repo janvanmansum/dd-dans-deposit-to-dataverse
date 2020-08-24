@@ -16,55 +16,50 @@
 package nl.knaw.dans.easy.s2d
 
 import nl.knaw.dans.easy.s2d.dataverse.DataverseInstance
-import nl.knaw.dans.easy.s2d.dataverse.json.{ DatasetVersion, DataverseDataset, MetadataBlock, PrimitiveField }
 import nl.knaw.dans.easy.s2d.queue.Task
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import org.json4s.Formats
-import org.json4s.native.Serialization
-import scala.xml._
 
-import scala.util.Try
+import scala.util.{ Failure, Success, Try }
 
 /**
  * Checks one deposit and then ingests it into Dataverse.
  *
- * @param deposit the deposit to ingest
- * @param dataverse the Dataverse instance to ingest in
+ * @param deposit     the deposit to ingest
+ * @param dataverse   the Dataverse instance to ingest in
  * @param jsonFormats implicit necessary for pretty-printing JSON
  */
 case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(implicit jsonFormats: Formats) extends Task with DebugEnhancedLogging {
   trace(deposit, dataverse)
 
-  override def run(): Try[Unit] = {
+  val mapper = new EasyToDataverseMapper()
+
+  override def run(): Try[Unit] = Try {
     trace(())
     debug(s"Ingesting $deposit into Dataverse")
 
     // TODO: validate: is this a deposit can does it contain a bag that conforms to DANS BagIt Profile? (call easy-validate-dans-bag)
 
-    // TODO: make this more robust
-    val maybeTitle = deposit.tryDdm map {
-      ddm =>
-        (ddm \ "profile" \ "title").toList.head.text
+    deposit.tryDdm match {
+      case Success(ddm) => {
+        mapper.mapToJson(ddm) match {
+          case Success(json) => dataverse.dataverse("root").createDataset(json).map(_ => ())
+          case Failure(exception) => {
+            logger.info("Mapping DDM to Dataverse Json failed: " + exception.getMessage)
+            Failure(exception)
+          }
+        }
+      }
+      case Failure(exception) => {
+        logger.info(exception.getMessage)
+        Failure(exception)
+      }
     }
-
-    val title = maybeTitle.get
-
-    // Create dataset
-    val ds = DataverseDataset(
-      DatasetVersion(
-        Map(
-          "citation" -> MetadataBlock(
-            fields = List(
-              PrimitiveField(
-                typeName = "title",
-                value = title,
-                multiple = false)
-            ),
-            displayName = "Citation Metadata"
-          )
-        )
-      )
-    )
-    dataverse.dataverse("root").createDataset(Serialization.writePretty(ds)).map(_ => ())
   }
 }
+
+
+
+
+
+
