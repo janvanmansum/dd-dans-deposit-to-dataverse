@@ -18,7 +18,7 @@
 #include <service.sh>
 
 NUMBER_OF_INSTALLATIONS=$1
-MODULE_NAME=easy-sword2-to-dataverse
+MODULE_NAME=dd-dans-deposit-to-dataverse
 PHASE="PRE-INSTALL"
 
 echo "$PHASE: START (Number of current installations: $NUMBER_OF_INSTALLATIONS)"

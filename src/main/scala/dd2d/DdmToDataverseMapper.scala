@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d
+package nl.knaw.dans.easy.dd2d
 
-import nl.knaw.dans.easy.s2d.dataverse.json.{ CompoundField, DatasetVersion, DataverseDataset, Field, MetadataBlock, PrimitiveFieldMultipleValues, PrimitiveFieldSingleValue }
+import nl.knaw.dans.easy.dd2d.dataverse.json.{ CompoundField, DatasetVersion, DataverseDataset, Field, MetadataBlock, PrimitiveFieldMultipleValues, PrimitiveFieldSingleValue }
 import org.json4s.DefaultFormats
 import org.json4s.native.Serialization
 
@@ -24,9 +24,9 @@ import scala.util.Try
 import scala.xml.{ Elem, MetaData, Node }
 
 /**
- * Maps Easy xml to Dataverse Json
+ * Maps DANS Dataset Metadata to Dataverse Json
  */
-class EasyToDataverseMapper() {
+class DdmToDataverseMapper() {
 
   implicit val format = DefaultFormats
   case class RelatedIdentifier(relationType: String, schemeOrUrl: String, value: String, isRelatedIdentifier: Boolean)

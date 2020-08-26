@@ -40,9 +40,9 @@
             <directory>${project.basedir}/src/main/assembly/dist/bin</directory>
             <outputDirectory>bin</outputDirectory>
             <includes>
-                <include>easy-sword2-to-dataverse</include>
-                <include>easy-sword2-to-dataverse-service-start</include>
-                <include>easy-sword2-to-dataverse-initd.sh</include>
+                <include>dd-dans-deposit-to-dataverse</include>
+                <include>dd-dans-deposit-to-dataverse-service-start</include>
+                <include>dd-dans-deposit-to-dataverse-initd.sh</include>
             </includes>
             <fileMode>0755</fileMode>
         </fileSet>

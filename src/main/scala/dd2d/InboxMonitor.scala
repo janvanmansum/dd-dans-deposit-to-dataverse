@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d
+package nl.knaw.dans.easy.dd2d
 
 import java.util.concurrent.Executors
 
 import better.files.{ File, FileMonitor }
-import nl.knaw.dans.easy.s2d.dataverse.DataverseInstance
-import nl.knaw.dans.easy.s2d.queue.ActiveTaskQueue
+import nl.knaw.dans.easy.dd2d.dataverse.DataverseInstance
+import nl.knaw.dans.easy.dd2d.queue.ActiveTaskQueue
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import org.json4s.{ DefaultFormats, Formats }
 

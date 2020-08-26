@@ -13,20 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d.dataverse
+package nl.knaw.dans.easy.dd2d.queue
 
-import java.io.PrintStream
+import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
-class DataverseInstance(config: DataverseInstanceConfig)(implicit resultOutputStream: PrintStream) {
-  def dataverse(dvId: String): Dataverse = {
-    new Dataverse(dvId: String, config)
-  }
+import scala.util.Try
 
-  def dataset(id: String, isPersistentId: Boolean): Dataset = {
-    new Dataset(id, isPersistentId, config)
-  }
+case class TriggerTask() extends Task with DebugEnhancedLogging {
+  var triggered = false
 
-  def file(id: String, isPersistentId: Boolean): FileCommand = {
-    new FileCommand(id, isPersistentId, config)
+  override def run(): Try[Unit] = Try {
+    trace(())
+    triggered = true
   }
 }

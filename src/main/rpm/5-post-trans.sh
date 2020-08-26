@@ -17,7 +17,7 @@
 
 #include <service.sh>
 
-MODULE_NAME=easy-sword2-to-dataverse
+MODULE_NAME=dd-dans-deposit-to-dataverse
 PHASE="POST-TRANS"
 
 echo "$PHASE: START"

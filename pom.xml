@@ -27,20 +27,20 @@
     </parent>
 
     <groupId>nl.knaw.dans.easy</groupId>
-    <artifactId>dd-easy-sword2-to-dataverse</artifactId>
+    <artifactId>dd-dans-deposit-to-dataverse</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
-    <name>EASY Sword2 To Dataverse Service</name>
-    <url>https://github.com/DANS-KNAW/dd-easy-sword2-to-dataverse</url>
-    <description>Transforms EASY SWORD2 deposit directories into Dataverse datasets.</description>
+    <name>DANS Deposit To Dataverse Service</name>
+    <url>https://github.com/DANS-KNAW/dd-dans-deposit-to-dataverse</url>
+    <description>Transforms DANS deposit directories into Dataverse datasets.</description>
     <inceptionYear>2020</inceptionYear>
 
     <properties>
-        <main-class>nl.knaw.dans.easy.s2d.Command</main-class>
+        <main-class>nl.knaw.dans.easy.dd2d.Command</main-class>
     </properties>
 
     <scm>
-        <developerConnection>scm:git:https://github.com/DANS-KNAW/dd-easy-sword2-to-dataverse</developerConnection>
+        <developerConnection>scm:git:https://github.com/DANS-KNAW/dd-dans-deposit-to-dataverse</developerConnection>
         <tag>HEAD</tag>
     </scm>
 

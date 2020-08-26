@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d
+package nl.knaw.dans.easy.dd2d
 
 import org.rogach.scallop.{ ScallopConf, Subcommand }
 
 class CommandLineOptions(args: Array[String], configuration: Configuration) extends ScallopConf(args) {
   appendDefaultToDescription = true
   editBuilder(_.setHelpWidth(110))
-  printedName = "dd-easy-sword2-to-dataverse"
+  printedName = "dd-dans-deposit-to-dataverse"
   version(configuration.version)
   private val SUBCOMMAND_SEPARATOR = "---\n"
-  val description: String = s"""Transforms EASY SWORD2 deposit directories into Dataverse datasets."""
+  val description: String = s"""Transforms DANS deposit directories into Dataverse datasets."""
   val synopsis: String =
     s"""
        |  $printedName run-service
@@ -43,7 +43,7 @@ class CommandLineOptions(args: Array[String], configuration: Configuration) exte
 
   val runService = new Subcommand("run-service") {
     descr(
-      "Starts EASY SWORD2 To Dataverse as a daemon that services HTTP requests")
+      "Starts DANS Deposit To Dataverse as a daemon that services HTTP requests")
     footer(SUBCOMMAND_SEPARATOR)
   }
   addSubcommand(runService)

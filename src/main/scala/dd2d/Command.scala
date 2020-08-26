@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d
+package nl.knaw.dans.easy.dd2d
 
 import better.files.File
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
@@ -27,7 +27,7 @@ object Command extends App with DebugEnhancedLogging {
   val commandLine: CommandLineOptions = new CommandLineOptions(args, configuration) {
     verify()
   }
-  val app = new EasySword2ToDataverseApp(configuration)
+  val app = new DansDeposit2ToDataverseApp(configuration)
   logger.info("Starting application...")
   app.start()
 
