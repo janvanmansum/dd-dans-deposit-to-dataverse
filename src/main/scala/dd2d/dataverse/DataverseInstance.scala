@@ -13,8 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d
+package nl.knaw.dans.easy.dd2d.dataverse
 
-package object dataverse {
-  case class CommandFailedException(status: Int, msg: String, body: String) extends Exception(s"Command could not be executed. Server returned: $msg")
+import java.io.PrintStream
+
+class DataverseInstance(config: DataverseInstanceConfig)(implicit resultOutputStream: PrintStream) {
+  def dataverse(dvId: String): Dataverse = {
+    new Dataverse(dvId: String, config)
+  }
+
+  def dataset(id: String, isPersistentId: Boolean): Dataset = {
+    new Dataset(id, isPersistentId, config)
+  }
+
+  def file(id: String, isPersistentId: Boolean): FileCommand = {
+    new FileCommand(id, isPersistentId, config)
+  }
 }

@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d
+package nl.knaw.dans.easy.dd2d
 
 import java.net.URI
 
 import better.files.File
 import better.files.File.root
-import nl.knaw.dans.easy.s2d.dataverse.DataverseInstanceConfig
+import nl.knaw.dans.easy.dd2d.dataverse.DataverseInstanceConfig
 import org.apache.commons.configuration.PropertiesConfiguration
 
 case class Configuration(version: String,
@@ -31,7 +31,7 @@ object Configuration {
 
   def apply(home: File): Configuration = {
     val cfgPath = Seq(
-      root / "etc" / "opt" / "dans.knaw.nl" / "dd-easy-sword2-to-dataverse",
+      root / "etc" / "opt" / "dans.knaw.nl" / "dd-dans-deposit-to-dataverse",
       home / "cfg")
       .find(_.exists)
       .getOrElse { throw new IllegalStateException("No configuration directory found") }

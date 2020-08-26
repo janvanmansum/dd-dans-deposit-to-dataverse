@@ -1,13 +1,13 @@
-dd-easy-sword2-to-dataverse
-===========================
-[![Build Status](https://travis-ci.org/DANS-KNAW/dd-easy-sword2-to-dataverse.png?branch=master)](https://travis-ci.org/DANS-KNAW/dd-easy-sword2-to-dataverse)
+dd-dans-deposit-to-dataverse
+============================
+[![Build Status](https://travis-ci.org/DANS-KNAW/dd-dans-deposit-to-dataverse.png?branch=master)](https://travis-ci.org/DANS-KNAW/dd-dans-deposit-to-dataverse)
 
-Transforms EASY SWORD2 deposit directories into Dataverse datasets.
+Transforms DANS deposit directories into Dataverse datasets.
 
 SYNOPSIS
 --------
 
-    dd-easy-sword2-to-dataverse run-service
+    dd-dans-deposit-to-dataverse run-service
 
 
 DESCRIPTION
@@ -22,15 +22,15 @@ ARGUMENTS
     
       -h, --help      Show help message
       -v, --version   Show version of this program
-    
-    Subcommand: run-service - Starts EASY SWORD2 To Dataverse as a daemon that services HTTP requests
+  
+    Subcommand: run-service - Starts DANS Deposit To Dataverse as a daemon that services HTTP requests
       -h, --help   Show help message
     ---
 
 INSTALLATION AND CONFIGURATION
 ------------------------------
 Currently this project is built as an RPM package for RHEL7/CentOS7 and later. The RPM will install the binaries to
-`/opt/dans.knaw.nl/dd-easy-sword2-to-dataverse` and the configuration files to `/etc/opt/dans.knaw.nl/dd-easy-sword2-to-dataverse`. 
+`/opt/dans.knaw.nl/dd-dans-deposit-to-dataverse` and the configuration files to `/etc/opt/dans.knaw.nl/dd-dans-deposit-to-dataverse`. 
 
 To install the module on systems that do not support RPM, you can copy and unarchive the tarball to the target host.
 You will have to take care of placing the files in the correct locations for your system yourself. For instructions
@@ -46,8 +46,8 @@ Prerequisites:
 
 Steps:
     
-    git clone https://github.com/DANS-KNAW/dd-easy-sword2-to-dataverse.git
-    cd dd-easy-sword2-to-dataverse 
+    git clone https://github.com/DANS-KNAW/dd-dans-deposit-to-dataverse.git
+    cd dd-dans-deposit-to-dataverse 
     mvn clean install
 
 If the `rpm` executable is found at `/usr/local/bin/rpm`, the build profile that includes the RPM 

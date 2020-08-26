@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d.queue
+package nl.knaw.dans.easy.dd2d.queue
 
 import org.scalatest.{ FlatSpec, Matchers, OneInstancePerTest }
 

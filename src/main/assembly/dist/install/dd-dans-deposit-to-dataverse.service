@@ -1,0 +1,18 @@
+[Unit]
+Description=EASY Sword2 To Dataverse Service
+
+[Service]
+ExecStart=/bin/java \
+   $INITIAL_HEAP_SIZE \
+   -Dlogback.configurationFile=/etc/opt/dans.knaw.nl/dd-dans-deposit-to-dataverse/logback-service.xml \
+   -Dapp.home=/opt/dans.knaw.nl/dd-dans-deposit-to-dataverse \
+   -Dorg.scalatra.environment="production" \
+   -jar /opt/dans.knaw.nl/dd-dans-deposit-to-dataverse/bin/dd-dans-deposit-to-dataverse.jar run-service
+# Java returns 143 even if the SIGTERM was handled correctly.
+SuccessExitStatus=143
+
+User=dd-dans-deposit-to-dataverse
+Group=dd-dans-deposit-to-dataverse
+
+[Install]
+WantedBy=multi-user.target

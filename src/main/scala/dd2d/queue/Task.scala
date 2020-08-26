@@ -13,17 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d.queue
-
-import nl.knaw.dans.lib.logging.DebugEnhancedLogging
+package nl.knaw.dans.easy.dd2d.queue
 
 import scala.util.Try
 
-case class TriggerTask() extends Task with DebugEnhancedLogging {
-  var triggered = false
-
-  override def run(): Try[Unit] = Try {
-    trace(())
-    triggered = true
-  }
+trait Task {
+  def run(): Try[Unit]
 }

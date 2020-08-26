@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d.dataverse
+package nl.knaw.dans.easy.dd2d.dataverse
 
 import java.io.PrintStream
 import java.net.URI

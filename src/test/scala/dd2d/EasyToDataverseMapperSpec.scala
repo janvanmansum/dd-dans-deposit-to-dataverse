@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d
+package nl.knaw.dans.easy.dd2d
 
-import nl.knaw.dans.easy.s2d.dataverse.json.{ CompoundField, PrimitiveFieldMultipleValues, PrimitiveFieldSingleValue }
+import nl.knaw.dans.easy.dd2d.dataverse.json.{ CompoundField, PrimitiveFieldMultipleValues, PrimitiveFieldSingleValue }
 import org.json4s.DefaultFormats
 import org.scalatest.{ FlatSpec, Matchers, OneInstancePerTest }
 
 class EasyToDataverseMapperSpec extends FlatSpec with OneInstancePerTest with Matchers {
 
   implicit val format = DefaultFormats
-  val mapper = new EasyToDataverseMapper
+  val mapper = new DdmToDataverseMapper
 
   "Primitive fields single value" should "be added to metadatablocks" in {
     val ddm =

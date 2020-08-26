@@ -18,7 +18,7 @@
 #include <service.sh>
 
 NUMBER_OF_INSTALLATIONS=$1
-MODULE_NAME=easy-sword2-to-dataverse
+MODULE_NAME=dd-dans-deposit-to-dataverse
 INSTALL_DIR=/opt/dans.knaw.nl/$MODULE_NAME
 PHASE="POST-REMOVE"
 

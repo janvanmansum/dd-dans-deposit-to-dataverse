@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d
+package nl.knaw.dans.easy.dd2d
 
-import nl.knaw.dans.easy.s2d.dataverse.DataverseInstance
-import nl.knaw.dans.easy.s2d.queue.Task
+import nl.knaw.dans.easy.dd2d.dataverse.DataverseInstance
+import nl.knaw.dans.easy.dd2d.queue.Task
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import org.json4s.Formats
 
@@ -32,7 +32,7 @@ import scala.util.{ Failure, Success, Try }
 case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(implicit jsonFormats: Formats) extends Task with DebugEnhancedLogging {
   trace(deposit, dataverse)
 
-  val mapper = new EasyToDataverseMapper()
+  val mapper = new DdmToDataverseMapper()
 
   override def run(): Try[Unit] = Try {
     trace(())

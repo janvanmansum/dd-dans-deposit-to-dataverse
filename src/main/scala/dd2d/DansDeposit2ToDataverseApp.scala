@@ -13,10 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d.queue
+package nl.knaw.dans.easy.dd2d
+
+import java.io.PrintStream
+
+import nl.knaw.dans.easy.dd2d.dataverse.DataverseInstance
 
 import scala.util.Try
 
-trait Task {
-  def run(): Try[Unit]
+class DansDeposit2ToDataverseApp(configuration: Configuration) {
+  private implicit val resultOutput: PrintStream = Console.out
+
+  private val inboxMonitor = new InboxMonitor(configuration.inboxDir, new DataverseInstance(configuration.dataverse))
+
+  def start(): Try[Unit] = Try {
+    inboxMonitor.start()
+  }
+
+  def stop(): Try[Unit] = Try {
+    inboxMonitor.stop()
+  }
 }

@@ -17,5 +17,5 @@
 
 echo -n "Pre-creating log..."
 TEMPDIR=data
-touch $TEMPDIR/easy-sword2-to-dataverse.log
+touch $TEMPDIR/dd-dans-deposit-to-dataverse.log
 echo "OK"
