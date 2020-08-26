@@ -1,5 +1,5 @@
 [Unit]
-Description=EASY Sword2 To Dataverse Service
+Description=DANS Deposit To Dataverse Service
 
 [Service]
 ExecStart=/bin/java \
