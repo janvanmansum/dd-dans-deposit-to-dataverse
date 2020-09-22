@@ -15,9 +15,7 @@
  */
 package nl.knaw.dans.easy
 
-import nl.knaw.dans.easy.dd2d.Deposit
-
-package object s2d {
+package object dd2d {
 
   type DepositName = String
 

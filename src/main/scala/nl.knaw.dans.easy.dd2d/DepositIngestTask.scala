@@ -20,7 +20,6 @@ import java.nio.file.Path
 
 import nl.knaw.dans.easy.dd2d.dataverse.DataverseInstance
 import nl.knaw.dans.easy.dd2d.queue.Task
-import nl.knaw.dans.easy.s2d.{ FailedDepositException, RejectedDepositException, ValidateBag }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization

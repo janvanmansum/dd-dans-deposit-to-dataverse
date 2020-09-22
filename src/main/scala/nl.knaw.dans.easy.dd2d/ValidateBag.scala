@@ -14,12 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.s2d
+package nl.knaw.dans.easy.dd2d
 
 import java.nio.file.Path
 
 import better.files.File
-import nl.knaw.dans.easy.dd2d.Configuration
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import scalaj.http.Http
 
@@ -27,8 +26,8 @@ import scala.util.{ Failure, Try }
 
 trait ValidateBag extends DebugEnhancedLogging {
 
-  val configuration = Configuration(File(System.getProperty("app.home")))
-  val validatorServiceUrl = configuration.validatorServiceUrl
+  private val configuration: Configuration = Configuration(File(System.getProperty("app.home")))
+  private val validatorServiceUrl = configuration.validatorServiceUrl
 
   def validateBag(bagDir: Path): Try[DansBagValidationResult] = {
     Try {
