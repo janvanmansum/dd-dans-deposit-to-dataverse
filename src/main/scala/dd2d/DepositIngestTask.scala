@@ -15,9 +15,9 @@
  */
 package nl.knaw.dans.easy.dd2d
 
-import java.nio.file.{ Path, Paths }
+import java.nio.charset.StandardCharsets
+import java.nio.file.Path
 
-import better.files.File
 import nl.knaw.dans.easy.dd2d.dataverse.DataverseInstance
 import nl.knaw.dans.easy.dd2d.queue.Task
 import nl.knaw.dans.easy.s2d.{ FailedDepositException, RejectedDepositException, ValidateBag }
@@ -25,6 +25,7 @@ import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization
 import org.json4s.{ Formats, _ }
+import scalaj.http.HttpResponse
 
 import scala.util.{ Failure, Success, Try }
 
@@ -45,69 +46,38 @@ case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(imp
   override def run(): Try[Unit] = Try {
     trace(())
     debug(s"Ingesting $deposit into Dataverse")
+    val bagDirPath = deposit.bagDir.path
 
-//    val validation = validateDansBag(deposit.bagDir.path)
-
-//    validation match {
-//      case Success(v) => {
-        deposit.tryDdm match {
-          case Success(ddm) => {
-            mapper.mapToJson(ddm) match {
-              case Success(json) => {
-                dataverse.dataverse("root")
-                  .createDataset(json) match {
-                  case Success(responseJson) => {
-                    val dvId = readIdFromResponse(responseJson)
-                    uploadFilesToDataset(dvId)
-                  }
-                  case Failure(exception) => {
-                    logger.info("Creating dataset failed: " + exception.getMessage)
-                  }
-                }
-              }
-              case Failure(exception) => {
-                logger.info("Mapping DDM to Dataverse Json failed: " + exception.getMessage)
-                Failure(exception)
-              }
-            }
-          }
-          case Failure(exception) => {
-            logger.info(exception.getMessage)
-            Failure(exception)
-          }
-        }
-      }
-//      case Failure(exception) => {
-//        logger.info(exception.getMessage)
-//        Failure(exception)
-//      }
-//    }
-//  }
+    for {
+      //_ <- validateDansBag(bagDirPath)
+      ddm <- deposit.tryDdm
+      json <- mapper.mapToJson(ddm)
+      response <- dataverse.dataverse("root").createDataset(json)
+      dvId <- readIdFromResponse(response)
+      _ <- uploadFilesToDataset(dvId)
+    } yield ()
+  }
 
   private def uploadFilesToDataset(dvId: String): Try[Unit] = {
-    deposit.tryFilesXml match {
-      case Success(filesXml) => Try {
-        mapper.mapFilesToJson(filesXml).foreach(fileMetadata => {
-          val path = rootToInboxPath + fileMetadata.directoryLabel.getOrElse("")
-
-          // Dataverse uses a "File Path" indicating which folder the file should be uploaded to within the dataset.
-          // The filepath attribute (excluding the filename) of the Bags files.xml is used for this purpose.
-          val fileMetadataUpdated = fileMetadata.copy(directoryLabel = getDirPath(fileMetadata.directoryLabel))
-          dataverse.dataverse(dvId)
-            .uploadFileToDataset(dvId, File(path), Some(Serialization.writePretty(fileMetadataUpdated)))
-        })
+    val filesXml = deposit.tryFilesXml.recoverWith {
+      case e: IllegalArgumentException => {
+        logger.error(s"Bag files xml could not be retrieved. Error message: ${ e.getMessage }")
+        Failure(e)
       }
-      case Failure(exception) => Failure(exception)
+    }.get
+
+    Try {
+      mapper.extractFileInfoFromFilesXml(filesXml).foreach(fileInformation => {
+        dataverse.dataverse(dvId)
+          .uploadFileToDataset(dvId, fileInformation.file, Some(Serialization.writePretty(fileInformation.fileMetadata)))
+      })
     }
   }
 
-  private def readIdFromResponse(responseJson: String): String = {
-    (parse(responseJson) \\ "persistentId")
+  private def readIdFromResponse(response: HttpResponse[Array[Byte]]): Try[String] = Try {
+    val responseBodyAsString = new String(response.body, StandardCharsets.UTF_8)
+    (parse(responseBodyAsString) \\ "persistentId")
       .extract[String]
-  }
-
-  private def getDirPath(fullPath: Option[String]): Option[String] = {
-    fullPath.map(p => Paths.get(p).getParent.toString)
   }
 
   private def validateDansBag(bagDir: Path): Try[Unit] = {
