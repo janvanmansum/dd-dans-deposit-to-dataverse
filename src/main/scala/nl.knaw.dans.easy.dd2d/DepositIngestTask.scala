@@ -40,8 +40,6 @@ case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(imp
   trace(deposit, dataverse)
 
   val mapper = new DdmToDataverseMapper()
-  //todo find a more robust solution
-  private val rootToInboxPath = "data/inbox/valid-easy-submitted/example-bag-medium/"
 
   override def run(): Try[Unit] = Try {
     trace(())
@@ -49,7 +47,7 @@ case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(imp
     val bagDirPath = deposit.bagDir.path
 
     for {
-      //_ <- validateDansBag(bagDirPath)
+      _ <- validateDansBag(bagDirPath)
       ddm <- deposit.tryDdm
       json <- mapper.mapToJson(ddm)
       response <- dataverse.dataverse("root").createDataset(json)
@@ -60,10 +58,9 @@ case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(imp
 
   private def uploadFilesToDataset(dvId: String): Try[Unit] = {
     val filesXml = deposit.tryFilesXml.recoverWith {
-      case e: IllegalArgumentException => {
+      case e: IllegalArgumentException =>
         logger.error(s"Bag files xml could not be retrieved. Error message: ${ e.getMessage }")
         Failure(e)
-      }
     }.get
 
     Try {
@@ -95,9 +92,8 @@ case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(imp
                |Violations:
                |${ validationResult.ruleViolations.map(_.map(formatViolation).mkString("\n")).getOrElse("") }
           """.stripMargin)
-      case Failure(f) => {
+      case Failure(f) =>
         depositFailed(s"Problem calling easy-validate-dans-bag: ${ f.getMessage }", f)
-      }
     }
   }
 
