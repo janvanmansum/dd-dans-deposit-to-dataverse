@@ -29,14 +29,12 @@ trait ValidateBag extends DebugEnhancedLogging {
   private val configuration: Configuration = Configuration(File(System.getProperty("app.home")))
   private val validatorServiceUrl = configuration.validatorServiceUrl
 
-  def validateBag(bagDir: Path): Try[DansBagValidationResult] = {
+  def validateBag(bagDir: Path) = {
     Try {
-      val bagDirUri = bagDir.toUri.toString
-      //todo replace with uri of bagstore
-      val vmTestUri = bagDirUri.split("data/")(1)
-      val validationUrlString = s"${ validatorServiceUrl }validate?infoPackageType=SIP&uri=file:///$vmTestUri"
+      val validationUrlString = s"${ validatorServiceUrl }validate?infoPackageType=SIP&uri=${bagDir.toUri}"
       logger.info(s"Calling Dans Bag Validation Service with ${ validationUrlString }")
       Http(s"${ validationUrlString }")
+        // TODO: Make timeouts configurable
         .timeout(connTimeoutMs = 10000, readTimeoutMs = 10000)
         .method("POST")
         .header("Accept", "application/json")
@@ -45,6 +43,7 @@ trait ValidateBag extends DebugEnhancedLogging {
       case r if r.code == 200 =>
         DansBagValidationResult.fromJson(r.body)
       case r =>
+        // TODO: THIS DOES NOT WORK. PLEASE TEST THAT FAILURES ACTUALLY GET PASSED UP.
         Failure(new RuntimeException(s"Dans Bag Validation failed (${ r.code }): ${ r.body }"))
     }
   }
