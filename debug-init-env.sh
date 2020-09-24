@@ -19,3 +19,8 @@ echo -n "Pre-creating log..."
 TEMPDIR=data
 touch $TEMPDIR/dd-dans-deposit-to-dataverse.log
 echo "OK"
+
+echo -n "Creating inbox..."
+INBOX=data/inbox
+mkdir $INBOX
+echo "OK"
