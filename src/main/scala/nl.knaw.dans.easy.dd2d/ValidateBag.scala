@@ -29,7 +29,8 @@ trait ValidateBag extends DebugEnhancedLogging {
   private val configuration: Configuration = Configuration(File(System.getProperty("app.home")))
   private val validatorServiceUrl = configuration.validatorServiceUrl
 
-  def validateBag(bagDir: Path) = {
+  def validateBag(bagDir: Path): Try[DansBagValidationResult] = {
+    trace(bagDir)
     Try {
       val validationUrlString = s"${ validatorServiceUrl }validate?infoPackageType=SIP&uri=${bagDir.toUri}"
       logger.info(s"Calling Dans Bag Validation Service with ${ validationUrlString }")

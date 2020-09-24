@@ -39,6 +39,7 @@ class InboxMonitor(inbox: File, dataverse: DataverseInstance) extends DebugEnhan
   private val ingestTasks = new ActiveTaskQueue()
   private val watcher = new FileMonitor(inbox, maxDepth = 1) {
     override def onCreate(d: File, count: Int): Unit = {
+      trace(d, count)
       if (d.isDirectory) {
         logger.debug(s"Detected new subdirectory in inbox. Adding $d")
         ingestTasks.add(DepositIngestTask(Deposit(d), dataverse))

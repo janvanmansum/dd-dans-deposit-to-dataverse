@@ -44,7 +44,7 @@ object Configuration {
     new Configuration(
       version = (home / "bin" / "version").contentAsString.stripLineEnd,
       inboxDir = File(properties.getString("deposits.inbox")),
-      validatorServiceUrl = properties.getString("easy.validator-service-url"),
+      validatorServiceUrl = properties.getString("validate-dans-bag.service-url"),
       dataverse = new DataverseInstanceConfig(
         connectionTimeout = properties.getInt("dataverse.connection-timeout-ms"),
         readTimeout = properties.getInt("dataverse.read-timeout-ms"),

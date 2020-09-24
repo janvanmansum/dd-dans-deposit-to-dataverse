@@ -56,6 +56,7 @@ case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(imp
   }
 
   private def uploadFilesToDataset(dvId: String): Try[Unit] = {
+    trace(dvId)
     val filesXml = deposit.tryFilesXml.recoverWith {
       case e: IllegalArgumentException =>
         logger.error(s"Bag files xml could not be retrieved. Error message: ${ e.getMessage }")
@@ -71,12 +72,14 @@ case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(imp
   }
 
   private def readIdFromResponse(response: HttpResponse[Array[Byte]]): Try[String] = Try {
+    trace(())
     val responseBodyAsString = new String(response.body, StandardCharsets.UTF_8)
     (parse(responseBodyAsString) \\ "persistentId")
       .extract[String]
   }
 
   private def validateDansBag(bagDir: Path): Try[Unit] = {
+    trace(bagDir)
     validateBag(bagDir) match {
       case Success(validationResult) =>
         if (validationResult.isCompliant) {
@@ -97,10 +100,12 @@ case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(imp
   }
 
   protected def depositRejected[T](message: => String, t: Throwable = null): Try[T] = {
+    trace(message, t)
     Failure(RejectedDepositException(deposit, message, t))
   }
 
   protected def depositFailed[T](message: => String, t: Throwable = null): Failure[T] = {
+    trace(message, t)
     Failure(FailedDepositException(deposit, message, t))
   }
 
