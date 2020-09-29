@@ -23,7 +23,7 @@ class CommandLineOptions(args: Array[String], configuration: Configuration) exte
   printedName = "dd-dans-deposit-to-dataverse"
   version(configuration.version)
   private val SUBCOMMAND_SEPARATOR = "---\n"
-  val description: String = s"""Transforms DANS deposit directories into Dataverse datasets."""
+  val description: String = s"""Imports DANS deposit directories into Dataverse datasets."""
   val synopsis: String =
     s"""
        |  $printedName run-service
