@@ -2,7 +2,7 @@ dd-dans-deposit-to-dataverse
 ============================
 [![Build Status](https://travis-ci.org/DANS-KNAW/dd-dans-deposit-to-dataverse.png?branch=master)](https://travis-ci.org/DANS-KNAW/dd-dans-deposit-to-dataverse)
 
-Transforms DANS deposit directories into Dataverse datasets.
+Imports DANS deposit directories into Dataverse datasets.
 
 SYNOPSIS
 --------

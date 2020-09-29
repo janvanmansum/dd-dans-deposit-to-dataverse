@@ -16,5 +16,5 @@
 package nl.knaw.dans.easy.dd2d
 
 package object dataverse {
-  case class CommandFailedException(status: Int, msg: String, body: String) extends Exception(s"Command could not be executed. Server returned: $msg")
+  case class CommandFailedException(status: Int, msg: String, body: String) extends Exception(s"Command could not be executed. Server returned: status line: '$msg', body: '$body'")
 }

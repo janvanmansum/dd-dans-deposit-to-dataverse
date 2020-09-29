@@ -40,7 +40,7 @@ case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(imp
 
   val mapper = new DdmToDataverseMapper()
 
-  override def run(): Try[Unit] = Try {
+  override def run(): Try[Unit] = {
     trace(())
     debug(s"Ingesting $deposit into Dataverse")
     val bagDirPath = deposit.bagDir.path
