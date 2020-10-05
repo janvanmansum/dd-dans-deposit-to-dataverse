@@ -65,6 +65,15 @@ class DdmToDataverseMapper() {
     files.toList
   }
 
+  def getDoi(datasetXml: Node): Try[String] = Try {
+    (datasetXml \\ "identifier")
+      .withFilter(_.attributes
+        .filter(_.prefixedKey == "xsi:type")
+        .filter(_.value.text == "id-type:DOI")
+        .nonEmpty)
+      .map(_.text).head
+  }
+
   /**
    * Converts easy-ddm xml to Scala case classes which at the end
    * are converted to json using the Json4s library

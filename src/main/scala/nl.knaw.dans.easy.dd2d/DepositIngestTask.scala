@@ -48,8 +48,9 @@ case class DepositIngestTask(deposit: Deposit, dataverse: DataverseInstance)(imp
     for {
       _ <- validateDansBag(bagDirPath)
       ddm <- deposit.tryDdm
+      doi <- mapper.getDoi(ddm)
       json <- mapper.mapToJson(ddm)
-      response <- dataverse.dataverse("root").createDataset(json)
+      response <- dataverse.dataverse("root").importDataset(json,false, doi, false)
       dvId <- readIdFromResponse(response)
       _ <- uploadFilesToDataset(dvId)
     } yield ()
