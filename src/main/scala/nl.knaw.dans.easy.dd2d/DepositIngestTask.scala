@@ -57,13 +57,13 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
           """.stripMargin)
       }
       ddm <- deposit.tryDdm
-      doi <- ddmMapper.getDoi(ddm)
+      doi <- deposit.getDoi(ddm)
       dataverseDataset <- ddmMapper.toDataverseDataset(ddm)
       json = Serialization.writePretty(dataverseDataset)
       _ = if (logger.underlying.isDebugEnabled) {
         debug(json)
       }
-      response <- dataverse.dataverse("root").importDataset(json,false, doi, false)
+      response <- dataverse.dataverse("root").importDataset(json,false, "doi:" + doi, false)
       dvId <- readIdFromResponse(response)
       _ <- uploadFilesToDataset(dvId)
     } yield ()

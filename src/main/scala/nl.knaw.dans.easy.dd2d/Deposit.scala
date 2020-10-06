@@ -60,5 +60,14 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
     case t: Throwable => Failure(new IllegalArgumentException(s"Unparseable XML: ${ t.getMessage }"))
   }
 
+  def getDoi(datasetXml: Node): Try[String] = Try {
+    (datasetXml \\ "identifier")
+      .withFilter(_.attributes
+        .filter(_.prefixedKey == "xsi:type")
+        .filter(_.value.text == "id-type:DOI")
+        .nonEmpty)
+      .map(_.text).head
+  }
+
   override def toString: String = s"Deposit at $dir"
 }

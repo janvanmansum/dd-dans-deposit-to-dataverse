@@ -58,15 +58,6 @@ class DdmToDataverseMapper() {
     val DEFAULT: IdScheme.Value = Value("")
   }
 
-  def getDoi(datasetXml: Node): Try[String] = Try {
-    (datasetXml \\ "identifier")
-      .withFilter(_.attributes
-        .filter(_.prefixedKey == "xsi:type")
-        .filter(_.value.text == "id-type:DOI")
-        .nonEmpty)
-      .map(_.text).head
-  }
-
   def toDataverseDataset(ddm: Node): Try[DataverseDataset] = Try {
     // Please keep ordered by order in Dataverse UI as much as possible
 
