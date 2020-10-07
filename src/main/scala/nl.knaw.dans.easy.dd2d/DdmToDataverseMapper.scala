@@ -26,26 +26,15 @@ import scala.xml.{ Elem, MetaData, Node, NodeSeq }
 import scala.language.postfixOps
 
 /**
- * Maps DANS Dataset Metadata to Dataverse Json.
+ * Maps DANS Dataset Metadata to Dataverse JSON.
  */
 // TODO: Rename if we also need to take elements from EMD
 class DdmToDataverseMapper() {
-  private implicit val format: DefaultFormats.type = DefaultFormats
   case class RelatedIdentifier(relationType: String, schemeOrUrl: String, value: String, isRelatedIdentifier: Boolean)
-  case class PointCoordinate(x: String, y: String)
-  case class BoxCoordinate(north: String, south: String, east: String, west: String)
   lazy val citationFields = new ListBuffer[Field]
   lazy val basicInformationFields = new ListBuffer[Field]
   lazy val archaeologySpecificFields = new ListBuffer[Field]
   lazy val temporalSpatialFields = new ListBuffer[Field]
-
-  object Spatial {
-    /** coordinate order y, x = latitude (DCX_SPATIAL_Y), longitude (DCX_SPATIAL_X) */
-    val DEGREES_SRS_NAME = "http://www.opengis.net/def/crs/EPSG/0/4326"
-
-    /** coordinate order x, y = longitude (DCX_SPATIAL_X), latitude (DCX_SPATIAL_Y) */
-    val RD_SRS_NAME = "http://www.opengis.net/def/crs/EPSG/0/28992"
-  }
 
   object IdScheme extends Enumeration {
     type IdScheme = Value
@@ -86,6 +75,11 @@ class DdmToDataverseMapper() {
     // Archaeology specific
     addPrimitiveFieldMultipleValues(archaeologySpecificFields, "archisZaakId", ddm \ "dcmiMetadata" \ "identifier", IsFormatOf toArchisZaakId)
 
+
+    // Temporal and spatial coverage
+    addCompoundFieldMultipleValues(temporalSpatialFields, "easy-tsm", ddm \ "dcmiMetadata" \ "spatial" \ "Point", SpatialPoint toEasyTsmSpatialPointValueObject)
+    addCompoundFieldMultipleValues(temporalSpatialFields, "easy-spatial-box", ddm \ "dcmiMetadata" \ "spatial" \ "boundedBy", SpatialBox toEasyTsmSpatialBoxValueObject)
+
     assembleDataverseDataset()
   }
 
@@ -100,7 +94,7 @@ class DdmToDataverseMapper() {
     DataverseDataset(datasetVersion)
   }
 
-  private def addPrimitiveFieldSingleValue(metadataBlockFields: ListBuffer[Field], name: String, sourceNodes: NodeSeq, nodeTransformer: Node => Option[String] = Generic toText): Unit = {
+  private def addPrimitiveFieldSingleValue(metadataBlockFields: ListBuffer[Field], name: String, sourceNodes: NodeSeq, nodeTransformer: Node => Option[String] = AnyElement toText): Unit = {
     sourceNodes
       .map(nodeTransformer)
       .filter(_.isDefined)
@@ -109,7 +103,7 @@ class DdmToDataverseMapper() {
       .foreach(v => metadataBlockFields += PrimitiveFieldSingleValue(name, multiple = false, "primitive", v))
   }
 
-  private def addPrimitiveFieldMultipleValues(metadataBlockFields: ListBuffer[Field], name: String, sourceNodes: NodeSeq, nodeTransformer: Node => Option[String] = Generic toText): Unit = {
+  private def addPrimitiveFieldMultipleValues(metadataBlockFields: ListBuffer[Field], name: String, sourceNodes: NodeSeq, nodeTransformer: Node => Option[String] = AnyElement toText): Unit = {
     val values = sourceNodes.map(nodeTransformer).filter(_.isDefined).map(_.get).toList
     if (values.nonEmpty) {
       metadataBlockFields += PrimitiveFieldMultipleValues(name, multiple = true, "primitive", values)
@@ -142,61 +136,6 @@ class DdmToDataverseMapper() {
     addDatesFreeFormat(node)
     addRelatedIdentifiers(node)
     addKeywords(node)
-    addSpatialPoint(node)
-    addSpatialBox(node)
-  }
-
-  def addSpatialBox(node: Node): Unit = {
-    val objectList = new ListBuffer[Map[String, Field]]()
-    (node \\ "spatial").filter(x => (x \\ "lowerCorner").nonEmpty).foreach(spatial => {
-      var subFields = collection.mutable.Map[String, Field]()
-      val isRD = (spatial \\ "Envelope").head.attributes.exists(_.value.text.equals(Spatial.RD_SRS_NAME))
-
-      if (isRD)
-        subFields += ("easy-tsm-spatial-box" -> PrimitiveFieldSingleValue("easy-tsm-spatial-box", false, "controlledVocabulary", "RD(in m.)"))
-      else
-        subFields += ("easy-tsm-spatial-box" -> PrimitiveFieldSingleValue("easy-tsm-spatial-box", false, "controlledVocabulary", "latitude/longitude (m)"))
-
-      val lowerCorner = (spatial \\ "lowerCorner")
-        .find(!_.text.isEmpty)
-        .map(
-          _.text.split(" +")
-            .take(2).toList
-        ).getOrElse(List(""))
-      val upperCorner = (spatial \\ "upperCorner")
-        .find(!_.text.isEmpty)
-        .map(
-          _.text.split(" +")
-            .take(2).toList
-        ).getOrElse(List(""))
-
-      val boxCoordinate = getBoxCoordinate(isRD, lowerCorner, upperCorner)
-      subFields += ("easy-tsm-spatial-box-north" -> PrimitiveFieldSingleValue("easy-tsm-spatial-box-north", false, "primitive", boxCoordinate.north))
-      subFields += ("easy-tsm-spatial-box-east" -> PrimitiveFieldSingleValue("easy-tsm-spatial-box-east", false, "primitive", boxCoordinate.east))
-      subFields += ("easy-tsm-spatial-box-south" -> PrimitiveFieldSingleValue("easy-tsm-spatial-box-south", false, "primitive", boxCoordinate.south))
-      subFields += ("easy-tsm-spatial-box-west" -> PrimitiveFieldSingleValue("easy-tsm-spatial-box-west", false, "primitive", boxCoordinate.west))
-      objectList += subFields.toMap
-    })
-    temporalSpatialFields += CompoundField("easy-spatial-box", multiple = true, "compound", objectList.toList)
-  }
-
-  def addSpatialPoint(node: Node): Unit = {
-    val objectList = new ListBuffer[Map[String, Field]]()
-    (node \\ "spatial").filter(x => (x \\ "Point").nonEmpty).foreach(spatial => {
-      var subFields = collection.mutable.Map[String, Field]()
-      val isRD = spatial.attributes.exists(_.value.text.equals(Spatial.RD_SRS_NAME))
-      if (isRD)
-        subFields += ("easy-tsm-spatial-point" -> PrimitiveFieldSingleValue("easy-tsm-spatial-point", false, "controlledVocabulary", "RD(in m.)"))
-      else
-        subFields += ("easy-tsm-spatial-point" -> PrimitiveFieldSingleValue("easy-tsm-spatial-point", false, "controlledVocabulary", "latitude/longitude (m)"))
-
-      val pos = (spatial \\ "pos").filter(!_.text.isEmpty).head.text.split(" +").take(2).toList
-      val coordinate = getPointCoordinate(isRD, pos)
-      subFields += ("easy-tsm-x" -> PrimitiveFieldSingleValue("easy-tsm-x", false, "primitive", coordinate.x))
-      subFields += ("easy-tsm-y" -> PrimitiveFieldSingleValue("easy-tsm-y", false, "primitive", coordinate.y))
-      objectList += subFields.toMap
-    })
-    temporalSpatialFields += CompoundField("easy-tsm", multiple = true, "compound", objectList.toList)
   }
 
   def addKeywords(node: Node): Try[Unit] = Try {
@@ -304,24 +243,5 @@ class DdmToDataverseMapper() {
 
   def getUrl(md: MetaData): String = {
     md.get("href").getOrElse("").asInstanceOf[String]
-  }
-
-  //assigns correct values to Coordinate (RD = [x,y) and Degrees = [y,x]
-  def getPointCoordinate(isDegree: Boolean, values: List[String]): PointCoordinate = {
-    if (isDegree) {
-      PointCoordinate(values.head, values(1))
-    }
-    else {
-      PointCoordinate(values(1), values.head)
-    }
-  }
-
-  def getBoxCoordinate(isRD: Boolean, lower: List[String], upper: List[String]): BoxCoordinate = {
-    if (isRD) {
-      BoxCoordinate(upper(1), lower(1), upper.head, lower.head)
-    }
-    else {
-      BoxCoordinate(upper.head, lower.head, upper(1), lower(1))
-    }
   }
 }

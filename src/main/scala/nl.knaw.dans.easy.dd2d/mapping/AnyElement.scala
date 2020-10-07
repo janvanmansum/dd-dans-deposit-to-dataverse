@@ -17,7 +17,7 @@ package nl.knaw.dans.easy.dd2d.mapping
 
 import scala.xml.Node
 
-object Generic {
+object AnyElement {
   def toText(node: Node): Option[String] = {
     Some(node.text)
   }
