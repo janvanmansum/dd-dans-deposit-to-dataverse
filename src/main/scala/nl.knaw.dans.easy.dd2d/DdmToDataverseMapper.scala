@@ -17,35 +17,22 @@ package nl.knaw.dans.easy.dd2d
 
 import nl.knaw.dans.easy.dd2d.dataverse.json.{ CompoundField, DatasetVersion, DataverseDataset, Field, MetadataBlock, PrimitiveFieldMultipleValues, PrimitiveFieldSingleValue, ValueObject, createCompoundFieldMultipleValues }
 import nl.knaw.dans.easy.dd2d.mapping._
-import org.json4s.DefaultFormats
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.language.postfixOps
 import scala.util.Try
 import scala.xml.{ Elem, MetaData, Node, NodeSeq }
-import scala.language.postfixOps
 
 /**
  * Maps DANS Dataset Metadata to Dataverse JSON.
  */
 // TODO: Rename if we also need to take elements from EMD
 class DdmToDataverseMapper() {
-  case class RelatedIdentifier(relationType: String, schemeOrUrl: String, value: String, isRelatedIdentifier: Boolean)
   lazy val citationFields = new ListBuffer[Field]
   lazy val basicInformationFields = new ListBuffer[Field]
   lazy val archaeologySpecificFields = new ListBuffer[Field]
   lazy val temporalSpatialFields = new ListBuffer[Field]
-
-  object IdScheme extends Enumeration {
-    type IdScheme = Value
-    val DOI: IdScheme.Value = Value("doi")
-    val URN: IdScheme.Value = Value("urn:nbn:nl")
-    val ISBN: IdScheme.Value = Value("ISBN")
-    val ISSN: IdScheme.Value = Value("ISSN")
-    val NWO: IdScheme.Value = Value("NWO ProjectNr")
-    val OTHER: IdScheme.Value = Value("other")
-    val DEFAULT: IdScheme.Value = Value("")
-  }
 
   def toDataverseDataset(ddm: Node): Try[DataverseDataset] = Try {
     // Please keep ordered by order in Dataverse UI as much as possible
@@ -71,10 +58,13 @@ class DdmToDataverseMapper() {
 
     // Basic information
     addPrimitiveFieldMultipleValues(basicInformationFields, "languageOfFiles", ddm \ "dcmiMetadata" \ "language")
+    addCompoundFieldMultipleValues(basicInformationFields, "easy-relid", (ddm \ "dcmiMetadata" \ "_").filter(Relation isRelation).filter(Relation isRelatedIdentifier), Relation toRelatedIdentifierValueObject)
+    addCompoundFieldMultipleValues(basicInformationFields, "easy-relid-url", (ddm \ "dcmiMetadata" \ "_").filter(Relation isRelation).filterNot(Relation isRelatedIdentifier), Relation toRelatedUrlValueObject)
+    addCompoundFieldMultipleValues(basicInformationFields, "easy-date", (ddm \ "dcmiMetadata" \ "_").filter(DateTypeElement isDate).filter(DateTypeElement hasW3CFormat), DateTypeElement toBasicInfoFormattedDateValueObject)
+    addCompoundFieldMultipleValues(basicInformationFields, "easy-date-free", (ddm \ "dcmiMetadata" \ "_").filter(DateTypeElement isDate).filterNot(DateTypeElement hasW3CFormat), DateTypeElement toBasicInfoFreeDateValue)
 
     // Archaeology specific
     addPrimitiveFieldMultipleValues(archaeologySpecificFields, "archisZaakId", ddm \ "dcmiMetadata" \ "identifier", IsFormatOf toArchisZaakId)
-
 
     // Temporal and spatial coverage
     addCompoundFieldMultipleValues(temporalSpatialFields, "easy-tsm", ddm \ "dcmiMetadata" \ "spatial" \ "Point", SpatialPoint toEasyTsmSpatialPointValueObject)
@@ -129,119 +119,5 @@ class DdmToDataverseMapper() {
     if (fields.nonEmpty) {
       versionMap.put(blockId, MetadataBlock(blockDisplayName, fields.toList))
     }
-  }
-
-  def mapToCompoundFields(node: Node): Try[Unit] = Try {
-    addDates(node)
-    addDatesFreeFormat(node)
-    addRelatedIdentifiers(node)
-    addKeywords(node)
-  }
-
-  def addKeywords(node: Node): Try[Unit] = Try {
-    val objectList = new ListBuffer[Map[String, Field]]()
-    val keywords = node \\ "subject"
-    if (keywords.nonEmpty) {
-      keywords.foreach(subject => {
-        var subFields = collection.mutable.Map[String, Field]()
-        subFields += ("keywordValue" -> PrimitiveFieldSingleValue("keywordValue", multiple = false, "primitive", subject.text))
-        //subFields += ("keywordVocabulary" -> PrimitiveFieldSingleValue("keywordVocabulary", multiple = false, "primitive", "NOT AVAILABLE IN EASY"))
-        //subFields += ("keywordVocabularyURI" -> PrimitiveFieldSingleValue("keywordVocabularyURI", multiple = false, "primitive", "NOT AVAILABLE IN EASY"))
-        objectList += subFields.toMap
-      })
-      citationFields += CompoundField("keyword", multiple = true, "compound", objectList.toList)
-    }
-  }
-
-  def addDates(node: Node): Try[Unit] = Try {
-    val objectList = new ListBuffer[Map[String, Field]]()
-    val dateElements = (node \\ "_").collect {
-      case e @ Elem("dcterms", "dateAccepted", _, _, _) if e.attributes.nonEmpty => ("Date accepted", e.text)
-      case e @ Elem("dcterms", "valid", _, _, _) if e.attributes.nonEmpty => ("Valid", e.text)
-      case e @ Elem("dcterms", "issued", _, _, _) if e.attributes.nonEmpty => ("Issued", e.text)
-      case e @ Elem("dcterms", "modified", _, _, _) if e.attributes.nonEmpty => ("Modified", e.text)
-      case e @ Elem("dc", "date", _, _, _) if e.attributes.nonEmpty => ("Date", e.text)
-    }
-    if (dateElements.nonEmpty) {
-      dateElements.foreach(date => {
-        var subFields = collection.mutable.Map[String, Field]()
-        subFields += ("easy-date-event" -> PrimitiveFieldSingleValue("easy-date-event", multiple = false, "controlledVocabulary", date._1))
-        subFields += ("esy-date-val" -> PrimitiveFieldSingleValue("esy-date-val", multiple = false, "primitive", date._2))
-        objectList += subFields.toMap
-      })
-      basicInformationFields += CompoundField("easy-date", multiple = true, "compound", objectList.toList)
-    }
-  }
-
-  def addDatesFreeFormat(node: Node): Try[Unit] = Try {
-    val objectList = new ListBuffer[Map[String, Field]]()
-    val dateElements = (node \\ "_").collect {
-      case e @ Elem("dcterms", "dateAccepted", _, _, _) if e.attributes.isEmpty => ("Date accepted", e.text)
-      case e @ Elem("dcterms", "valid", _, _, _) if e.attributes.isEmpty => ("Valid", e.text)
-      case e @ Elem("dcterms", "issued", _, _, _) if e.attributes.isEmpty => ("Issued", e.text)
-      case e @ Elem("dcterms", "modified", _, _, _) if e.attributes.isEmpty => ("Modified", e.text)
-      case e @ Elem("dc", "date", _, _, _) if e.attributes.isEmpty => ("Date", e.text)
-    }
-    if (dateElements.nonEmpty) {
-      dateElements.foreach(date => {
-        var subFields = collection.mutable.Map[String, Field]()
-        subFields += ("easy-date-event-free" -> PrimitiveFieldSingleValue("easy-date-event-free", multiple = false, "controlledVocabulary", date._1))
-        subFields += ("easy-date-val-free" -> PrimitiveFieldSingleValue("easy-date-val-free", multiple = false, "primitive", date._2))
-        objectList += subFields.toMap
-      })
-      basicInformationFields += CompoundField("easy-date-free", multiple = true, "compound", objectList.toList)
-    }
-  }
-
-  def addRelatedIdentifiers(node: Node): Try[Unit] = Try {
-    val relIdList = new ListBuffer[Map[String, Field]]()
-    val relIdUrlList = new ListBuffer[Map[String, Field]]()
-
-    val relationElements = (node \\ "_").collect {
-      case e @ Elem(_, "conformsTo", _, _, _) if isRelatedIdentifier(e.attributes) => RelatedIdentifier("relation", mapScheme(e.attributes).toString, e.text, isRelatedIdentifier = true)
-      case e @ Elem(_, "relation", _, _, _) if isRelatedIdentifier(e.attributes) => RelatedIdentifier("relation", mapScheme(e.attributes).toString, e.text, isRelatedIdentifier = false)
-      case e @ Elem(_, "relation", _, _, _) if !isRelatedIdentifier(e.attributes) => RelatedIdentifier("relation", getUrl(e.attributes), e.text, isRelatedIdentifier = false)
-    }
-    if (relationElements.nonEmpty) {
-      relationElements.foreach(relation => {
-        var subFields = collection.mutable.Map[String, Field]()
-        if (relation.isRelatedIdentifier) {
-          subFields += ("easy-relid-relation" -> PrimitiveFieldSingleValue("easy-relid-relation", multiple = false, "controlledVocabulary", relation.relationType))
-          subFields += ("easy-relid-type" -> PrimitiveFieldSingleValue("easy-relid-type", multiple = false, "controlledVocabulary", relation.schemeOrUrl))
-          subFields += ("easy-relid-relatedid" -> PrimitiveFieldSingleValue("easy-relid-relatedid", multiple = false, "primitive", relation.value))
-          relIdList += subFields.toMap
-        }
-        else {
-          subFields += ("easy-relid-relation-url" -> PrimitiveFieldSingleValue("easy-relid-relation-url", multiple = false, "controlledVocabulary", relation.relationType))
-          subFields += ("easy-relid-url-title" -> PrimitiveFieldSingleValue("easy-relid-url-title", multiple = false, "primitive", relation.value))
-          subFields += ("easy-relid-url-url" -> PrimitiveFieldSingleValue("easy-relid-url-url", multiple = false, "primitive", relation.schemeOrUrl))
-          relIdUrlList += subFields.toMap
-        }
-      })
-      basicInformationFields += CompoundField("easy-relid", multiple = true, "compound", relIdList.toList)
-      basicInformationFields += CompoundField("easy-relid-url", multiple = true, "compound", relIdUrlList.toList)
-    }
-  }
-
-  //check if RelatedIdentifier or Relation
-  def isRelatedIdentifier(md: MetaData): Boolean = {
-    md.get("xsi-type").nonEmpty || md.get("scheme").nonEmpty
-  }
-
-  def mapScheme(md: MetaData): IdScheme.Value = {
-    val attr = md.asAttrMap.filter(a => a._1 == "scheme" | (a._1 == "xsi:type"))
-    attr.head._2 match {
-      case "id-type:NWO-PROJECTNR" => IdScheme.NWO
-      case "id-type:ISBN" => IdScheme.ISBN
-      case "id-type:ISSN" => IdScheme.ISSN
-      case "DOI" | "id-type:DOI" => IdScheme.DOI
-      case "URN" => IdScheme.URN
-      case "id-type:other" => IdScheme.OTHER
-      case _ => IdScheme.DEFAULT
-    }
-  }
-
-  def getUrl(md: MetaData): String = {
-    md.get("href").getOrElse("").asInstanceOf[String]
   }
 }
