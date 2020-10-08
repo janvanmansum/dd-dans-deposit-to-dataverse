@@ -13,24 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.dd2d
+package nl.knaw.dans.easy.dd2d.mapping
 
-import better.files.File
 import nl.knaw.dans.easy.dd2d.dataverse.json.DataverseFile
-import nl.knaw.dans.easy.dd2d.mapping.FileElement
+import org.scalatest.{ FlatSpec, Matchers }
 
-import scala.util.Try
-import scala.xml.Node
 
-case class FileInfo(file: File, metadata: DataverseFile)
+class FileElementSpec extends FlatSpec with Matchers {
 
-class FilesXmlToDataverseMapper(bagDir: File) {
-  def toDataverseFiles(node: Node): Try[List[FileInfo]] = Try {
-    (node \ "file").map(n => FileInfo(getFile(n), FileElement.toFileValueObject(n))).toList
-  }
-
-  private def getFile(node: Node): File = {
-    val filePathAttr = node.attribute("filepath").flatMap(_.headOption).getOrElse { throw new RuntimeException("File node without a filepath attribute") }.text
-    bagDir / filePathAttr
+  "toFileValueObject" should "strip data/ prefix from path to get directoryLabel" in {
+    val filesXml =
+      <file filepath="data/this/is/the/directoryLabel/filename.txt">
+      </file>
+    val result = FileElement.toFileValueObject(filesXml)
+    result shouldBe DataverseFile(directoryLabel = Some("this/is/the/directoryLabel"))
   }
 }

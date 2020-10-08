@@ -16,7 +16,7 @@
 package nl.knaw.dans.easy.dd2d.dataverse
 
 import better.files.File
-import org.json4s.{ DefaultFormats, Formats, JObject }
+import org.json4s.{ DefaultFormats, Formats }
 
 import scala.collection.mutable
 
@@ -58,7 +58,6 @@ package object json {
 
   case class PrimitiveFieldMultipleValues(typeName: String,
                                           multiple: Boolean,
-                                          //create enum
                                           typeClass: String,
                                           value: List[String]
                                          ) extends Field
@@ -68,11 +67,10 @@ package object json {
                            typeClass: String = "compound",
                            value: List[Map[String, Field]]) extends Field
 
-  case class FileMetadata(description: Option[String] = None,
-                          directoryLabel: Option[String] = None,
-                          restrict: Option[String] = None)
-
-  case class FileInformation(file: File, fileMetadata: FileMetadata)
+  case class DataverseFile(description: Option[String] = None,
+                           directoryLabel: Option[String] = None,
+                           restrict: Option[String] = None,
+                           categories: List[String] = List.empty[String])
 
   def createPrimitiveFieldSingleValue(name: String, value: String): PrimitiveFieldSingleValue = {
     PrimitiveFieldSingleValue(name, multiple = false, "primitive", value)
@@ -91,7 +89,7 @@ package object json {
   }
 
   def createCompoundFieldSingleValue(name: String, value: Map[String, Field]): CompoundField = {
-    CompoundField(name, multiple = false, typeClass = "compound", value = List(value))
+    CompoundField(name, multiple = false, value = List(value))
   }
 
   def createCompoundFieldMultipleValues(name: String, values: List[Map[String, Field]]): CompoundField = {
