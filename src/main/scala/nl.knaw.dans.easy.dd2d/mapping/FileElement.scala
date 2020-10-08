@@ -22,6 +22,12 @@ import nl.knaw.dans.easy.dd2d.dataverse.json.{ DataverseFile, FieldMap, JsonObje
 import scala.xml.Node
 
 object FileElement {
+  private val accessibilityToRestrict = Map (
+    "KNOWN"-> "true",
+    "NONE" -> "true",
+    "RESTRICTED_REQUEST" -> "true",
+    "ANONYMOUS" -> "false"
+  )
 
   def toFileValueObject(node: Node): DataverseFile = {
     val pathAttr = node.attribute("filepath").flatMap(_.headOption).getOrElse { throw new RuntimeException("File node without a filepath attribute") }.text
@@ -29,10 +35,12 @@ object FileElement {
     val dirPath = Option(Paths.get(pathAttr.substring("data/".length)).getParent).map(_.toString)
     val descr = (node \ "description").headOption.map(_.text)
     val cats = (node \ "subject").map(_.text).toList
+    val restr = (node \ "accessibleToRights").headOption.map(_.text).flatMap(accessibilityToRestrict.get).orElse(Some("true"))
 
     DataverseFile(
       directoryLabel = dirPath,
       description = descr,
+      restrict = restr,
 // TODO: what do we use categories for, if anything?
 //      categories = cats
     )

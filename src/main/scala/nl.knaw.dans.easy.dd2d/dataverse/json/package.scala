@@ -69,7 +69,7 @@ package object json {
 
   case class DataverseFile(description: Option[String] = None,
                            directoryLabel: Option[String] = None,
-                           restrict: Option[String] = None,
+                           restrict: Option[String] = Some("true"),
                            categories: List[String] = List.empty[String])
 
   def createPrimitiveFieldSingleValue(name: String, value: String): PrimitiveFieldSingleValue = {

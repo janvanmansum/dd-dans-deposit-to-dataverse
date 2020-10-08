@@ -27,7 +27,7 @@ import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization
 import scalaj.http.HttpResponse
 
-import scala.util.{ Failure, Try }
+import scala.util.{ Failure, Success, Try }
 
 /**
  * Checks one deposit and then ingests it into Dataverse.
