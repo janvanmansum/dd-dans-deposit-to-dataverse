@@ -15,13 +15,13 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ ValueObject, createPrimitiveFieldSingleValue }
+import nl.knaw.dans.easy.dd2d.dataverse.json.{ JsonObject, createPrimitiveFieldSingleValue }
 
 import scala.xml.Node
 
 object Description {
 
-  def toDescriptionValueObject(node: Node): ValueObject = {
+  def toDescriptionValueObject(node: Node): JsonObject = {
     Map(
       "dsDescriptionValue" -> createPrimitiveFieldSingleValue("dsDescriptionValue", node.text)
       // TODO: add date subfield?

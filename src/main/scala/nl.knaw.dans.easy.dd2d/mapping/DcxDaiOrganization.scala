@@ -15,7 +15,7 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ Field, ValueObject, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
+import nl.knaw.dans.easy.dd2d.dataverse.json.{ Field, JsonObject, FieldMap, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
 import nl.knaw.dans.easy.dd2d.mapping.DcxDaiAuthor.{ contributoreRoleToContributorType, formatName, parseAuthor }
 import org.apache.commons.lang.StringUtils
 
@@ -31,16 +31,15 @@ object DcxDaiOrganization extends Contributor {
       role = (node \ "role").map(_.text).headOption)
   }
 
-  def toContributorValueObject(node: Node): ValueObject = {
-    val valueObject = mutable.Map[String, Field]()
+  def toContributorValueObject(node: Node): JsonObject = {
+    val m = FieldMap()
     val organization = parseOrganization(node)
     if (organization.name.isDefined) {
-      valueObject.put("contributorName", createPrimitiveFieldSingleValue("contributorName", organization.name.get))
+      m.addPrimitiveField("contributorName", organization.name.get)
     }
     if (organization.role.isDefined) {
-      valueObject.put("contributorType",
-        createCvFieldSingleValue("contributorType", organization.role.map(contributoreRoleToContributorType.getOrElse(_, "Other")).getOrElse("Other")))
+      m.addCvField("contributorType", organization.role.map(contributoreRoleToContributorType.getOrElse(_, "Other")).getOrElse("Other"))
     }
-    valueObject.toMap
+    m.toJsonObject
   }
 }

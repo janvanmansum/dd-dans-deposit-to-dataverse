@@ -15,13 +15,13 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ ValueObject, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
+import nl.knaw.dans.easy.dd2d.dataverse.json.{ JsonObject, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
 import nl.knaw.dans.easy.dd2d.mapping.SpatialBox.{ LATLON_SCHEME, RD_SCHEME, getPoint, isRd }
 
 import scala.xml.Node
 
 object SpatialPoint extends Spatial {
-  def toEasyTsmSpatialPointValueObject(point: Node): ValueObject = {
+  def toEasyTsmSpatialPointValueObject(point: Node): JsonObject = {
     val isRD = isRd(point)// TODO: improve error handling
     val p = getPoint(point)
 

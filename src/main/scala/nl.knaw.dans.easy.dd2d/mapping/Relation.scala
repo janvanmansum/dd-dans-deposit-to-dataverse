@@ -15,7 +15,7 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ ValueObject, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
+import nl.knaw.dans.easy.dd2d.dataverse.json.{ JsonObject, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
 
 import scala.xml.Node
 
@@ -51,7 +51,7 @@ object Relation {
     getScheme(node).isDefined
   }
 
-  def toRelatedIdentifierValueObject(node: Node): ValueObject = {
+  def toRelatedIdentifierValueObject(node: Node): JsonObject = {
     getScheme(node).map {
       s => Map(
         "easy-relid-relation" -> createCvFieldSingleValue("easy-relid-relation", getRelationType(node)),
@@ -63,7 +63,7 @@ object Relation {
     }
   }
 
-  def toRelatedUrlValueObject(node: Node): ValueObject = {
+  def toRelatedUrlValueObject(node: Node): JsonObject = {
     if (getScheme(node).isDefined) throw new RuntimeException("Expected related URL, not a related ID")
     else {
       Map(

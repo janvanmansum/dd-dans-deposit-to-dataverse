@@ -15,7 +15,7 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ ValueObject, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
+import nl.knaw.dans.easy.dd2d.dataverse.json.{ JsonObject, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
 
 import scala.xml.Node
 
@@ -27,7 +27,7 @@ object SpatialBox extends Spatial {
    * @param boundedBy the boundedBy element
    * @return the spatial box value object
    */
-  def toEasyTsmSpatialBoxValueObject(boundedBy: Node): ValueObject = {
+  def toEasyTsmSpatialBoxValueObject(boundedBy: Node): JsonObject = {
     val isRD = (boundedBy \ "Envelope").headOption.map(isRd).get // TODO: improve error handling
     val lowerCorner = (boundedBy \ "Envelope" \ "lowerCorner").headOption.map(getPoint).get // TODO: improve error handling
     val upperCorner = (boundedBy \ "Envelope" \ "upperCorner").headOption.map(getPoint).get // TODO: improve error handling

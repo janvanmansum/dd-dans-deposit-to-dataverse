@@ -16,16 +16,37 @@
 package nl.knaw.dans.easy.dd2d.dataverse
 
 import better.files.File
-import org.json4s.{ DefaultFormats, Formats }
+import org.json4s.{ DefaultFormats, Formats, JObject }
+
+import scala.collection.mutable
 
 package object json {
   type MetadataBlockName = String
-  type ValueObject = Map[String, Field]
+  type JsonObject = Map[String, Field]
+
+  implicit val jsonFormats: Formats = DefaultFormats
 
   abstract class Field
-  implicit val jsonFormats: Formats = DefaultFormats
-  case class MetadataBlock(displayName: String, fields: List[Field])
 
+  case class FieldMap() {
+    private val fields = mutable.Map[String, Field]()
+
+    def addPrimitiveField(name: String, value: String): Unit = {
+      fields.put(name, createPrimitiveFieldSingleValue(name, value))
+    }
+
+    def addCvField(name: String, value: String): Unit = {
+      fields.put(name, createCvFieldSingleValue(name, value))
+    }
+
+    def addCompoundField(name: String, value: Map[String, Field]): Unit = {
+      fields.put(name, createCompoundFieldSingleValue(name, value))
+    }
+
+    def toJsonObject: JsonObject = fields.toMap
+  }
+
+  case class MetadataBlock(displayName: String, fields: List[Field])
   case class DatasetVersion(metadataBlocks: Map[MetadataBlockName, MetadataBlock])
   case class DataverseDataset(datasetVersion: DatasetVersion)
 

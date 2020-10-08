@@ -15,7 +15,7 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ ValueObject, createPrimitiveFieldSingleValue }
+import nl.knaw.dans.easy.dd2d.dataverse.json.{ JsonObject, createPrimitiveFieldSingleValue }
 
 import scala.xml.Node
 
@@ -26,7 +26,7 @@ object IsFormatOf {
     else Option.empty
   }
 
-  def toOtherIdValueObject(node: Node): ValueObject = {
+  def toOtherIdValueObject(node: Node): JsonObject = {
     Map("otherIdValue" -> createPrimitiveFieldSingleValue("otherIdValue", node.text)
     // TODO: can a sensible value be found for "otherIdAgency"?
     )

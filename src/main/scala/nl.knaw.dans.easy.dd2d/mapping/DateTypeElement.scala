@@ -15,7 +15,7 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ ValueObject, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
+import nl.knaw.dans.easy.dd2d.dataverse.json.{ JsonObject, FieldMap, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
 import org.joda.time.DateTime
 import org.joda.time.format.{ DateTimeFormat, DateTimeFormatter }
 
@@ -47,15 +47,17 @@ object DateTypeElement {
     yyyymmddPattern.print(DateTime.parse(node.text))
   }
 
-  def toBasicInfoFormattedDateValueObject(node: Node): ValueObject = {
-    Map(
-      "easy-date-event" -> createCvFieldSingleValue("easy-date-event", labelToDateType.getOrElse(node.label, "Date")),
-      "esy-date-val" -> createPrimitiveFieldSingleValue("esy-date-val", toYearMonthDayFormat(node).getOrElse("")))
+  def toBasicInfoFormattedDateValueObject(node: Node): JsonObject = {
+    val m = FieldMap()
+    m.addCvField("easy-date-event", labelToDateType.getOrElse(node.label, "Date"))
+    m.addPrimitiveField("esy-date-val", toYearMonthDayFormat(node).getOrElse(""))
+    m.toJsonObject
   }
 
-  def toBasicInfoFreeDateValue(node: Node): ValueObject = {
-    Map(
-      "easy-date-event-free" -> createCvFieldSingleValue("easy-date-event-free", labelToDateType.getOrElse(node.label, "Date")),
-      "easy-date-val-free" -> createPrimitiveFieldSingleValue("easy-date-val-free", node.text))
+  def toBasicInfoFreeDateValue(node: Node): JsonObject = {
+    val m = FieldMap()
+    m.addCvField("easy-date-event-free", labelToDateType.getOrElse(node.label, "Date"))
+    m.addPrimitiveField("easy-date-val-free", node.text)
+    m.toJsonObject
   }
 }

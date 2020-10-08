@@ -15,14 +15,14 @@
  */
 package nl.knaw.dans.easy.dd2d
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ CompoundField, DatasetVersion, DataverseDataset, Field, MetadataBlock, PrimitiveFieldMultipleValues, PrimitiveFieldSingleValue, ValueObject, createCompoundFieldMultipleValues }
+import nl.knaw.dans.easy.dd2d.dataverse.json.{ DatasetVersion, DataverseDataset, Field, JsonObject, MetadataBlock, PrimitiveFieldMultipleValues, PrimitiveFieldSingleValue, createCompoundFieldMultipleValues }
 import nl.knaw.dans.easy.dd2d.mapping._
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 import scala.util.Try
-import scala.xml.{ Elem, MetaData, Node, NodeSeq }
+import scala.xml.{ Node, NodeSeq }
 
 /**
  * Maps DANS Dataset Metadata to Dataverse JSON.
@@ -79,7 +79,6 @@ class DdmToDataverseMapper() {
     addMetadataBlock(versionMap, "basicInformation", "Basic Information", basicInformationFields)
     addMetadataBlock(versionMap, "archaeologyMetadata", "Archaeology-Specific Metadata", archaeologySpecificFields)
     addMetadataBlock(versionMap, "temporal-spatial", "Temporal and Spatial Coverage", temporalSpatialFields)
-
     val datasetVersion = DatasetVersion(versionMap.toMap)
     DataverseDataset(datasetVersion)
   }
@@ -107,8 +106,8 @@ class DdmToDataverseMapper() {
     }
   }
 
-  private def addCompoundFieldMultipleValues(metadataBlockFields: ListBuffer[Field], name: String, sourceNodes: NodeSeq, nodeTransformer: Node => ValueObject): Unit = {
-    val valueObjects = new ListBuffer[ValueObject]()
+  private def addCompoundFieldMultipleValues(metadataBlockFields: ListBuffer[Field], name: String, sourceNodes: NodeSeq, nodeTransformer: Node => JsonObject): Unit = {
+    val valueObjects = new ListBuffer[JsonObject]()
     sourceNodes.foreach(e => valueObjects += nodeTransformer(e))
     if (valueObjects.nonEmpty) {
       metadataBlockFields += createCompoundFieldMultipleValues(name, valueObjects.toList)
