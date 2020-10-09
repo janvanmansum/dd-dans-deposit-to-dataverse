@@ -25,8 +25,8 @@ import scala.xml.Node
 case class FileInfo(file: File, metadata: DataverseFile)
 
 class FilesXmlToDataverseMapper(bagDir: File) {
-  def toDataverseFiles(node: Node): Try[List[FileInfo]] = Try {
-    (node \ "file").map(n => FileInfo(getFile(n), FileElement.toFileValueObject(n))).toList
+  def toDataverseFiles(node: Node, defaultRestrict: Boolean): Try[List[FileInfo]] = Try {
+    (node \ "file").map(n => FileInfo(getFile(n), FileElement.toFileValueObject(n, defaultRestrict))).toList
   }
 
   private def getFile(node: Node): File = {

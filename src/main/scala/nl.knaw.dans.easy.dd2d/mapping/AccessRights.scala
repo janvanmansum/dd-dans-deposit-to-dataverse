@@ -15,17 +15,17 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.DataverseFile
-import org.scalatest.{ FlatSpec, Matchers }
+import scala.xml.Node
 
+object AccessRights {
+  private val accessRightsToDefaultRestrict = Map(
+    "OPEN_ACCESS" -> false,
+    "OPEN_ACCESS_FOR_REGISTERED_USERS" -> true,
+    "REQUEST_PERMISSION" -> true,
+    "NO_ACCESS" -> true)
 
-class FileElementSpec extends FlatSpec with Matchers {
-
-  "toFileValueObject" should "strip data/ prefix from path to get directoryLabel" in {
-    val filesXml =
-      <file filepath="data/this/is/the/directoryLabel/filename.txt">
-      </file>
-    val result = FileElement.toFileValueObject(filesXml, defaultRestrict = true)
-    result shouldBe DataverseFile(directoryLabel = Some("this/is/the/directoryLabel"))
+  def toDefaultRestrict(node: Node): Boolean = {
+    accessRightsToDefaultRestrict.getOrElse(node.text, true)
   }
+
 }

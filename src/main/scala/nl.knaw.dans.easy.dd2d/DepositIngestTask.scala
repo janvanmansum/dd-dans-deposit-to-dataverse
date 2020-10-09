@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets
 import better.files.File
 import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
 import nl.knaw.dans.easy.dd2d.dataverse.DataverseInstance
+import nl.knaw.dans.easy.dd2d.mapping.AccessRights
 import nl.knaw.dans.easy.dd2d.queue.Task
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import org.json4s.Formats
@@ -27,6 +28,7 @@ import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization
 import scalaj.http.HttpResponse
 
+import scala.language.postfixOps
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -84,9 +86,11 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
         Failure(e)
     }.get
 
-    filesXmlMapper.toDataverseFiles(filesXml).map {
-      _.map {
-        f => dataverse.dataverse(dvId).uploadFileToDataset(dvId, f.file, Some(Serialization.writePretty(f.metadata)))
+    deposit.tryDdm.map(ddm => (ddm \ "profile" \ "accessRights").headOption.map(AccessRights toDefaultRestrict)).map { defaultRestrict =>
+      filesXmlMapper.toDataverseFiles(filesXml, defaultRestrict.getOrElse(true)).map {
+        _.map {
+          f => dataverse.dataverse(dvId).uploadFileToDataset(dvId, f.file, Some(Serialization.writePretty(f.metadata)))
+        }
       }
     }
   }
