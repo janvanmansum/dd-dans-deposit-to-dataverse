@@ -15,22 +15,21 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ JsonObject, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
-import nl.knaw.dans.easy.dd2d.mapping.SpatialBox.{ LATLON_SCHEME, RD_SCHEME, getPoint, isRd }
+import nl.knaw.dans.easy.dd2d.dataverse.json.{ FieldMap, JsonObject, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
+import nl.knaw.dans.easy.dd2d.mapping.SpatialBox.{ LATLON_SCHEME, RD_SCHEME, SPATIAL_BOX_NORTH, SPATIAL_BOX_SCHEME, getPoint, isRd }
 
 import scala.xml.Node
 
-object SpatialPoint extends Spatial {
+object SpatialPoint extends Spatial with BlockTemporalAndSpatial {
   def toEasyTsmSpatialPointValueObject(point: Node): JsonObject = {
     val isRD = isRd(point)// TODO: improve error handling
     val p = getPoint(point)
+    val m = FieldMap()
 
-    Map(
-      "scheme" -> createCvFieldSingleValue("easy-tsm-spatial-point",
-        if (isRD) RD_SCHEME
-        else LATLON_SCHEME),
-      "easy-tsm-x" -> createPrimitiveFieldSingleValue("easy-tsm-x", p.x.toString),
-      "easy-tsm-y" -> createPrimitiveFieldSingleValue("easy-tsm-y", p.y.toString),
-    )
+    m.addCvField(SPATIAL_POINT_SCHEME, if (isRD) RD_SCHEME
+                                     else LATLON_SCHEME)
+    m.addPrimitiveField(SPATIAL_POINT_X, p.x.toString)
+    m.addPrimitiveField(SPATIAL_POINT_Y, p.y.toString)
+    m.toJsonObject
   }
 }

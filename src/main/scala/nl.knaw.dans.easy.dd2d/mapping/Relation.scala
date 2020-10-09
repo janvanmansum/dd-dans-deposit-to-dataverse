@@ -15,11 +15,11 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ JsonObject, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
+import nl.knaw.dans.easy.dd2d.dataverse.json.{ FieldMap, JsonObject, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
 
 import scala.xml.Node
 
-object Relation {
+object Relation extends BlockBasicInformation {
   private val ddmSchemeToDataverseScheme = Map(
     "DOI" -> "doi",
     "URN" -> "urn:nbn:nl",
@@ -30,8 +30,8 @@ object Relation {
     "MENDELEY-DATA" -> "other"
   )
 
-  private val labelToRelationType = Map (
-    "relation"-> "relation",
+  private val labelToRelationType = Map(
+    "relation" -> "relation",
     "conformsTo" -> "conforms to",
     "hasFormat" -> "has format",
     "hasPart" -> "has part",
@@ -46,18 +46,18 @@ object Relation {
     labelToRelationType.keySet.contains(node.label)
   }
 
-
   def isRelatedIdentifier(node: Node): Boolean = {
     getScheme(node).isDefined
   }
 
   def toRelatedIdentifierValueObject(node: Node): JsonObject = {
     getScheme(node).map {
-      s => Map(
-        "easy-relid-relation" -> createCvFieldSingleValue("easy-relid-relation", getRelationType(node)),
-        "easy-relid-type" -> createCvFieldSingleValue("easy-relid-type", s),
-        "easy-relid-relatedid" -> createPrimitiveFieldSingleValue("easy-relid-relatedid", node.text)
-      )
+      s =>
+        val m = FieldMap()
+        m.addCvField(RELATED_ID_RELATION_TYPE, getRelationType(node))
+        m.addCvField(RELATED_ID_SCHEME, s)
+        m.addPrimitiveField(RELATED_ID_IDENTIFIER, node.text)
+        m.toJsonObject
     }.getOrElse {
       throw new RuntimeException("Expected related identifier scheme")
     }
@@ -66,11 +66,11 @@ object Relation {
   def toRelatedUrlValueObject(node: Node): JsonObject = {
     if (getScheme(node).isDefined) throw new RuntimeException("Expected related URL, not a related ID")
     else {
-      Map(
-        "easy-relid-relation-url" -> createCvFieldSingleValue("easy-relid-relation-url", getRelationType(node)),
-        "easy-relid-url-title" -> createPrimitiveFieldSingleValue("easy-relid-url-title", node.text),
-        "easy-relid-url-url" -> createPrimitiveFieldSingleValue("easy-relid-url-url", getHref(node).getOrElse(""))
-      )
+      val m = FieldMap()
+      m.addCvField(RELATED_ID_URL_RELATION_TYPE, getRelationType(node))
+      m.addPrimitiveField(RELATED_ID_URL_TITLE, node.text)
+      m.addPrimitiveField(RELATED_ID_URL_URL, getHref(node).getOrElse(""))
+      m.toJsonObject
     }
   }
 

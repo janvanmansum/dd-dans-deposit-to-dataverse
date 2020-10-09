@@ -21,7 +21,7 @@ import org.apache.commons.lang.StringUtils
 import scala.collection.mutable
 import scala.xml.Node
 
-object DcxDaiAuthor extends Contributor {
+object DcxDaiAuthor extends Contributor with BlockCitation {
   // TODO: handle case where a DcxDaiOrganization is specified
 
   private case class Author(titles: Option[String],
@@ -52,7 +52,7 @@ object DcxDaiAuthor extends Contributor {
     val name = formatName(author)
 
     if (StringUtils.isNotBlank(name)) {
-      m.addPrimitiveField("authorName", name)
+      m.addPrimitiveField(AUTHOR_NAME, name)
     }
 
     if (author.orcid.isDefined) {
@@ -66,7 +66,7 @@ object DcxDaiAuthor extends Contributor {
          }
 
     if (author.organization.isDefined) {
-      m.addPrimitiveField("authorAffiliation", author.organization.get)
+      m.addPrimitiveField(AUTHOR_AFFILIATION, author.organization.get)
     }
     m.toJsonObject
   }
@@ -76,13 +76,13 @@ object DcxDaiAuthor extends Contributor {
     val author = parseAuthor(node)
     val name = formatName(author)
     if (StringUtils.isNotBlank(name)) {
-      m.addPrimitiveField("contributorName", name)
+      m.addPrimitiveField(CONTRIBUTOR_NAME, name)
     }
     else if (author.organization.isDefined) {
-      m.addPrimitiveField("contributorName", name)
+      m.addPrimitiveField(CONTRIBUTOR_NAME, name)
     }
     if(author.role.isDefined) {
-      m.addCvField("contributorType", author.role.map(contributoreRoleToContributorType.getOrElse(_, "Other")).getOrElse("Other"))
+      m.addCvField(CONTRIBUTOR_TYPE, author.role.map(contributoreRoleToContributorType.getOrElse(_, "Other")).getOrElse("Other"))
     }
     m.toJsonObject
   }
@@ -97,8 +97,8 @@ object DcxDaiAuthor extends Contributor {
 
   private def addIdentifier(m: FieldMap, scheme: String, value: String): Unit = {
     if (StringUtils.isNotBlank(value)) {
-      m.addCvField("authorIdentifierScheme", scheme)
-      m.addPrimitiveField("authorIdentifier", value)
+      m.addCvField(AUTHOR_IDENTIFIER_SCHEME, scheme)
+      m.addPrimitiveField(AUTHOR_IDENTIFIER, value)
     }
   }
 }

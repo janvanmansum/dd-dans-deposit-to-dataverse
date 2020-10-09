@@ -15,11 +15,11 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ JsonObject, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
+import nl.knaw.dans.easy.dd2d.dataverse.json.{ FieldMap, JsonObject, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
 
 import scala.xml.Node
 
-object SpatialBox extends Spatial {
+object SpatialBox extends Spatial with BlockTemporalAndSpatial {
 
   /**
    * Converts a boundedBy element to a spatial box value object.
@@ -31,15 +31,13 @@ object SpatialBox extends Spatial {
     val isRD = (boundedBy \ "Envelope").headOption.map(isRd).get // TODO: improve error handling
     val lowerCorner = (boundedBy \ "Envelope" \ "lowerCorner").headOption.map(getPoint).get // TODO: improve error handling
     val upperCorner = (boundedBy \ "Envelope" \ "upperCorner").headOption.map(getPoint).get // TODO: improve error handling
-
-    Map(
-      "scheme" -> createCvFieldSingleValue("easy-tsm-spatial-box",
-        if (isRD) RD_SCHEME
-        else LATLON_SCHEME),
-      "easy-tsm-spatial-box-north" -> createPrimitiveFieldSingleValue("easy-tsm-spatial-box-north", upperCorner.y.toString),
-      "easy-tsm-spatial-box-east" -> createPrimitiveFieldSingleValue("easy-tsm-spatial-box-east", lowerCorner.x.toString),
-      "easy-tsm-spatial-box-south" -> createPrimitiveFieldSingleValue("easy-tsm-spatial-box-south", lowerCorner.y.toString),
-      "easy-tsm-spatial-box-west" -> createPrimitiveFieldSingleValue("easy-tsm-spatial-box-west", upperCorner.x.toString)
-    )
+    val m = FieldMap()
+    m.addCvField(SPATIAL_BOX_SCHEME, if (isRD) RD_SCHEME
+                                     else LATLON_SCHEME)
+    m.addPrimitiveField(SPATIAL_BOX_NORTH, upperCorner.y.toString)
+    m.addPrimitiveField(SPATIAL_BOX_EAST, lowerCorner.x.toString)
+    m.addPrimitiveField(SPATIAL_BOX_SOUTH, lowerCorner.y.toString)
+    m.addPrimitiveField(SPATIAL_BOX_WEST, upperCorner.x.toString)
+    m.toJsonObject
   }
 }

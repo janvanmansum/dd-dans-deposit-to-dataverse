@@ -15,16 +15,16 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ JsonObject, createPrimitiveFieldSingleValue }
+import nl.knaw.dans.easy.dd2d.dataverse.json.{ FieldMap, JsonObject }
 
 import scala.xml.Node
 
-object Description {
+object Description extends BlockCitation {
 
   def toDescriptionValueObject(node: Node): JsonObject = {
-    Map(
-      "dsDescriptionValue" -> createPrimitiveFieldSingleValue("dsDescriptionValue", node.text)
-      // TODO: add date subfield?
-    )
+    val m = FieldMap()
+    m.addPrimitiveField(DESCRIPTION_VALUE, node.text)
+    // TODO: add date subfield?
+    m.toJsonObject
   }
 }

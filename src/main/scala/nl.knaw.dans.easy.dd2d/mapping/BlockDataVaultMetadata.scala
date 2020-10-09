@@ -15,20 +15,13 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ FieldMap, JsonObject, createPrimitiveFieldSingleValue }
+trait BlockDataVaultMetadata {
+  val DATAVERSE_PID = "dansDataversePid"
+  val DATAVERSE_PID_VERSION = "dansDataversePidVersion"
+  val BAG_ID = "dansBagId"
+  val NBN = "dansNbn"
+  val OTHER_ID = "dansOtherId"
+  val OTHER_ID_VERSION = "dansOtherIdVersion"
+  val SWORD_TOKEN = "dansSwordToken"
 
-import scala.xml.Node
-
-object IsFormatOf extends BlockCitation {
-
-  def toArchisZaakId(node: Node): Option[String] = {
-    if (hasXsiType(node, "ARCHIS-ZAAK-IDENTIFICATIE")) Some(node.text)
-    else Option.empty
-  }
-
-  def toOtherIdValueObject(node: Node): JsonObject = {
-    val m = FieldMap()
-    m.addPrimitiveField(OTHER_ID_VALUE, node.text)
-    m.toJsonObject
-  }
 }

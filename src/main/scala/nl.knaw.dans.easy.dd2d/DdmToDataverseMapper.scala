@@ -28,7 +28,7 @@ import scala.xml.{ Node, NodeSeq }
  * Maps DANS Dataset Metadata to Dataverse JSON.
  */
 // TODO: Rename if we also need to take elements from EMD
-class DdmToDataverseMapper() {
+class DdmToDataverseMapper() extends BlockCitation with BlockBasicInformation with BlockArchaeologySpecific with BlockTemporalAndSpatial {
   lazy val citationFields = new ListBuffer[Field]
   lazy val basicInformationFields = new ListBuffer[Field]
   lazy val archaeologySpecificFields = new ListBuffer[Field]
@@ -40,35 +40,35 @@ class DdmToDataverseMapper() {
     // TODO: if a single value is expected, the first encountered will be used; is this OK? Add checks on multiplicity before processing?
 
     // Citation
-    addPrimitiveFieldSingleValue(citationFields, "title", ddm \ "profile" \ "title")
-    addCompoundFieldMultipleValues(citationFields, "otherId", ddm \ "dcmiMetadata" \ "isFormatOf", IsFormatOf toOtherIdValueObject)
-    addCompoundFieldMultipleValues(citationFields, "dsDescription", ddm \ "profile" \ "description", Description toDescriptionValueObject)
-    addCompoundFieldMultipleValues(citationFields, "author", ddm \ "profile" \ "creatorDetails" \ "author", DcxDaiAuthor toAuthorValueObject)
+    addPrimitiveFieldSingleValue(citationFields, TITLE, ddm \ "profile" \ "title")
+    addCompoundFieldMultipleValues(citationFields, OTHER_ID, ddm \ "dcmiMetadata" \ "isFormatOf", IsFormatOf toOtherIdValueObject)
+    addCompoundFieldMultipleValues(citationFields, DESCRIPTION, ddm \ "profile" \ "description", Description toDescriptionValueObject)
+    addCompoundFieldMultipleValues(citationFields, AUTHOR, ddm \ "profile" \ "creatorDetails" \ "author", DcxDaiAuthor toAuthorValueObject)
     // TODO: creator unstructured
-    addPrimitiveFieldSingleValue(citationFields, "productionDate", ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
-    addPrimitiveFieldSingleValue(citationFields, "distributionDate", ddm \ "profile" \ "available", DateTypeElement toYearMonthDayFormat)
-    addCvFieldMultipleValues(citationFields, "subject", ddm \ "profile" \ "audience", Audience toCitationBlockSubject)
-    addCvFieldMultipleValues(citationFields, "language", ddm \ "dcmiMetadata" \ "language", Language toCitationBlockLanguage)
-    addPrimitiveFieldSingleValue(citationFields, "alternativeTitle", ddm \ "dcmiMetadata" \ "alternative")
-    addPrimitiveFieldMultipleValues(citationFields, "dataSources", ddm \ "dcmiMetadata" \ "source")
-    addCompoundFieldMultipleValues(citationFields, "contributor", ddm \ "dcmiMetadata" \ "contributorDetails" \ "author", DcxDaiAuthor toContributorValueObject)
-    addCompoundFieldMultipleValues(citationFields, "contributor", ddm \ "profile" \ "creatorDetails" \ "organization", DcxDaiOrganization toContributorValueObject)
-    addCompoundFieldMultipleValues(citationFields, "contributor", ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization", DcxDaiOrganization toContributorValueObject)
+    addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
+    addPrimitiveFieldSingleValue(citationFields, DISTRIBUTION_DATE, ddm \ "profile" \ "available", DateTypeElement toYearMonthDayFormat)
+    addCvFieldMultipleValues(citationFields, SUBJECT, ddm \ "profile" \ "audience", Audience toCitationBlockSubject)
+    addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language toCitationBlockLanguage)
+    addPrimitiveFieldSingleValue(citationFields, ALTERNATIVE_TITLE, ddm \ "dcmiMetadata" \ "alternative")
+    addPrimitiveFieldMultipleValues(citationFields, DATA_SOURCES, ddm \ "dcmiMetadata" \ "source")
+    addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, ddm \ "dcmiMetadata" \ "contributorDetails" \ "author", DcxDaiAuthor toContributorValueObject)
+    addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, ddm \ "profile" \ "creatorDetails" \ "organization", DcxDaiOrganization toContributorValueObject)
+    addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization", DcxDaiOrganization toContributorValueObject)
     // TODO: contributor unstructured
 
     // Basic information
-    addPrimitiveFieldMultipleValues(basicInformationFields, "languageOfFiles", ddm \ "dcmiMetadata" \ "language")
-    addCompoundFieldMultipleValues(basicInformationFields, "easy-relid", (ddm \ "dcmiMetadata" \ "_").filter(Relation isRelation).filter(Relation isRelatedIdentifier), Relation toRelatedIdentifierValueObject)
-    addCompoundFieldMultipleValues(basicInformationFields, "easy-relid-url", (ddm \ "dcmiMetadata" \ "_").filter(Relation isRelation).filterNot(Relation isRelatedIdentifier), Relation toRelatedUrlValueObject)
-    addCompoundFieldMultipleValues(basicInformationFields, "easy-date", (ddm \ "dcmiMetadata" \ "_").filter(DateTypeElement isDate).filter(DateTypeElement hasW3CFormat), DateTypeElement toBasicInfoFormattedDateValueObject)
-    addCompoundFieldMultipleValues(basicInformationFields, "easy-date-free", (ddm \ "dcmiMetadata" \ "_").filter(DateTypeElement isDate).filterNot(DateTypeElement hasW3CFormat), DateTypeElement toBasicInfoFreeDateValue)
+    addPrimitiveFieldMultipleValues(basicInformationFields, LANGUAGE_OF_FILES, ddm \ "dcmiMetadata" \ "language")
+    addCompoundFieldMultipleValues(basicInformationFields, RELATED_ID, (ddm \ "dcmiMetadata" \ "_").filter(Relation isRelation).filter(Relation isRelatedIdentifier), Relation toRelatedIdentifierValueObject)
+    addCompoundFieldMultipleValues(basicInformationFields, RELATED_ID_URL, (ddm \ "dcmiMetadata" \ "_").filter(Relation isRelation).filterNot(Relation isRelatedIdentifier), Relation toRelatedUrlValueObject)
+    addCompoundFieldMultipleValues(basicInformationFields, DATE, (ddm \ "dcmiMetadata" \ "_").filter(DateTypeElement isDate).filter(DateTypeElement hasW3CFormat), DateTypeElement toBasicInfoFormattedDateValueObject)
+    addCompoundFieldMultipleValues(basicInformationFields, DATE_FREE_FORMAT, (ddm \ "dcmiMetadata" \ "_").filter(DateTypeElement isDate).filterNot(DateTypeElement hasW3CFormat), DateTypeElement toBasicInfoFreeDateValue)
 
     // Archaeology specific
-    addPrimitiveFieldMultipleValues(archaeologySpecificFields, "archisZaakId", ddm \ "dcmiMetadata" \ "identifier", IsFormatOf toArchisZaakId)
+    addPrimitiveFieldMultipleValues(archaeologySpecificFields, ARCHIS_ZAAK_ID, ddm \ "dcmiMetadata" \ "identifier", IsFormatOf toArchisZaakId)
 
     // Temporal and spatial coverage
-    addCompoundFieldMultipleValues(temporalSpatialFields, "easy-tsm", ddm \ "dcmiMetadata" \ "spatial" \ "Point", SpatialPoint toEasyTsmSpatialPointValueObject)
-    addCompoundFieldMultipleValues(temporalSpatialFields, "easy-spatial-box", ddm \ "dcmiMetadata" \ "spatial" \ "boundedBy", SpatialBox toEasyTsmSpatialBoxValueObject)
+    addCompoundFieldMultipleValues(temporalSpatialFields, SPATIAL_POINT, ddm \ "dcmiMetadata" \ "spatial" \ "Point", SpatialPoint toEasyTsmSpatialPointValueObject)
+    addCompoundFieldMultipleValues(temporalSpatialFields, SPATIAL_BOX, ddm \ "dcmiMetadata" \ "spatial" \ "boundedBy", SpatialBox toEasyTsmSpatialBoxValueObject)
 
     assembleDataverseDataset()
   }
