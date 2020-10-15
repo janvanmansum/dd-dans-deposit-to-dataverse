@@ -30,6 +30,7 @@ import scalaj.http.HttpResponse
 
 import scala.language.postfixOps
 import scala.util.{ Failure, Success, Try }
+import nl.knaw.dans.lib.error._
 
 /**
  * Checks one deposit and then ingests it into Dataverse.
@@ -79,21 +80,13 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
 
   private def uploadFilesToDataset(datasetId: String): Try[Unit] = {
     trace(datasetId)
-    val filesXml = deposit.tryFilesXml.recoverWith {
-      case e: IllegalArgumentException =>
-        logger.error(s"Bag files xml could not be retrieved. Error message: ${
-          e.getMessage
-        }")
-        Failure(e)
-    }.get
-
-    deposit.tryDdm.map(ddm => (ddm \ "profile" \ "accessRights").headOption.map(AccessRights toDefaultRestrict)).map { defaultRestrict =>
-      filesXmlMapper.toDataverseFiles(filesXml, defaultRestrict.getOrElse(true)).map {
-        _.map {
-          f => dataverse.dataset(datasetId, isPersistentId = false).addFile(f.file, Option.empty[File], Some(Serialization.writePretty(f.metadata)))
-        }
-      }
-    }
+    for {
+      filesXml <- deposit.tryFilesXml
+      ddm <- deposit.tryDdm
+      defaultRestrict <- Try { (ddm \ "profile" \ "accessRights").headOption.forall(AccessRights toDefaultRestrict) }
+      files <- filesXmlMapper.toDataverseFiles(filesXml, defaultRestrict)
+      _ <- files.map(f => dataverse.dataset(datasetId, isPersistentId = true).addFile(f.file, Option.empty[File], Some(Serialization.writePretty(f.metadata)))).collectResults
+    } yield ()
   }
 
   private def readIdFromResponse(response: HttpResponse[Array[Byte]]): Try[String] = Try {
@@ -104,6 +97,6 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
   }
 
   private def publishDataset(datasetId: String): Try[Unit] = {
-    dataverse.dataset(datasetId, isPersistentId = false).publish("major").map(_ => ())
+    dataverse.dataset(datasetId, isPersistentId = true).publish("major").map(_ => ())
   }
 }

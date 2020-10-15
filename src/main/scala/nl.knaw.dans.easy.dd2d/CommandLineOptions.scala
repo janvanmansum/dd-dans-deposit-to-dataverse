@@ -29,8 +29,8 @@ class CommandLineOptions(args: Array[String], configuration: Configuration) exte
   val synopsis: String =
     s"""
        |  $printedName run-service
-       |  $printedName import <inbox>
-       |  $printedName import -s <single-deposit>
+       |  $printedName import [-d,--draft] <inbox>
+       |  $printedName import [-d,--draft] -s <single-deposit>
        |  """.stripMargin
 
   version(s"$printedName v${ configuration.version }")
