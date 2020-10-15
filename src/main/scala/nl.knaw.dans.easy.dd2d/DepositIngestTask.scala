@@ -38,7 +38,7 @@ import scala.util.{ Failure, Success, Try }
  * @param dataverse   the Dataverse instance to ingest in
  * @param jsonFormats implicit necessary for pretty-printing JSON
  */
-case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidator, dataverse: DataverseInstance)(implicit jsonFormats: Formats) extends Task with DebugEnhancedLogging {
+case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidator, dataverse: DataverseInstance, publish: Boolean = true)(implicit jsonFormats: Formats) extends Task with DebugEnhancedLogging {
   trace(deposit, dataverse)
 
   private val ddmMapper = new DdmToDataverseMapper()
@@ -47,7 +47,7 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
 
   override def run(): Try[Unit] = {
     trace(())
-    debug(s"Ingesting $deposit into Dataverse")
+    logger.info(s"Ingesting $deposit into Dataverse")
 
     for {
       validationResult <- dansBagValidator.validateBag(bagDirPath)
@@ -66,8 +66,9 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
         debug(json)
       }
       response <- dataverse.dataverse("root").createDataset(json)
-      dvId <- readIdFromResponse(response)
-      _ <- uploadFilesToDataset(dvId)
+      datasetId <- readIdFromResponse(response)
+      _ <- uploadFilesToDataset(datasetId)
+      _ <- if (publish) publishDataset(datasetId) else Success(())
     } yield ()
     // TODO: delete draft if something went wrong
   }
@@ -76,8 +77,8 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
     case (nr, msg) => s" - [$nr] $msg"
   }
 
-  private def uploadFilesToDataset(dvId: String): Try[Unit] = {
-    trace(dvId)
+  private def uploadFilesToDataset(datasetId: String): Try[Unit] = {
+    trace(datasetId)
     val filesXml = deposit.tryFilesXml.recoverWith {
       case e: IllegalArgumentException =>
         logger.error(s"Bag files xml could not be retrieved. Error message: ${
@@ -89,7 +90,7 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
     deposit.tryDdm.map(ddm => (ddm \ "profile" \ "accessRights").headOption.map(AccessRights toDefaultRestrict)).map { defaultRestrict =>
       filesXmlMapper.toDataverseFiles(filesXml, defaultRestrict.getOrElse(true)).map {
         _.map {
-          f => dataverse.dataverse(dvId).uploadFileToDataset(dvId, f.file, Some(Serialization.writePretty(f.metadata)))
+          f => dataverse.dataset(datasetId, isPersistentId = false).addFile(f.file, Option.empty[File], Some(Serialization.writePretty(f.metadata)))
         }
       }
     }
@@ -100,5 +101,9 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
     val responseBodyAsString = new String(response.body, StandardCharsets.UTF_8)
     (parse(responseBodyAsString) \\ "persistentId")
       .extract[String]
+  }
+
+  private def publishDataset(datasetId: String): Try[Unit] = {
+    dataverse.dataset(datasetId, isPersistentId = false).publish("major").map(_ => ())
   }
 }

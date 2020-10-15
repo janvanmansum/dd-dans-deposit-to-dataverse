@@ -27,6 +27,7 @@ class ReadmeSpec extends FlatSpec with Matchers with CustomMatchers {
     inboxDir = null,
     validatorServiceUrl = null,
     dataverse = null,
+    autoPublish = true
   )
   private val clo = new CommandLineOptions(Array[String](), configuration) {
     // avoids System.exit() in case of invalid arguments or "--help"
