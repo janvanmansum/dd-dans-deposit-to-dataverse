@@ -15,20 +15,16 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ FieldMap, JsonObject, createPrimitiveFieldSingleValue }
-
-import scala.xml.Node
-
-object IsFormatOf extends BlockCitation {
-
-  def toArchisZaakId(node: Node): Option[String] = {
-    if (hasXsiType(node, "ARCHIS-ZAAK-IDENTIFICATIE")) Some(node.text)
-    else Option.empty
-  }
-
-  def toOtherIdValueObject(node: Node): JsonObject = {
-    val m = FieldMap()
-    m.addPrimitiveField(OTHER_ID_VALUE, node.text)
-    m.toJsonObject
-  }
+trait BlockTemporalAndSpatial {
+  val TEMPORAL_COVERAGE = "dansTemporalCoverage"
+  val SPATIAL_POINT = "dansSpatialPoint"
+  val SPATIAL_POINT_SCHEME = "dansSpatialPointScheme"
+  val SPATIAL_POINT_X = "dansSpatialPointX"
+  val SPATIAL_POINT_Y = "dansSpatialPointY"
+  val SPATIAL_BOX = "dansSpatialBox"
+  val SPATIAL_BOX_SCHEME = "dansSpatialBoxScheme"
+  val SPATIAL_BOX_NORTH = "dansSpatialBoxNorth"
+  val SPATIAL_BOX_EAST = "dansSpatialBoxEast"
+  val SPATIAL_BOX_SOUTH = "dansSpatialBoxSouth"
+  val SPATIAL_BOX_WEST = "dansSpatialBoxWest"
 }

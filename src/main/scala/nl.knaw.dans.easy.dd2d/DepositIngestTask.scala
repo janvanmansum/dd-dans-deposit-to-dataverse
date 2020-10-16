@@ -17,16 +17,19 @@ package nl.knaw.dans.easy.dd2d
 
 import java.nio.charset.StandardCharsets
 
+import better.files.File
 import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
 import nl.knaw.dans.easy.dd2d.dataverse.DataverseInstance
+import nl.knaw.dans.easy.dd2d.mapping.AccessRights
 import nl.knaw.dans.easy.dd2d.queue.Task
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import org.json4s.Formats
-import org.json4s.native.Serialization
 import org.json4s.native.JsonMethods._
+import org.json4s.native.Serialization
 import scalaj.http.HttpResponse
 
-import scala.util.{ Failure, Try }
+import scala.language.postfixOps
+import scala.util.{ Failure, Success, Try }
 
 /**
  * Checks one deposit and then ingests it into Dataverse.
@@ -38,13 +41,13 @@ import scala.util.{ Failure, Try }
 case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidator, dataverse: DataverseInstance)(implicit jsonFormats: Formats) extends Task with DebugEnhancedLogging {
   trace(deposit, dataverse)
 
-  val ddmMapper = new DdmToDataverseMapper()
-  val filesXmlMapper = new FilesXmlToDataverseMapper()
+  private val ddmMapper = new DdmToDataverseMapper()
+  private val bagDirPath = File(deposit.bagDir.path)
+  private val filesXmlMapper = new FilesXmlToDataverseMapper(bagDirPath)
 
   override def run(): Try[Unit] = {
     trace(())
     debug(s"Ingesting $deposit into Dataverse")
-    val bagDirPath = deposit.bagDir.path
 
     for {
       validationResult <- dansBagValidator.validateBag(bagDirPath)
@@ -67,6 +70,7 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
       dvId <- readIdFromResponse(response)
       _ <- uploadFilesToDataset(dvId)
     } yield ()
+    // TODO: delete draft if something went wrong
   }
 
   private def formatViolation(v: (String, String)): String = v match {
@@ -83,11 +87,12 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
         Failure(e)
     }.get
 
-    Try {
-      filesXmlMapper.extractFileInfoFromFilesXml(filesXml).foreach(fileInformation => {
-        dataverse.dataverse(dvId)
-          .uploadFileToDataset(dvId, fileInformation.file, Some(Serialization.writePretty(fileInformation.fileMetadata)))
-      })
+    deposit.tryDdm.map(ddm => (ddm \ "profile" \ "accessRights").headOption.map(AccessRights toDefaultRestrict)).map { defaultRestrict =>
+      filesXmlMapper.toDataverseFiles(filesXml, defaultRestrict.getOrElse(true)).map {
+        _.map {
+          f => dataverse.dataverse(dvId).uploadFileToDataset(dvId, f.file, Some(Serialization.writePretty(f.metadata)))
+        }
+      }
     }
   }
 

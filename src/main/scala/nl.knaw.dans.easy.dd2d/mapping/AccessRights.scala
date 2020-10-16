@@ -15,20 +15,17 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ FieldMap, JsonObject, createPrimitiveFieldSingleValue }
-
 import scala.xml.Node
 
-object IsFormatOf extends BlockCitation {
+object AccessRights {
+  private val accessRightsToDefaultRestrict = Map(
+    "OPEN_ACCESS" -> false,
+    "OPEN_ACCESS_FOR_REGISTERED_USERS" -> true,
+    "REQUEST_PERMISSION" -> true,
+    "NO_ACCESS" -> true)
 
-  def toArchisZaakId(node: Node): Option[String] = {
-    if (hasXsiType(node, "ARCHIS-ZAAK-IDENTIFICATIE")) Some(node.text)
-    else Option.empty
+  def toDefaultRestrict(node: Node): Boolean = {
+    accessRightsToDefaultRestrict.getOrElse(node.text, true)
   }
 
-  def toOtherIdValueObject(node: Node): JsonObject = {
-    val m = FieldMap()
-    m.addPrimitiveField(OTHER_ID_VALUE, node.text)
-    m.toJsonObject
-  }
 }

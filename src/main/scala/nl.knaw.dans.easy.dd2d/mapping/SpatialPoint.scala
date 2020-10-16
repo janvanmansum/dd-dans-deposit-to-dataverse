@@ -15,20 +15,21 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.dataverse.json.{ FieldMap, JsonObject, createPrimitiveFieldSingleValue }
+import nl.knaw.dans.easy.dd2d.dataverse.json.{ FieldMap, JsonObject, createCvFieldSingleValue, createPrimitiveFieldSingleValue }
+import nl.knaw.dans.easy.dd2d.mapping.SpatialBox.{ LATLON_SCHEME, RD_SCHEME, SPATIAL_BOX_NORTH, SPATIAL_BOX_SCHEME, getPoint, isRd }
 
 import scala.xml.Node
 
-object IsFormatOf extends BlockCitation {
-
-  def toArchisZaakId(node: Node): Option[String] = {
-    if (hasXsiType(node, "ARCHIS-ZAAK-IDENTIFICATIE")) Some(node.text)
-    else Option.empty
-  }
-
-  def toOtherIdValueObject(node: Node): JsonObject = {
+object SpatialPoint extends Spatial with BlockTemporalAndSpatial {
+  def toEasyTsmSpatialPointValueObject(point: Node): JsonObject = {
+    val isRD = isRd(point)// TODO: improve error handling
+    val p = getPoint(point)
     val m = FieldMap()
-    m.addPrimitiveField(OTHER_ID_VALUE, node.text)
+
+    m.addCvField(SPATIAL_POINT_SCHEME, if (isRD) RD_SCHEME
+                                     else LATLON_SCHEME)
+    m.addPrimitiveField(SPATIAL_POINT_X, p.x.toString)
+    m.addPrimitiveField(SPATIAL_POINT_Y, p.y.toString)
     m.toJsonObject
   }
 }
