@@ -6,9 +6,9 @@
         </encoder>
     </appender>
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>data/easy-sword2-to-dataverse.log</file>
+        <file>${user.home}/dd-dans-deposit-to-dataverse</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>data/easy-sword2-to-dataverse.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${user.home}/dd-dans-deposit-to-dataverse.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
