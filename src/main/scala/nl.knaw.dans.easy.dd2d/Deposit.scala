@@ -23,6 +23,7 @@ import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import scala.util.{ Failure, Success, Try }
 import scala.xml.{ Node, Utility, XML }
 import nl.knaw.dans.lib.error._
+import org.apache.commons.configuration.PropertiesConfiguration
 
 /**
  * Represents a deposit directory and provides access to the files and metadata in it.
@@ -44,6 +45,10 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
   private val bagReader = new BagReader()
   private val ddmPath = bagDir / "metadata" / "dataset.xml"
   private val filesXmlPath = bagDir / "metadata" / "files.xml"
+  private val depositProperties = new PropertiesConfiguration() {
+    setDelimiterParsingDisabled(true)
+    load((dir / "deposit.properties").toJava)
+  }
 
   lazy val tryBag: Try[Bag] = Try { bagReader.read(bagDir.path) }
 
@@ -63,13 +68,8 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
     case t: Throwable => Failure(new IllegalArgumentException(s"Unparseable XML: ${ t.getMessage }"))
   }
 
-  def getDoi(datasetXml: Node): Try[String] = Try {
-    (datasetXml \\ "identifier")
-      .withFilter(_.attributes
-        .filter(_.prefixedKey == "xsi:type")
-        .filter(_.value.text == "id-type:DOI")
-        .nonEmpty)
-      .map(_.text).head
+  def doi: String = {
+    depositProperties.getString("identifier.doi", "")
   }
 
   private def checkCondition(check: File => Boolean, msg: String): Unit = {
