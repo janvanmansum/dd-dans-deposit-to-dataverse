@@ -66,10 +66,10 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
       _ = if (logger.underlying.isDebugEnabled) {
         debug(json)
       }
-      response <- dataverse.dataverse("root").createDataset(json)
-      datasetId <- readIdFromResponse(response)
-      _ <- uploadFilesToDataset(datasetId)
-      _ <- if (publish) publishDataset(datasetId) else Success(())
+      response <- if (deposit.doi.nonEmpty) dataverse.dataverse("root").importDataset(json, false, "doi:" + deposit.doi, true)
+                  else dataverse.dataverse("root").createDataset(json)
+      dvId <- readIdFromResponse(response)
+      _ <- uploadFilesToDataset(dvId)
     } yield ()
     // TODO: delete draft if something went wrong
   }

@@ -126,12 +126,12 @@ class Dataverse(dvId: String, configuration: DataverseInstanceConfig)(implicit r
     postJson(s"dataverses/$dvId/datasets")(201)(json)
   }
 
-  def importDataset(importFile: File, isDdi: Boolean = false, pid: String, keepOnDraft: Boolean = false): Try[HttpResponse[Array[Byte]]] = {
-    trace(importFile)
-    tryReadFileToString(importFile).flatMap(postJson(s"dataverses/$dvId/datasets/:import${
+  def importDataset(json: String, isDdi: Boolean = false, pid: String, keepOnDraft: Boolean = false): Try[HttpResponse[Array[Byte]]] = {
+    trace(json)
+    postJson(s"dataverses/$dvId/datasets/:import${
       if (isDdi) "ddi"
       else ""
-    }?pid=$pid&release=${ !keepOnDraft }")(201))
+    }?pid=$pid&release=${ !keepOnDraft }")(201)(json)
   }
 
   def publish(): Try[HttpResponse[Array[Byte]]] = {
