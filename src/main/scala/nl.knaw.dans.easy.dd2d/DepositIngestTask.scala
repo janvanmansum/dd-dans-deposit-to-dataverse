@@ -22,6 +22,7 @@ import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
 import nl.knaw.dans.easy.dd2d.dataverse.DataverseInstance
 import nl.knaw.dans.easy.dd2d.mapping.AccessRights
 import nl.knaw.dans.easy.dd2d.queue.Task
+import nl.knaw.dans.lib.error._
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import org.json4s.Formats
 import org.json4s.native.JsonMethods._
@@ -29,8 +30,7 @@ import org.json4s.native.Serialization
 import scalaj.http.HttpResponse
 
 import scala.language.postfixOps
-import scala.util.{ Failure, Success, Try }
-import nl.knaw.dans.lib.error._
+import scala.util.{ Success, Try }
 
 /**
  * Checks one deposit and then ingests it into Dataverse.
@@ -70,7 +70,14 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
                   else dataverse.dataverse("root").createDataset(json)
       datasetId <- readIdFromResponse(response)
       _ <- uploadFilesToDataset(datasetId)
-      _ <- if (publish) publishDataset(datasetId) else Success(())
+      _ <- if (publish) {
+        debug("Publishing dataset")
+        publishDataset(datasetId)
+      }
+           else {
+             debug("Keeping dataset on DRAFT")
+             Success(())
+           }
     } yield ()
     // TODO: delete draft if something went wrong
   }
