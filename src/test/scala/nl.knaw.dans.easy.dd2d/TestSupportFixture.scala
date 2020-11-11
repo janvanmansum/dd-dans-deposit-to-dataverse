@@ -21,6 +21,6 @@ import org.scalatest.{ FlatSpec, Inside, Matchers, OneInstancePerTest }
 trait TestSupportFixture extends FlatSpec with Matchers with Inside with CustomMatchers with OneInstancePerTest {
 
   lazy val testDirValid: File = File("src/test/resources/examples")
-  lazy val testDirNonValid: File = File("src/test/resources//no-deposit")
+  lazy val testDirNonValid: File = File("src/test/resources/no-deposit")
 }
 

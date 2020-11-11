@@ -15,17 +15,24 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
+import com.jayway.jsonpath.JsonPath
+import nl.knaw.dans.easy.dd2d.JsonPathSupportFixture
 import nl.knaw.dans.easy.dd2d.dataverse.json.DataverseFile
+import nl.knaw.dans.lib.logging.DebugEnhancedLogging
+import org.json4s.{ DefaultFormats, Formats }
+import org.json4s.native.Serialization
 import org.scalatest.{ FlatSpec, Matchers }
 
 
-class FileElementSpec extends FlatSpec with Matchers {
+class FileElementSpec extends FlatSpec with Matchers with DebugEnhancedLogging with JsonPathSupportFixture {
+  private implicit val jsonFormats: Formats = new DefaultFormats {}
 
   "toFileValueObject" should "strip data/ prefix from path to get directoryLabel" in {
     val filesXml =
       <file filepath="data/this/is/the/directoryLabel/filename.txt">
       </file>
-    val result = FileElement.toFileValueObject(filesXml, defaultRestrict = true)
-    result shouldBe DataverseFile(directoryLabel = Some("this/is/the/directoryLabel"))
+    val result = Serialization.writePretty(FileElement.toFileValueObject(filesXml, defaultRestrict = true))
+    findString(result, "$.directoryLabel") shouldBe "this/is/the/directoryLabel"
+    findString(result, "$.restrict") shouldBe "true"
   }
 }
