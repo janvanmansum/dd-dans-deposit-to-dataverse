@@ -28,13 +28,14 @@ import scala.xml.{ Node, NodeSeq }
  * Maps DANS Dataset Metadata to Dataverse JSON.
  */
 // TODO: Rename if we also need to take elements from EMD
-class DdmToDataverseMapper() extends BlockCitation with BlockBasicInformation with BlockArchaeologySpecific with BlockTemporalAndSpatial {
+class DdmToDataverseMapper() extends BlockCitation with BlockBasicInformation with BlockArchaeologySpecific with BlockTemporalAndSpatial with BlockDataVaultMetadata {
   lazy val citationFields = new ListBuffer[Field]
   lazy val basicInformationFields = new ListBuffer[Field]
   lazy val archaeologySpecificFields = new ListBuffer[Field]
   lazy val temporalSpatialFields = new ListBuffer[Field]
+  lazy val dataVaultFields = new ListBuffer[Field]
 
-  def toDataverseDataset(ddm: Node): Try[DataverseDataset] = Try {
+  def toDataverseDataset(ddm: Node, deposit: Deposit): Try[DataverseDataset] = Try {
     // Please keep ordered by order in Dataverse UI as much as possible
 
     // TODO: if a single value is expected, the first encountered will be used; is this OK? Add checks on multiplicity before processing?
@@ -70,6 +71,14 @@ class DdmToDataverseMapper() extends BlockCitation with BlockBasicInformation wi
     addCompoundFieldMultipleValues(temporalSpatialFields, SPATIAL_POINT, ddm \ "dcmiMetadata" \ "spatial" \ "Point", SpatialPoint toEasyTsmSpatialPointValueObject)
     addCompoundFieldMultipleValues(temporalSpatialFields, SPATIAL_BOX, ddm \ "dcmiMetadata" \ "spatial" \ "boundedBy", SpatialBox toEasyTsmSpatialBoxValueObject)
 
+    // Data vault
+    addVaultValue(dataVaultFields, DATAVERSE_PID, deposit.getDataversePid)
+    addVaultValue(dataVaultFields, BAG_ID, deposit.getDataverseBagId, false)
+    addVaultValue(dataVaultFields, NBN, deposit.getDataverseNbn)
+    addVaultValue(dataVaultFields, DANS_OTHER_ID, deposit.getDataverseOtherId, false)
+    addVaultValue(dataVaultFields, DANS_OTHER_ID_VERSION, deposit.getDataverseOtherIdVersion, false)
+    addVaultValue(dataVaultFields, SWORD_TOKEN, deposit.getDataverseSwordToken)
+
     assembleDataverseDataset()
   }
 
@@ -79,6 +88,7 @@ class DdmToDataverseMapper() extends BlockCitation with BlockBasicInformation wi
     addMetadataBlock(versionMap, "basicInformation", "Basic Information", basicInformationFields)
     addMetadataBlock(versionMap, "archaeologyMetadata", "Archaeology-Specific Metadata", archaeologySpecificFields)
     addMetadataBlock(versionMap, "temporal-spatial", "Temporal and Spatial Coverage", temporalSpatialFields)
+    addMetadataBlock(versionMap, "dataVault", "Data Vault Metadata", dataVaultFields)
     val datasetVersion = DatasetVersion(versionMap.toMap)
     DataverseDataset(datasetVersion)
   }
@@ -111,6 +121,12 @@ class DdmToDataverseMapper() extends BlockCitation with BlockBasicInformation wi
     sourceNodes.foreach(e => valueObjects += nodeTransformer(e))
     if (valueObjects.nonEmpty) {
       metadataBlockFields += createCompoundFieldMultipleValues(name, valueObjects.toList)
+    }
+  }
+
+  private def addVaultValue(metadataBlockFields: ListBuffer[Field], name: String, value: String, required: Boolean = true): Unit = {
+    if (required || value.nonEmpty) {
+      metadataBlockFields += PrimitiveFieldSingleValue(name, multiple = false, "primitive", value)
     }
   }
 

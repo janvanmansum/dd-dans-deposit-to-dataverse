@@ -22,7 +22,6 @@ import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
 import scala.util.{ Failure, Success, Try }
 import scala.xml.{ Node, Utility, XML }
-import nl.knaw.dans.lib.error._
 import org.apache.commons.configuration.PropertiesConfiguration
 
 /**
@@ -70,6 +69,42 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
 
   def doi: String = {
     depositProperties.getString("identifier.doi", "")
+  }
+
+  def getDataversePid: String = {
+    getDataverseIdProtocol + ":" + getDataverseIdAuthority + "-" + getDataverseId
+  }
+
+  private def getDataverseIdProtocol: String = {
+    depositProperties.getString("dataverse.id-protocol", "")
+  }
+
+  private def getDataverseIdAuthority: String = {
+    depositProperties.getString("dataverse.id-authority", "")
+  }
+
+  private def getDataverseId: String = {
+    depositProperties.getString("dataverse.id-identifier", "")
+  }
+
+  def getDataverseBagId: String = {
+    depositProperties.getString("dataverse.bag-id", "")
+  }
+
+  def getDataverseNbn: String = {
+    depositProperties.getString("dataverse.nbn", "")
+  }
+
+  def getDataverseOtherId: String = {
+    depositProperties.getString("dataverse.other-id", "")
+  }
+
+  def getDataverseOtherIdVersion: String = {
+    depositProperties.getString("dataverse.other-id-version", "")
+  }
+
+  def getDataverseSwordToken: String = {
+    depositProperties.getString("dataverse.sword-token", "")
   }
 
   private def checkCondition(check: File => Boolean, msg: String): Unit = {
