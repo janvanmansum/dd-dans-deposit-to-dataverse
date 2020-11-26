@@ -79,11 +79,11 @@ object TemporalAbr extends BlockArchaeologySpecific with DebugEnhancedLogging {
     "XXX" -> TermAndUrl("Onbekend", ABR_BASE_URL + "3db8e14e-9ee5-4b5d-a5df-b706901468a2")
   )
 
-  def toTemporalAbr(node: Node, depositDirName: String): Option[JsonObject] = {
+  def toTemporalAbr(node: Node): Option[JsonObject] = {
     val abrTemporal = ariadneTemporalToDataversename.get(node.text).map(_.term).getOrElse("")
     abrTemporal match {
       case "" =>
-        logger.error(s"Invalid controlled vocabulary term for 'Temporal (ABR Period)' for the deposit '$depositDirName'")
+        logger.error(s"Invalid controlled vocabulary term for 'Temporal (ABR Period)': $abrTemporal")
         None
       case _ =>
         val m = FieldMap()

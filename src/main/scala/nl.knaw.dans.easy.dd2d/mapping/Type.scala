@@ -37,11 +37,11 @@ object Type extends BlockContentTypeAndFileFormat with DebugEnhancedLogging {
     "Text" -> "Text"
   )
 
-  def toContentTypeAndFileFormatBlockType(node: Node, depositDirName: String): Option[JsonObject] = {
+  def toContentTypeAndFileFormatBlockType(node: Node): Option[JsonObject] = {
     val contentType = getContentType(node)
     contentType match {
       case "" =>
-        logger.error(s"Invalid controlled vocabulary term for 'Content Type' for the deposit '$depositDirName'")
+        logger.error(s"Invalid controlled vocabulary term for 'Content Type': '$contentType'")
         None
       case _ =>
         val m = FieldMap()

@@ -119,11 +119,11 @@ object SubjectAbr extends BlockArchaeologySpecific with DebugEnhancedLogging {
     "VKW" -> TermAndUrl("Versterking - Waterburcht", ABR_BASE_URL + "61bf7838-56b1-4270-9648-4bb8d2e393d0")
   )
 
-  def toSubjectAbrObject(node: Node, depositDirName: String): Option[JsonObject] = {
+  def toSubjectAbrObject(node: Node): Option[JsonObject] = {
     val abrSubject = ariadneSubjectToDataversename.get(node.text).map(_.term).getOrElse("")
     abrSubject match {
       case "" =>
-        logger.error(s"Invalid controlled vocabulary term for 'Subject (ABR Complex)' for the deposit '$depositDirName'")
+        logger.error(s"Invalid controlled vocabulary term for 'Subject (ABR Complex)': '$abrSubject'")
         None
       case _ =>
         val m = FieldMap()

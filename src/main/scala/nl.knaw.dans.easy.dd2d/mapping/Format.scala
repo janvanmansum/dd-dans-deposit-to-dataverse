@@ -38,11 +38,12 @@ object Format extends BlockContentTypeAndFileFormat with DebugEnhancedLogging {
     "video/mpeg1" -> "video/mpeg1"
   )
 
-  def toContentTypeAndFileFormatBlockFormat(node: Node, depositDirName: String): Option[JsonObject] = {
+  def toContentTypeAndFileFormatBlockFormat(node: Node): Option[JsonObject] = {
+    // TODO: properly use Option[String] here and use Option.map instead of match construct
     val contentFormat = getContentFormat(node)
     contentFormat match {
       case "" =>
-        logger.error(s"Invalid controlled vocabulary term for 'Format (Media Type)' for the deposit '$depositDirName'")
+        logger.error(s"Invalid controlled vocabulary term for 'Format (Media Type)': '$contentFormat")
         None
       case _ =>
         val m = FieldMap()

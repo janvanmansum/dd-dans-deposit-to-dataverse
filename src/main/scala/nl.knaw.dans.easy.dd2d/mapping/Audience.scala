@@ -47,11 +47,11 @@ object Audience extends BlockBasicInformation with DebugEnhancedLogging {
    * @param node the audience element
    * @return A JsonObject with Subject CV fields
    */
-  def toBasicInformationBlockSubjectCv(node: Node, depositDirName: String): Option[JsonObject] = {
+  def toBasicInformationBlockSubjectCv(node: Node): Option[JsonObject] = {
     val termAndUrl = getTermAndUrl(node)
     termAndUrl.term match {
       case "" =>
-        logger.error(s"Invalid controlled vocabulary term for 'Subject' for the deposit '$depositDirName'")
+        logger.error(s"Invalid controlled vocabulary term for 'Subject': $termAndUrl'")
         None
       case _ =>
         val m = FieldMap()

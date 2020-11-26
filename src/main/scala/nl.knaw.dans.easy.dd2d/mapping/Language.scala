@@ -40,11 +40,11 @@ object Language extends BlockBasicInformation with DebugEnhancedLogging {
     // TODO: extend, and probably load from resource file
   )
 
-  def toBasicInformationBlockLanguageOfFiles(node: Node, depositDirName: String): Option[JsonObject] = {
+  def toBasicInformationBlockLanguageOfFiles(node: Node): Option[JsonObject] = {
     val isoLanguage = getISOLanguage(node)
     isoLanguage match {
       case "" =>
-        logger.error(s"Invalid controlled vocabulary term for 'Language of Files' for the deposit '$depositDirName'")
+        logger.error(s"Invalid controlled vocabulary term for 'Language of Files': '$isoLanguage'. Ignoring.")
         None
       case _ =>
         val m = FieldMap()
@@ -55,7 +55,7 @@ object Language extends BlockBasicInformation with DebugEnhancedLogging {
     }
   }
 
-  def toBasicInformationLanguageOfMetadata(node: Node, depositDirName: String): Option[JsonObject] = {
+  def toBasicInformationLanguageOfMetadata(node: Node): Option[JsonObject] = {
     //ISO 639-1: two letter country codes
     val xmlLangAttribute = getXmlLangAttribute(node)
     //ISO 639-2: three letter country codes. Only these are resolvable when used in term url.
@@ -63,7 +63,7 @@ object Language extends BlockBasicInformation with DebugEnhancedLogging {
     val isoLanguage = iso639_2ToDataverse.getOrElse(iso639_2LangAttribute, "")
     isoLanguage match {
       case "" =>
-        logger.error(s"Invalid controlled vocabulary term for 'Language of Metadata' for the deposit '$depositDirName'")
+        logger.error(s"Invalid controlled vocabulary term for 'Language of Metadata'")
         None
       case _ =>
         val m = FieldMap()
