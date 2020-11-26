@@ -18,9 +18,10 @@ package nl.knaw.dans.easy.dd2d.mapping
 import scala.xml.Node
 
 /**
- *  ddm:audience element with a NARCIS classification code in it.
+ * ddm:audience element with a NARCIS classification code in it.
+ * Used for Subject field in the Citation metadata block
  */
-object Audience {
+object Audience extends BlockBasicInformation {
   val narcisToSubject = Map(
     "D11" -> "Mathematical Sciences",
     "D12" -> "Physics",
@@ -39,6 +40,7 @@ object Audience {
 
   /**
    * Returns the best match for this NARCIS classification code in the Dataverse subject vocabulary
+   * used in the Citation metadata block
    *
    * @param node the audience element
    * @return the Dataverse subject term
