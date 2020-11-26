@@ -15,8 +15,6 @@
  */
 package nl.knaw.dans.easy.dd2d
 
-import org.joda.time.format.{ DateTimeFormat, DateTimeFormatter }
-
 import scala.xml.Node
 
 package object mapping {
