@@ -25,7 +25,7 @@ import scala.util.Success
 class DdmToDataverseMapperSpec extends TestSupportFixture with BlockCitation with BlockBasicInformation with BlockTemporalAndSpatial {
 
   implicit val format: DefaultFormats.type = DefaultFormats
-  private val mapper = new DdmToDataverseMapper
+  private val mapper = new DdmToDataverseMapper()
 
   "toDataverseDataset" should "map profile/title to citation/title" in {
     val ddm =
@@ -37,7 +37,7 @@ class DdmToDataverseMapperSpec extends TestSupportFixture with BlockCitation wit
         </ddm:dcmiMetadata>
       </ddm:DDM>
 
-    val result = mapper.toDataverseDataset(ddm)
+    val result = mapper.toDataverseDataset(ddm, "")
     result shouldBe a[Success[_]]
     inside(result) {
       case Success(DataverseDataset(DatasetVersion(metadataBlocks))) =>
@@ -59,7 +59,7 @@ class DdmToDataverseMapperSpec extends TestSupportFixture with BlockCitation wit
         </ddm:dcmiMetadata>
       </ddm:DDM>
 
-    val result = mapper.toDataverseDataset(ddm)
+    val result = mapper.toDataverseDataset(ddm, "")
     result shouldBe a[Success[_]]
     inside(result) {
       case Success(DataverseDataset(DatasetVersion(metadataBlocks))) =>
@@ -107,7 +107,7 @@ class DdmToDataverseMapperSpec extends TestSupportFixture with BlockCitation wit
           </ddm:dcmiMetadata>
       </ddm:DDM>
 
-    val result = mapper.toDataverseDataset(ddm)
+    val result = mapper.toDataverseDataset(ddm, "")
     result shouldBe a[Success[_]]
     inside(result) {
       case Success(DataverseDataset(DatasetVersion(metadataBlocks))) =>
