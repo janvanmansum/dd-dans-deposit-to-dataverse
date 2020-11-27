@@ -71,8 +71,8 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
     depositProperties.getString("identifier.doi", "")
   }
 
-  def vaultData: VaultData = {
-    VaultData(dataversePid, dataverseBagId, dataverseNbn, dataverseOtherId, dataverseOtherIdVersion, dataverseSwordToken)
+  def vaultMetadata: VaultMetadata = {
+    VaultMetadata(dataversePid, dataverseBagId, dataverseNbn, dataverseOtherId, dataverseOtherIdVersion, dataverseSwordToken)
   }
 
   private def dataversePid: String = {

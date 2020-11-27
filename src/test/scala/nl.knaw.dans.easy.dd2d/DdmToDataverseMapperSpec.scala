@@ -24,7 +24,7 @@ class DepositToDataverseMapperSpec extends TestSupportFixture {
 
   implicit val format: DefaultFormats.type = DefaultFormats
   private val mapper = new DepositToDataverseMapper
-  private val vaultData = VaultData("doi:10.17026/dans-ztg-q3s4", "", "urn:nbn:nl:ui:13-ar2-u8v", "", "", "sword:123e4567-e89b-12d3-a456-556642440000")
+  private val vaultMetadata = VaultMetadata("doi:10.17026/dans-ztg-q3s4", "", "urn:nbn:nl:ui:13-ar2-u8v", "", "", "sword:123e4567-e89b-12d3-a456-556642440000")
 
   "toDataverseDataset" should "map profile/title to citation/title" in {
     val ddm =
@@ -36,7 +36,7 @@ class DepositToDataverseMapperSpec extends TestSupportFixture {
         </ddm:dcmiMetadata>
       </ddm:DDM>
 
-    val result = mapper.toDataverseDataset(ddm, vaultData)
+    val result = mapper.toDataverseDataset(ddm, vaultMetadata)
     result shouldBe a[Success[_]]
     inside(result) {
       case Success(DataverseDataset(DatasetVersion(metadataBlocks))) =>
@@ -58,7 +58,7 @@ class DepositToDataverseMapperSpec extends TestSupportFixture {
         </ddm:dcmiMetadata>
       </ddm:DDM>
 
-    val result = mapper.toDataverseDataset(ddm, vaultData)
+    val result = mapper.toDataverseDataset(ddm, vaultMetadata)
     result shouldBe a[Success[_]]
     inside(result) {
       case Success(DataverseDataset(DatasetVersion(metadataBlocks))) =>
@@ -106,7 +106,7 @@ class DepositToDataverseMapperSpec extends TestSupportFixture {
           </ddm:dcmiMetadata>
       </ddm:DDM>
 
-    val result = mapper.toDataverseDataset(ddm, vaultData)
+    val result = mapper.toDataverseDataset(ddm, vaultMetadata)
     result shouldBe a[Success[_]]
     inside(result) {
       case Success(DataverseDataset(DatasetVersion(metadataBlocks))) =>
@@ -125,7 +125,7 @@ class DepositToDataverseMapperSpec extends TestSupportFixture {
   }
 
   it should "map deposit.properties correctly to vault data" in {
-    val result = mapper.toDataverseDataset(<ddm:DDM/>, vaultData)
+    val result = mapper.toDataverseDataset(<ddm:DDM/>, vaultMetadata)
     result shouldBe a[Success[_]]
     inside(result) {
       case Success(DataverseDataset(DatasetVersion(metadataBlocks))) =>

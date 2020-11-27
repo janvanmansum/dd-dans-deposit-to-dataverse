@@ -35,7 +35,7 @@ class DepositToDataverseMapper() extends BlockCitation with BlockBasicInformatio
   lazy val temporalSpatialFields = new ListBuffer[Field]
   lazy val dataVaultFields = new ListBuffer[Field]
 
-  def toDataverseDataset(ddm: Node, vaultData: VaultData): Try[DataverseDataset] = Try {
+  def toDataverseDataset(ddm: Node, vaultMetadata: VaultMetadata): Try[DataverseDataset] = Try {
     // Please keep ordered by order in Dataverse UI as much as possible
 
     // TODO: if a single value is expected, the first encountered will be used; is this OK? Add checks on multiplicity before processing?
@@ -72,12 +72,12 @@ class DepositToDataverseMapper() extends BlockCitation with BlockBasicInformatio
     addCompoundFieldMultipleValues(temporalSpatialFields, SPATIAL_BOX, ddm \ "dcmiMetadata" \ "spatial" \ "boundedBy", SpatialBox toEasyTsmSpatialBoxValueObject)
 
     // Data vault
-    addVaultValue(dataVaultFields, DATAVERSE_PID, vaultData.dataversePid)
-    addVaultValue(dataVaultFields, BAG_ID, vaultData.dataverseBagId)
-    addVaultValue(dataVaultFields, NBN, vaultData.dataverseNbn)
-    addVaultValue(dataVaultFields, DANS_OTHER_ID, vaultData.dataverseOtherId)
-    addVaultValue(dataVaultFields, DANS_OTHER_ID_VERSION, vaultData.dataverseOtherIdVersion)
-    addVaultValue(dataVaultFields, SWORD_TOKEN, vaultData.dataverseSwordToken)
+    addVaultValue(dataVaultFields, DATAVERSE_PID, vaultMetadata.dataversePid)
+    addVaultValue(dataVaultFields, BAG_ID, vaultMetadata.dataverseBagId)
+    addVaultValue(dataVaultFields, NBN, vaultMetadata.dataverseNbn)
+    addVaultValue(dataVaultFields, DANS_OTHER_ID, vaultMetadata.dataverseOtherId)
+    addVaultValue(dataVaultFields, DANS_OTHER_ID_VERSION, vaultMetadata.dataverseOtherIdVersion)
+    addVaultValue(dataVaultFields, SWORD_TOKEN, vaultMetadata.dataverseSwordToken)
 
     assembleDataverseDataset()
   }
