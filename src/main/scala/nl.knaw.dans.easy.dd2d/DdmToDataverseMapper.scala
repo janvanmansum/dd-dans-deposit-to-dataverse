@@ -28,14 +28,14 @@ import scala.xml.{ Node, NodeSeq }
  * Maps DANS Dataset Metadata to Dataverse JSON.
  */
 // TODO: Rename if we also need to take elements from EMD
-class DdmToDataverseMapper() extends BlockCitation with BlockBasicInformation with BlockArchaeologySpecific with BlockTemporalAndSpatial with BlockDataVaultMetadata {
+class DepositToDataverseMapper() extends BlockCitation with BlockBasicInformation with BlockArchaeologySpecific with BlockTemporalAndSpatial with BlockDataVaultMetadata {
   lazy val citationFields = new ListBuffer[Field]
   lazy val basicInformationFields = new ListBuffer[Field]
   lazy val archaeologySpecificFields = new ListBuffer[Field]
   lazy val temporalSpatialFields = new ListBuffer[Field]
   lazy val dataVaultFields = new ListBuffer[Field]
 
-  def toDataverseDataset(ddm: Node, deposit: Deposit): Try[DataverseDataset] = Try {
+  def toDataverseDataset(ddm: Node, vaultData: VaultData): Try[DataverseDataset] = Try {
     // Please keep ordered by order in Dataverse UI as much as possible
 
     // TODO: if a single value is expected, the first encountered will be used; is this OK? Add checks on multiplicity before processing?
@@ -72,12 +72,12 @@ class DdmToDataverseMapper() extends BlockCitation with BlockBasicInformation wi
     addCompoundFieldMultipleValues(temporalSpatialFields, SPATIAL_BOX, ddm \ "dcmiMetadata" \ "spatial" \ "boundedBy", SpatialBox toEasyTsmSpatialBoxValueObject)
 
     // Data vault
-    addVaultValue(dataVaultFields, DATAVERSE_PID, deposit.getDataversePid)
-    addVaultValue(dataVaultFields, BAG_ID, deposit.getDataverseBagId, false)
-    addVaultValue(dataVaultFields, NBN, deposit.getDataverseNbn)
-    addVaultValue(dataVaultFields, DANS_OTHER_ID, deposit.getDataverseOtherId, false)
-    addVaultValue(dataVaultFields, DANS_OTHER_ID_VERSION, deposit.getDataverseOtherIdVersion, false)
-    addVaultValue(dataVaultFields, SWORD_TOKEN, deposit.getDataverseSwordToken)
+    addVaultValue(dataVaultFields, DATAVERSE_PID, vaultData.dataversePid)
+    addVaultValue(dataVaultFields, BAG_ID, vaultData.dataverseBagId)
+    addVaultValue(dataVaultFields, NBN, vaultData.dataverseNbn)
+    addVaultValue(dataVaultFields, DANS_OTHER_ID, vaultData.dataverseOtherId)
+    addVaultValue(dataVaultFields, DANS_OTHER_ID_VERSION, vaultData.dataverseOtherIdVersion)
+    addVaultValue(dataVaultFields, SWORD_TOKEN, vaultData.dataverseSwordToken)
 
     assembleDataverseDataset()
   }
@@ -124,8 +124,8 @@ class DdmToDataverseMapper() extends BlockCitation with BlockBasicInformation wi
     }
   }
 
-  private def addVaultValue(metadataBlockFields: ListBuffer[Field], name: String, value: String, required: Boolean = true): Unit = {
-    if (required || value.nonEmpty) {
+  private def addVaultValue(metadataBlockFields: ListBuffer[Field], name: String, value: String): Unit = {
+    if (value.nonEmpty) {
       metadataBlockFields += PrimitiveFieldSingleValue(name, multiple = false, "primitive", value)
     }
   }

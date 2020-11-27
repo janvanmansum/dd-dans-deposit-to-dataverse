@@ -71,39 +71,43 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
     depositProperties.getString("identifier.doi", "")
   }
 
-  def getDataversePid: String = {
-    getDataverseIdProtocol + ":" + getDataverseIdAuthority + "-" + getDataverseId
+  def vaultData: VaultData = {
+    VaultData(dataversePid, dataverseBagId, dataverseNbn, dataverseOtherId, dataverseOtherIdVersion, dataverseSwordToken)
   }
 
-  private def getDataverseIdProtocol: String = {
+  private def dataversePid: String = {
+    dataverseIdProtocol + ":" + dataverseIdAuthority + "/" + dataverseId
+  }
+
+  private def dataverseIdProtocol: String = {
     depositProperties.getString("dataverse.id-protocol", "")
   }
 
-  private def getDataverseIdAuthority: String = {
+  private def dataverseIdAuthority: String = {
     depositProperties.getString("dataverse.id-authority", "")
   }
 
-  private def getDataverseId: String = {
+  private def dataverseId: String = {
     depositProperties.getString("dataverse.id-identifier", "")
   }
 
-  def getDataverseBagId: String = {
+  private def dataverseBagId: String = {
     depositProperties.getString("dataverse.bag-id", "")
   }
 
-  def getDataverseNbn: String = {
+  private def dataverseNbn: String = {
     depositProperties.getString("dataverse.nbn", "")
   }
 
-  def getDataverseOtherId: String = {
+  private def dataverseOtherId: String = {
     depositProperties.getString("dataverse.other-id", "")
   }
 
-  def getDataverseOtherIdVersion: String = {
+  private def dataverseOtherIdVersion: String = {
     depositProperties.getString("dataverse.other-id-version", "")
   }
 
-  def getDataverseSwordToken: String = {
+  private def dataverseSwordToken: String = {
     depositProperties.getString("dataverse.sword-token", "")
   }
 
