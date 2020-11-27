@@ -24,7 +24,7 @@ class DepositToDataverseMapperSpec extends TestSupportFixture {
 
   implicit val format: DefaultFormats.type = DefaultFormats
   private val mapper = new DepositToDataverseMapper
-  private val vaultMetadata = VaultMetadata("doi:10.17026/dans-ztg-q3s4", "", "urn:nbn:nl:ui:13-ar2-u8v", "", "", "sword:123e4567-e89b-12d3-a456-556642440000")
+  private val vaultMetadata = Deposit(testDirValid / "valid-easy-submitted").vaultMetadata
 
   "toDataverseDataset" should "map profile/title to citation/title" in {
     val ddm =
