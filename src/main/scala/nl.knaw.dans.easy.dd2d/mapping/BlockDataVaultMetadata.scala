@@ -20,8 +20,8 @@ trait BlockDataVaultMetadata {
   val DATAVERSE_PID_VERSION = "dansDataversePidVersion"
   val BAG_ID = "dansBagId"
   val NBN = "dansNbn"
-  val OTHER_ID = "dansOtherId"
-  val OTHER_ID_VERSION = "dansOtherIdVersion"
+  val DANS_OTHER_ID = "dansOtherId"
+  val DANS_OTHER_ID_VERSION = "dansOtherIdVersion"
   val SWORD_TOKEN = "dansSwordToken"
 
 }
