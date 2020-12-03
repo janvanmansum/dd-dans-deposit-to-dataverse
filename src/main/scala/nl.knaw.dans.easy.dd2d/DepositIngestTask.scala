@@ -18,11 +18,11 @@ package nl.knaw.dans.easy.dd2d
 import better.files.File
 import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
 import nl.knaw.dans.easy.dd2d.mapping.AccessRights
-import nl.knaw.dans.easy.dd2d.queue.Task
 import nl.knaw.dans.lib.dataverse.model.dataset.{ DatasetCreationResult, UpdateType }
 import nl.knaw.dans.lib.dataverse.{ DataverseInstance, DataverseResponse }
 import nl.knaw.dans.lib.error._
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
+import nl.knaw.dans.lib.taskqueue.Task
 import org.json4s.Formats
 
 import scala.language.postfixOps
@@ -35,7 +35,7 @@ import scala.util.{ Success, Try }
  * @param dataverse   the Dataverse instance to ingest in
  * @param jsonFormats implicit necessary for pretty-printing JSON
  */
-case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidator, dataverse: DataverseInstance, publish: Boolean = true)(implicit jsonFormats: Formats) extends Task with DebugEnhancedLogging {
+case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidator, dataverse: DataverseInstance, publish: Boolean = true)(implicit jsonFormats: Formats) extends Task[Deposit] with DebugEnhancedLogging {
   trace(deposit, dataverse)
 
   private val mapper = new DepositToDataverseMapper()
@@ -96,4 +96,6 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
   private def publishDataset(datasetId: String): Try[Unit] = {
     dataverse.dataset(datasetId).publish(UpdateType.major).map(_ => ())
   }
+
+  override def getTarget: Deposit = deposit
 }
