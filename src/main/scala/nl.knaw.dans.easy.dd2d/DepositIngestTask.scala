@@ -58,7 +58,7 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
       }
       ddm <- deposit.tryDdm
       dataverseDataset <- mapper.toDataverseDataset(ddm, deposit.vaultMetadata)
-      response <- if (deposit.doi.nonEmpty) dataverse.dataverse("root").importDataset(dataverseDataset, publish)
+      response <- if (deposit.doi.nonEmpty) dataverse.dataverse("root").importDataset(dataverseDataset, autoPublish = false)
                   else dataverse.dataverse("root").createDataset(dataverseDataset)
       persistentId <- getPersistentId(response)
       _ <- uploadFilesToDataset(persistentId)
