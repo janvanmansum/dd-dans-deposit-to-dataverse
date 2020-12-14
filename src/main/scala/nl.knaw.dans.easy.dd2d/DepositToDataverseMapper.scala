@@ -69,7 +69,7 @@ class DepositToDataverseMapper() extends BlockCitation with BlockBasicInformatio
     addCompoundFieldWithControlledVocabulary(basicInformationFields, LANGUAGE_OF_FILES_CV, (ddm \\ "language").filter(Language isISOLanguage), Language toBasicInformationBlockLanguageOfFiles)
     addCompoundFieldMultipleValues(basicInformationFields, DATE, (ddm \ "dcmiMetadata" \ "_").filter(DateTypeElement isDate).filter(DateTypeElement hasW3CFormat), DateTypeElement toBasicInfoFormattedDateValueObject)
     addCompoundFieldMultipleValues(basicInformationFields, DATE_FREE_FORMAT, (ddm \ "dcmiMetadata" \ "_").filter(DateTypeElement isDate).filterNot(DateTypeElement hasW3CFormat), DateTypeElement toBasicInfoFreeDateValue)
-    addCompoundFieldWithControlledVocabulary(basicInformationFields, SUBJECT_CV, ddm \ "profile" \ "audience", Audience toBasicInformationBlockSubjectCv)
+//    addCompoundFieldWithControlledVocabulary(basicInformationFields, SUBJECT_CV, ddm \ "profile" \ "audience", Audience toBasicInformationBlockSubjectCv)
 
     // Archaeology specific
     addPrimitiveFieldMultipleValues(archaeologySpecificFields, ARCHIS_ZAAK_ID, ddm \ "dcmiMetadata" \ "identifier", IsFormatOf toArchisZaakId)
