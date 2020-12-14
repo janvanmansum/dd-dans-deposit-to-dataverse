@@ -25,6 +25,8 @@ import org.apache.commons.configuration.PropertiesConfiguration
 case class Configuration(version: String,
                          inboxDir: File,
                          validatorServiceUrl: URI,
+                         validatorConnectionTimeoutMs: Int,
+                         validatorReadTimeoutMs: Int,
                          dataverse: DataverseInstanceConfig,
                          autoPublish: Boolean,
                          publishAwaitUnlockMaxNumberOfRetries: Int,
@@ -48,6 +50,8 @@ object Configuration {
       version = (home / "bin" / "version").contentAsString.stripLineEnd,
       inboxDir = File(properties.getString("deposits.inbox")),
       validatorServiceUrl = new URI(properties.getString("validate-dans-bag.service-url")),
+      validatorConnectionTimeoutMs = properties.getInt("validate-dans-bag.connection-timeout-ms"),
+      validatorReadTimeoutMs = properties.getInt("validate-dans-bag.read-timeout-ms"),
       dataverse = DataverseInstanceConfig(
         connectionTimeout = properties.getInt("dataverse.connection-timeout-ms"),
         readTimeout = properties.getInt("dataverse.read-timeout-ms"),

@@ -25,6 +25,8 @@ class ReadmeSpec extends TestSupportFixture {
     version = "my-version",
     inboxDir = null,
     validatorServiceUrl = null,
+    validatorConnectionTimeoutMs = 1000,
+    validatorReadTimeoutMs= 1000,
     dataverse = null,
     autoPublish = true,
     publishAwaitUnlockMaxNumberOfRetries = 3,

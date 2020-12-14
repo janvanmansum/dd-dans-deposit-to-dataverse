@@ -28,7 +28,10 @@ import scala.util.Try
 class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnhancedLogging {
   private implicit val resultOutput: PrintStream = Console.out
   private val dataverse = new DataverseInstance(configuration.dataverse)
-  private val dansBagValidator = new DansBagValidator(configuration.validatorServiceUrl)
+  private val dansBagValidator = new DansBagValidator(
+    serviceUri = configuration.validatorServiceUrl,
+    connTimeoutMs = configuration.validatorConnectionTimeoutMs,
+    readTimeoutMs = configuration.validatorReadTimeoutMs)
   private val inboxWatcher =
     new InboxWatcher(new Inbox(configuration.inboxDir,
       dansBagValidator,

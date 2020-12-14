@@ -23,13 +23,12 @@ import scalaj.http.Http
 
 import scala.util.Try
 
-class DansBagValidator(serviceUri: URI) extends DebugEnhancedLogging {
+class DansBagValidator(serviceUri: URI, connTimeoutMs: Int, readTimeoutMs: Int) extends DebugEnhancedLogging {
   def checkConnection(): Try[Unit] = {
     logger.info("Checking if validator service can be reached")
     Try {
       Http(s"$serviceUri")
-        // TODO: Make timeouts configurable
-        .timeout(connTimeoutMs = 10000, readTimeoutMs = 10000)
+        .timeout(connTimeoutMs, readTimeoutMs)
         .method("GET")
         .header("Accept", "text/plain")
         .asString
@@ -47,8 +46,7 @@ class DansBagValidator(serviceUri: URI) extends DebugEnhancedLogging {
       val validationUri = serviceUri.resolve(s"validate?infoPackageType=SIP&uri=${ bagDir.path.toUri }")
       logger.debug(s"Calling Dans Bag Validation Service with ${ validationUri.toASCIIString }")
       Http(s"${ validationUri.toASCIIString }")
-        // TODO: Make timeouts configurable
-        .timeout(connTimeoutMs = 10000, readTimeoutMs = 10000)
+        .timeout(connTimeoutMs, readTimeoutMs)
         .method("POST")
         .header("Accept", "application/json")
         .asString
