@@ -20,7 +20,6 @@ import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.AbstractInbox
-import org.json4s.{ DefaultFormats, Formats }
 
 /**
  * The inbox directory containing deposit directories. It can enqueue DepositIngestTasks in
@@ -29,12 +28,16 @@ import org.json4s.{ DefaultFormats, Formats }
  * @param dir       the file system directory
  * @param dataverse the DataverseInstance to use for the DepositIngestTasks
  */
-class Inbox(dir: File, dansBagValidator: DansBagValidator, dataverse: DataverseInstance, autoPublish: Boolean = true) extends AbstractInbox[Deposit](dir) with DebugEnhancedLogging {
-  private implicit val jsonFormats: Formats = new DefaultFormats {}
-
+class Inbox(dir: File,
+            dansBagValidator: DansBagValidator,
+            dataverse: DataverseInstance, autoPublish: Boolean = true,
+            publishAwaitUnlockMaxNumberOfRetries: Int,
+            publishAwaitUnlockMillisecondsBetweenRetries: Int) extends AbstractInbox[Deposit](dir) with DebugEnhancedLogging {
   override def createTask(f: File): Option[DepositIngestTask] = {
-
-    try Some(DepositIngestTask(Deposit(f), dansBagValidator, dataverse, autoPublish)) catch {
+    try {
+      Some(DepositIngestTask(Deposit(f), dansBagValidator, dataverse, autoPublish, publishAwaitUnlockMaxNumberOfRetries, publishAwaitUnlockMillisecondsBetweenRetries))
+    }
+    catch {
       case e: InvalidDepositException =>
         logger.warn(e.getMessage)
         None

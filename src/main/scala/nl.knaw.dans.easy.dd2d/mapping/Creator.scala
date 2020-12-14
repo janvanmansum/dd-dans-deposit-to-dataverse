@@ -13,24 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.dd2d
+package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.lib.logging.DebugEnhancedLogging
-import nl.knaw.dans.lib.taskqueue.PassiveTaskQueue
+import scala.xml.Node
 
-import scala.util.Try
+object Creator extends BlockCitation {
 
-class InboxProcessor(inbox: Inbox) extends DebugEnhancedLogging {
-
-  def process(): Try[Unit] = {
-    trace(())
-    for {
-      ingestTasks <- Try { new PassiveTaskQueue[Deposit]() }
-      _ = logger.info("Enqueuing deposits found in inbox...")
-      _ <- inbox.enqueue(ingestTasks, Some(new DepositSorter))
-      _ = logger.info("Processing queue...")
-      _ <- ingestTasks.process()
-      _ = logger.info("Done processing.")
-    } yield ()
+  def toAuthorValueObject(node: Node): JsonObject = {
+    val m = FieldMap()
+    m.addPrimitiveField(AUTHOR_NAME, node.text)
+    m.toJsonObject
   }
 }

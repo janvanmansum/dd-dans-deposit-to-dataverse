@@ -16,14 +16,11 @@
 package nl.knaw.dans.easy.dd2d
 
 import better.files.File
-import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
-import nl.knaw.dans.easy.dd2d.mapping.AccessRights
-import nl.knaw.dans.lib.dataverse.model.dataset.{ DatasetCreationResult, UpdateType }
-import nl.knaw.dans.lib.dataverse.{ DataverseInstance, DataverseResponse }
-import nl.knaw.dans.lib.error._
+import nl.knaw.dans.easy.dd2d.dansbag.{ DansBagValidationResult, DansBagValidator }
+import nl.knaw.dans.lib.dataverse.DataverseInstance
+import nl.knaw.dans.lib.dataverse.model.dataset.{ CompoundField, PrimitiveSingleValueField, UpdateType, toFieldMap }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.Task
-import org.json4s.Formats
 
 import scala.language.postfixOps
 import scala.util.{ Success, Try }
@@ -31,16 +28,19 @@ import scala.util.{ Success, Try }
 /**
  * Checks one deposit and then ingests it into Dataverse.
  *
- * @param deposit     the deposit to ingest
- * @param dataverse   the Dataverse instance to ingest in
- * @param jsonFormats implicit necessary for pretty-printing JSON
+ * @param deposit  the deposit to ingest
+ * @param instance the Dataverse instance to ingest in
  */
-case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidator, dataverse: DataverseInstance, publish: Boolean = true)(implicit jsonFormats: Formats) extends Task[Deposit] with DebugEnhancedLogging {
-  trace(deposit, dataverse)
+case class DepositIngestTask(deposit: Deposit,
+                             dansBagValidator: DansBagValidator,
+                             instance: DataverseInstance,
+                             publish: Boolean = true,
+                             publishAwaitUnlockMaxNumberOfRetries: Int,
+                             publishAwaitUnlockMillisecondsBetweenRetries: Int) extends Task[Deposit] with DebugEnhancedLogging {
+  trace(deposit, instance)
 
   private val mapper = new DepositToDataverseMapper()
   private val bagDirPath = File(deposit.bagDir.path)
-  private val filesXmlMapper = new FilesXmlToDataverseMapper(bagDirPath)
 
   override def run(): Try[Unit] = {
     trace(())
@@ -48,54 +48,69 @@ case class DepositIngestTask(deposit: Deposit, dansBagValidator: DansBagValidato
 
     for {
       validationResult <- dansBagValidator.validateBag(bagDirPath)
-      _ <- Try {
-        if (!validationResult.isCompliant) throw RejectedDepositException(deposit,
-          s"""
-             |Bag was not valid according to Profile Version ${ validationResult.profileVersion }.
-             |Violations:
-             |${ validationResult.ruleViolations.map(_.map(formatViolation).mkString("\n")).getOrElse("") }
-                      """.stripMargin)
-      }
+      _ <- rejectIfInvalid(validationResult)
+
+      // TODO: base contact on owner of deposit
+      response <- instance.admin().getSingleUser("dataverseAdmin")
+      user <- response.data
+      datasetContact <- createDatasetContact(user.displayName, user.email)
       ddm <- deposit.tryDdm
-      dataverseDataset <- mapper.toDataverseDataset(ddm, deposit.vaultMetadata)
-      response <- if (deposit.doi.nonEmpty) dataverse.dataverse("root").importDataset(dataverseDataset, autoPublish = false)
-                  else dataverse.dataverse("root").createDataset(dataverseDataset)
-      persistentId <- getPersistentId(response)
-      _ <- uploadFilesToDataset(persistentId)
-      _ <- if (publish) {
-        debug("Publishing dataset")
-        publishDataset(persistentId)
-      }
-           else {
-             debug("Keeping dataset on DRAFT")
-             Success(())
-           }
+      dataverseDataset <- mapper.toDataverseDataset(ddm, datasetContact, deposit.vaultMetadata)
+      isUpdate <- deposit.isUpdate
+      _ = debug(s"isUpdate? = $isUpdate")
+      editor = if (isUpdate) new DatasetUpdater(deposit, dataverseDataset.datasetVersion.metadataBlocks, instance)
+               else new DatasetCreator(deposit, dataverseDataset, instance)
+      persistentId <- editor.performEdit()
+      _ <- if (publish) publishDataset(persistentId)
+           else keepOnDraft()
     } yield ()
     // TODO: delete draft if something went wrong
   }
 
-  private def getPersistentId(response: DataverseResponse[DatasetCreationResult]): Try[String] = {
-    response.data.map(_.persistentId)
+  private def rejectIfInvalid(validationResult: DansBagValidationResult): Try[Unit] = Try {
+    if (!validationResult.isCompliant) throw RejectedDepositException(deposit,
+      s"""
+         |Bag was not valid according to Profile Version ${ validationResult.profileVersion }.
+         |Violations:
+         |${ validationResult.ruleViolations.map(_.map(formatViolation).mkString("\n")).getOrElse("") }
+                      """.stripMargin)
   }
 
   private def formatViolation(v: (String, String)): String = v match {
     case (nr, msg) => s" - [$nr] $msg"
   }
 
-  private def uploadFilesToDataset(datasetId: String): Try[Unit] = {
-    trace(datasetId)
+  private def createDatasetContact(name: String, email: String): Try[CompoundField] = Try {
+    CompoundField(
+      typeName = "datasetContact",
+      value =
+        List(toFieldMap(
+          PrimitiveSingleValueField("datasetContactName", name),
+          PrimitiveSingleValueField("datasetContactEmail", email)
+        ))
+    )
+  }
+
+  private def publishDataset(persistentId: String): Try[Unit] = {
+    debug("Publishing dataset")
     for {
-      filesXml <- deposit.tryFilesXml
-      ddm <- deposit.tryDdm
-      defaultRestrict = (ddm \ "profile" \ "accessRights").headOption.forall(AccessRights toDefaultRestrict)
-      files <- filesXmlMapper.toDataverseFiles(filesXml, defaultRestrict)
-      _ <- files.map(f => dataverse.dataset(datasetId).addFile(f.file, f.metadata)).collectResults
+      _ <- instance.dataset(persistentId).publish(UpdateType.major).map(_ => ())
+      _ <- instance.dataset(persistentId).awaitUnlock(
+        maxNumberOfRetries = publishAwaitUnlockMaxNumberOfRetries,
+        waitTimeInMilliseconds = publishAwaitUnlockMillisecondsBetweenRetries)
     } yield ()
   }
 
-  private def publishDataset(datasetId: String): Try[Unit] = {
-    dataverse.dataset(datasetId).publish(UpdateType.major).map(_ => ())
+  private def keepOnDraft(): Try[Unit] = {
+    debug("Keeping dataset on DRAFT")
+    Success(())
   }
 
-  override def getTarget: Deposit = deposit
+  override def getTarget: Deposit = {
+    deposit
+  }
+
+  override def toString: DepositName = {
+    s"DepositIngestTask for ${ deposit }"
+  }
 }

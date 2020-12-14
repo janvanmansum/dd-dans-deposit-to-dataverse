@@ -37,4 +37,13 @@ object DcxDaiOrganization extends Contributor with BlockCitation {
     }
     m.toJsonObject
   }
+
+  def toAuthorValueObject(node: Node): JsonObject = {
+    val m = FieldMap()
+    val organization = parseOrganization(node)
+    if (organization.name.isDefined) {
+      m.addPrimitiveField(AUTHOR_NAME, organization.name.get)
+    }
+    m.toJsonObject
+  }
 }
