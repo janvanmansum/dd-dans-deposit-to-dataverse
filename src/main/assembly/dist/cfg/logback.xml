@@ -6,7 +6,7 @@
         </encoder>
     </appender>
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${user.home}/dd-dans-deposit-to-dataverse</file>
+        <file>${user.home}/dd-dans-deposit-to-dataverse.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${user.home}/dd-dans-deposit-to-dataverse.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
