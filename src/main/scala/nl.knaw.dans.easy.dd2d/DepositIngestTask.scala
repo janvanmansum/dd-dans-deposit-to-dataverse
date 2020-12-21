@@ -24,6 +24,7 @@ import nl.knaw.dans.lib.taskqueue.Task
 
 import scala.language.postfixOps
 import scala.util.{ Success, Try }
+import scala.xml.Elem
 
 /**
  * Checks one deposit and then ingests it into Dataverse.
@@ -36,10 +37,11 @@ case class DepositIngestTask(deposit: Deposit,
                              instance: DataverseInstance,
                              publish: Boolean = true,
                              publishAwaitUnlockMaxNumberOfRetries: Int,
-                             publishAwaitUnlockMillisecondsBetweenRetries: Int) extends Task[Deposit] with DebugEnhancedLogging {
+                             publishAwaitUnlockMillisecondsBetweenRetries: Int,
+                             narcisClassification: Elem) extends Task[Deposit] with DebugEnhancedLogging {
   trace(deposit, instance)
 
-  private val mapper = new DepositToDataverseMapper()
+  private val mapper = new DepositToDataverseMapper(narcisClassification)
   private val bagDirPath = File(deposit.bagDir.path)
 
   override def run(): Try[Unit] = {
