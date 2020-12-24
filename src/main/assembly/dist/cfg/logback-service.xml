@@ -2,17 +2,23 @@
 <configuration>
     <appender name="FILE"
               class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${user.home}/dd-dans-deposit-to-dataverse.log</file>
+        <file>/var/opt/dans.knaw.nl/log/dd-dans-deposit-to-dataverse/dd-dans-deposit-to-dataverse.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${user.home}/dd-dans-deposit-to-dataverse.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>/var/opt/dans.knaw.nl/log/dd-dans-deposit-to-dataverse/dd-dans-deposit-to-dataverse.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
             <pattern>[%date{ISO8601}] %-5level %msg%n</pattern>
         </encoder>
     </appender>
+    <appender name="JOURNAL" class="org.gnieh.logback.SystemdJournalAppender">
+        <logStackTrace>true</logStackTrace>
+        <logLoggerName>true</logLoggerName>
+        <syslogIdentifier>dd-dans-deposit-to-dataverse</syslogIdentifier>
+    </appender>
     <root level="warn">
         <appender-ref ref="FILE"/>
+        <appender-ref ref="JOURNAL" />
     </root>
     <logger name="nl.knaw.dans.easy" level="info"/>
 </configuration>

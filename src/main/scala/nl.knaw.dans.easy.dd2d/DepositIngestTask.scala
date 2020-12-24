@@ -15,6 +15,8 @@
  */
 package nl.knaw.dans.easy.dd2d
 
+import java.lang.Thread.sleep
+
 import better.files.File
 import nl.knaw.dans.easy.dd2d.dansbag.{ DansBagValidationResult, DansBagValidator }
 import nl.knaw.dans.lib.dataverse.DataverseInstance

@@ -15,12 +15,12 @@
  */
 package nl.knaw.dans.easy.dd2d
 
+import java.lang.Thread.sleep
 import java.nio.file.Path
 
 import gov.loc.repository.bagit.hash.StandardSupportedAlgorithms
-import nl.knaw.dans.easy.dd2d.mapping.JsonObject
 import nl.knaw.dans.lib.dataverse.DataverseInstance
-import nl.knaw.dans.lib.dataverse.model.dataset.{ MetadataBlock, MetadataBlocks, MetadataField, PrimitiveSingleValueField, toFieldMap }
+import nl.knaw.dans.lib.dataverse.model.dataset.MetadataBlocks
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
@@ -32,6 +32,8 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
 
   override def performEdit(): Try[PersistendId] = {
     for {
+      _ <- Try { sleep(1000) } // Temporary stop-gap to avoid random behavior from Dataverse
+
       _ <- dataset.awaitUnlock()
       _ <- dataset.updateMetadata(metadataBlocks)
 
