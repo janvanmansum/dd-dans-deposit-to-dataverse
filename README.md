@@ -16,6 +16,19 @@ DESCRIPTION
 Service that watches an inbox directory for new deposit directories. Each deposit directory that appears is checked for conformity 
 to DANS BagIt Profile (SIP) and subsequently added as a dataset to the configured Dataverse.
 
+### Input format
+The input of this tool consists of deposit directories. A deposit directory is basically a directory containing a bag and a
+file called `deposit.properties`. <!-- Add link to description of this layout -->
+
+### Metadata mapping
+
+* Link to archaeology spreadsheet
+
+
+### Update deposits
+A deposit results either in a new dataset in the target Dataverse instance, or in a new version of an existing Dataverse dataset. ....
+
+
 ARGUMENTS
 ---------
 
