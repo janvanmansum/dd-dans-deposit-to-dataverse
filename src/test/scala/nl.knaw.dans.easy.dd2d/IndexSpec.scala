@@ -19,7 +19,8 @@ import java.io.ByteArrayOutputStream
 
 import better.files.File
 
-class ReadmeSpec extends TestSupportFixture {
+class IndexSpec extends TestSupportFixture {
+  private val indexFile = File("docs/index.md")
 
   private val configuration = Configuration(
     version = "my-version",
@@ -46,19 +47,19 @@ class ReadmeSpec extends TestSupportFixture {
     mockedStdOut.toString
   }
 
-  "options in help info" should "be part of README.md" in {
+  "options in help info" should "be part of index.md" in {
     val lineSeparators = s"(${ System.lineSeparator() })+"
     val options = helpInfo.split(s"${ lineSeparators }Options:$lineSeparators")(1)
     options.trim should not be empty
-    File("README.md") should containTrimmed(options)
+    indexFile should containTrimmed(options)
   }
 
-  "synopsis in help info" should "be part of README.md" in {
-    File("README.md") should containTrimmed(clo.synopsis)
+  "synopsis in help info" should "be part of index.md" in {
+    indexFile should containTrimmed(clo.synopsis)
   }
 
   "description line(s) in help info" should "be part of README.md and pom.xml" in {
-    File("README.md") should containTrimmed(clo.description)
+    indexFile should containTrimmed(clo.description)
     File("pom.xml") should containTrimmed(clo.description)
   }
 }
