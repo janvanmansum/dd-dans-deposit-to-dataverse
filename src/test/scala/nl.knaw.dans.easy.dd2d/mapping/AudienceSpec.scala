@@ -18,29 +18,68 @@ package nl.knaw.dans.easy.dd2d.mapping
 import nl.knaw.dans.easy.dd2d.TestSupportFixture
 import nl.knaw.dans.easy.dd2d.mapping.Audience.{ toBasicInformationBlockSubjectCv, toCitationBlockSubject }
 import nl.knaw.dans.lib.dataverse.model.dataset.PrimitiveSingleValueField
+import org.scalatest.prop.TableDrivenPropertyChecks
 
-import scala.util.Success
 import scala.xml.XML
 
-class AudienceSpec extends TestSupportFixture {
+class AudienceSpec extends TestSupportFixture with TableDrivenPropertyChecks {
 
-  "toCitationBlockSubject" should "map the audience code to correct subject" in {
-    val audience = <ddm:audience>D16</ddm:audience>
-    toCitationBlockSubject(audience) shouldBe Some("Computer and Information Science")
+  "toCitationBlockSubject" should "map the audience codes to correct subjects" in {
+    val narcisAudiences = Table(
+      ("audience", "subject"),
+      ("D11000", "Mathematical Sciences"),
+      ("D12000", "Physics"),
+      ("D13000", "Chemistry"),
+      ("D14000", "Engineering"),
+      ("D16000", "Computer and Information Science"),
+      ("D17000", "Astronomy and Astrophysics"),
+      ("D18000", "Agricultural Sciences"),
+      ("D20000", "Medicine, Health and Life Sciences"),
+      ("D30000", "Arts and Humanities"),
+      ("D40000", "Law"),
+      ("D60000", "Social Sciences"),
+      ("D70000", "Business and Management"),
+      ("E15000", "Earth and Environmental Sciences"),
+    )
+
+    forAll(narcisAudiences) { (audience, subject) =>
+      val audienceNode = <ddm:audience>{audience}</ddm:audience>
+      toCitationBlockSubject(audienceNode) shouldBe Some(subject)
+    }
   }
 
   it should "map unknown audience codes to 'Other'" in {
-    val audience = <ddm:audience>UNKNOWN</ddm:audience>
+    val audience = <ddm:audience>D99999</ddm:audience>
     toCitationBlockSubject(audience) shouldBe Some("Other")
   }
 
-  "toBasicInformationBlockSubjectCv" should "return the correct Narcis classification" in {
-    val audience = <ddm:audience>D16</ddm:audience>
+  it should "throw a RuntimeException for an invalid NARCIS audience code" in {
+    val audience = <ddm:audience>INVALID</ddm:audience>
+    assertThrows[RuntimeException] {
+      toCitationBlockSubject(audience)
+    }
+  }
+
+  "toBasicInformationBlockSubjectCv" should "return the correct NARCIS classifications" in {
+    val narcisAudiences = Table(
+      ("audience", "term"),
+      ("D11300", "Functions, differential equations"),
+      ("D42100", "Political science"),
+      ("D65000", "Urban and rural planning"),
+      ("E15000", "Environmental studies")
+    )
+
     val narcisClassification = XML.loadFile("src/test/resources/narcis_classification.xml")
-    val result = toBasicInformationBlockSubjectCv(audience, narcisClassification)
-    inside(result) {
-      case Some(jsonObject) =>
-        jsonObject.get("subjectCvVocabularyURI") shouldBe Some(PrimitiveSingleValueField("primitive", "subjectCvVocabularyURI", false, "https://www.narcis.nl/classification/D16800"))
+
+    forAll(narcisAudiences) { (audience, term) =>
+      val audienceNode = <ddm:audience>{audience}</ddm:audience>
+      val result = toBasicInformationBlockSubjectCv(audienceNode, narcisClassification)
+      inside(result) {
+        case Some(jsonObject) =>
+          jsonObject.get("subjectCvValue") shouldBe Some(PrimitiveSingleValueField("primitive", "subjectCvValue", false, term))
+          jsonObject.get("subjectCvVocabulary") shouldBe Some(PrimitiveSingleValueField("primitive", "subjectCvVocabulary", false, "NARCIS classification"))
+          jsonObject.get("subjectCvVocabularyURI") shouldBe Some(PrimitiveSingleValueField("primitive", "subjectCvVocabularyURI", false, s"https://www.narcis.nl/classification/$audience"))
+      }
     }
   }
 }
