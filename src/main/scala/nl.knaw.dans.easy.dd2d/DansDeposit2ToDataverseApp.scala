@@ -15,16 +15,18 @@
  */
 package nl.knaw.dans.easy.dd2d
 
+import java.io.PrintStream
+
 import better.files.File
 import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
 import nl.knaw.dans.lib.dataverse.DataverseInstance
-import nl.knaw.dans.lib.error._
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.InboxWatcher
 
 import scala.util.Try
 
 class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnhancedLogging {
+  private implicit val resultOutput: PrintStream = Console.out
   private val dataverse = new DataverseInstance(configuration.dataverse)
   private val dansBagValidator = new DansBagValidator(
     serviceUri = configuration.validatorServiceUrl,
@@ -33,7 +35,6 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
   private val inboxWatcher =
     new InboxWatcher(new Inbox(configuration.inboxDir,
       dansBagValidator,
-      isImport = false,
       dataverse,
       configuration.autoPublish,
       configuration.publishAwaitUnlockMaxNumberOfRetries,
@@ -48,55 +49,23 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
   }
 
   def importSingleDeposit(deposit: File, autoPublish: Boolean): Try[Unit] = {
-    val workflowDisabler = new WorkflowDisabler(dataverse)
-    val tryMemo = workflowDisabler.disableDefaultWorkflows(configuration.importDisableWorkflows)
-    if (tryMemo.isFailure) {
-      logger.error("Failed to disable one or more workflows!")
-      tryMemo.map(_ => ())
-    }
-    else {
-      Runtime.getRuntime.addShutdownHook(new Thread() {
-        override def run(): Unit = {
-          workflowDisabler.restoreDefaultWorkflows(tryMemo.get).doIfFailure { case e => logger.error("Failed to restore one or more workflows!", e) }
-        }
-      })
-      val result = new SingleDepositProcessor(deposit,
-        dansBagValidator,
-        dataverse,
-        autoPublish,
-        configuration.publishAwaitUnlockMaxNumberOfRetries,
-        configuration.publishAwaitUnlockMillisecondsBetweenRetries,
-        configuration.narcisClassification).process()
-      workflowDisabler.restoreDefaultWorkflows(tryMemo.get).doIfFailure { case e => logger.error("Failed to restore one or more workflows!", e) }
-      result
-    }
+    new SingleDepositProcessor(deposit,
+      dansBagValidator,
+      dataverse,
+      autoPublish,
+      configuration.publishAwaitUnlockMaxNumberOfRetries,
+      configuration.publishAwaitUnlockMillisecondsBetweenRetries,
+      configuration.narcisClassification).process()
   }
 
   def importDeposits(inbox: File, autoPublish: Boolean): Try[Unit] = {
-    val workflowDisabler = new WorkflowDisabler(dataverse)
-    val tryMemo = workflowDisabler.disableDefaultWorkflows(configuration.importDisableWorkflows)
-    if (tryMemo.isFailure) {
-      logger.error("Failed to disable one or more workflows!")
-      tryMemo.map(_ => ())
-    }
-    else {
-      Runtime.getRuntime.addShutdownHook(new Thread() {
-        override def run(): Unit = {
-          workflowDisabler.restoreDefaultWorkflows(tryMemo.get).doIfFailure { case e => logger.error("Failed to restore one or more workflows!", e) }
-        }
-      })
-      val result =
-        new InboxProcessor(new Inbox(inbox,
-          dansBagValidator,
-          isImport = true,
-          dataverse,
-          autoPublish,
-          configuration.publishAwaitUnlockMaxNumberOfRetries,
-          configuration.publishAwaitUnlockMillisecondsBetweenRetries,
-          configuration.narcisClassification)).process()
-      workflowDisabler.restoreDefaultWorkflows(tryMemo.get).doIfFailure { case e => logger.error("Failed to restore one or more workflows!", e) }
-      result
-    }
+    new InboxProcessor(new Inbox(inbox,
+      dansBagValidator,
+      dataverse,
+      autoPublish,
+      configuration.publishAwaitUnlockMaxNumberOfRetries,
+      configuration.publishAwaitUnlockMillisecondsBetweenRetries,
+      configuration.narcisClassification)).process()
   }
 
   def start(): Try[Unit] = {

@@ -25,7 +25,6 @@ import scala.xml.{ Elem, XML }
 
 case class Configuration(version: String,
                          inboxDir: File,
-                         importDisableWorkflows: List[String],
                          validatorServiceUrl: URI,
                          validatorConnectionTimeoutMs: Int,
                          validatorReadTimeoutMs: Int,
@@ -59,7 +58,6 @@ object Configuration {
     new Configuration(
       version = (home / "bin" / "version").contentAsString.stripLineEnd,
       inboxDir = File(properties.getString("deposits.inbox")),
-      importDisableWorkflows = properties.getString("import.disable-workflows").split(",").toList,
       validatorServiceUrl = new URI(properties.getString("validate-dans-bag.service-url")),
       validatorConnectionTimeoutMs = properties.getInt("validate-dans-bag.connection-timeout-ms"),
       validatorReadTimeoutMs = properties.getInt("validate-dans-bag.read-timeout-ms"),
