@@ -15,6 +15,8 @@
  */
 package nl.knaw.dans.easy.dd2d
 
+import java.lang.Thread.sleep
+
 import better.files.File
 import nl.knaw.dans.easy.dd2d.dansbag.{ DansBagValidationResult, DansBagValidator }
 import nl.knaw.dans.lib.dataverse.DataverseInstance
@@ -34,7 +36,6 @@ import scala.xml.Elem
  */
 case class DepositIngestTask(deposit: Deposit,
                              dansBagValidator: DansBagValidator,
-                             isImport: Boolean,
                              instance: DataverseInstance,
                              publish: Boolean = true,
                              publishAwaitUnlockMaxNumberOfRetries: Int,
@@ -50,8 +51,6 @@ case class DepositIngestTask(deposit: Deposit,
     logger.info(s"Ingesting $deposit into Dataverse")
 
     for {
-      _ <- if (isImport) deposit.vaultMetadata.checkMinimumFieldsForImport()
-           else Success(())
       validationResult <- dansBagValidator.validateBag(bagDirPath)
       _ <- rejectIfInvalid(validationResult)
 
