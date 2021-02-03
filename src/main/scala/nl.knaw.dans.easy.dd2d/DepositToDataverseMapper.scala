@@ -28,64 +28,67 @@ import scala.xml.{ Elem, Node, NodeSeq }
  * Maps DANS Dataset Metadata to Dataverse JSON.
  */
 // TODO: Rename if we also need to take elements from EMD
-class DepositToDataverseMapper(narcisClassification: Elem) extends BlockCitation with BlockBasicInformation with BlockArchaeologySpecific with BlockTemporalAndSpatial with BlockContentTypeAndFileFormat with BlockDataVaultMetadata {
+class DepositToDataverseMapper(narcisClassification: Elem, isoToDataverseLanguage: Map[String, String]) extends BlockCitation
+  with BlockArchaeologySpecific
+  with BlockTemporalAndSpatial
+  with BlockRights
+  with BlockDataVaultMetadata {
   lazy val citationFields = new ListBuffer[MetadataField]
-  lazy val basicInformationFields = new ListBuffer[MetadataField]
   lazy val archaeologySpecificFields = new ListBuffer[MetadataField]
   lazy val temporalSpatialFields = new ListBuffer[MetadataField]
+  lazy val rightsFields = new ListBuffer[MetadataField]
   lazy val dataVaultFields = new ListBuffer[MetadataField]
-  lazy val contentTypeAndFileFormatFields = new ListBuffer[MetadataField]
 
   def toDataverseDataset(ddm: Node, contactData: CompoundField, vaultMetadata: VaultMetadata): Try[Dataset] = Try {
-    // Please keep ordered by order in Dataverse UI as much as possible
+    // Please, keep ordered by order in Dataverse UI as much as possible (note, if display-on-create is not set for all fields, some may be hidden initally)
 
-    // TODO: if a single value is expected, the first encountered will be used; is this OK? Add checks on multiplicity before processing?
+    val titles = ddm \ "profile" \ "title"
+    if (titles.isEmpty) throw MissingRequiredFieldException("title")
+
+    val alternativeTitles = (ddm \ "dcmiMetadata" \ "title") ++ (ddm \ "dcmiMetadata" \ "alternative")
 
     // Citation
-    addPrimitiveFieldSingleValue(citationFields, TITLE, ddm \ "profile" \ "title")
+    addPrimitiveFieldSingleValue(citationFields, TITLE, titles.head)
+    addPrimitiveFieldSingleValue(citationFields, ALTERNATIVE_TITLE, alternativeTitles)
     addCompoundFieldMultipleValues(citationFields, OTHER_ID, ddm \ "dcmiMetadata" \ "isFormatOf", IsFormatOf toOtherIdValueObject)
-    addCompoundFieldMultipleValues(citationFields, DESCRIPTION, ddm \ "profile" \ "description", Description toDescriptionValueObject)
     addCompoundFieldMultipleValues(citationFields, AUTHOR, ddm \ "profile" \ "creatorDetails" \ "author", DcxDaiAuthor toAuthorValueObject)
     addCompoundFieldMultipleValues(citationFields, AUTHOR, ddm \ "profile" \ "creatorDetails" \ "organization", DcxDaiOrganization toAuthorValueObject)
     addCompoundFieldMultipleValues(citationFields, AUTHOR, ddm \ "profile" \ "creator", Creator toAuthorValueObject)
     citationFields.append(contactData)
+    addCompoundFieldMultipleValues(citationFields, DESCRIPTION, ddm \ "profile" \ "description", Description toDescriptionValueObject)
+    addCompoundFieldMultipleValues(citationFields, DESCRIPTION, if (alternativeTitles.isEmpty) NodeSeq.Empty
+                                                                else alternativeTitles.tail, Description toDescriptionValueObject)
+    // TODO: add languages that cannot be mapped to Dataverse language terms.
 
-    // TODO: creator unstructured
-    addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
-    addPrimitiveFieldSingleValue(citationFields, DISTRIBUTION_DATE, ddm \ "profile" \ "available", DateTypeElement toYearMonthDayFormat)
+    val audience = ddm \ "profile" \ "audience"
+    if (audience.isEmpty) throw MissingRequiredFieldException(SUBJECT)
+
     addCvFieldMultipleValues(citationFields, SUBJECT, ddm \ "profile" \ "audience", Audience toCitationBlockSubject)
-    addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language toCitationBlockLanguage)
-    addPrimitiveFieldSingleValue(citationFields, ALTERNATIVE_TITLE, ddm \ "dcmiMetadata" \ "alternative")
-    addPrimitiveFieldMultipleValues(citationFields, DATA_SOURCES, ddm \ "dcmiMetadata" \ "source")
+    addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(isoToDataverseLanguage))
+    addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
     addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, ddm \ "dcmiMetadata" \ "contributorDetails" \ "author", DcxDaiAuthor toContributorValueObject)
     addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization", DcxDaiOrganization toContributorValueObject)
-    // TODO: contributor unstructured
-
-    // Basic information
-    addCompoundFieldWithControlledVocabulary(basicInformationFields, LANGUAGE_OF_METADATA_CV, ddm, Language toBasicInformationLanguageOfMetadata)
-    addCompoundFieldMultipleValues(basicInformationFields, RELATED_ID, (ddm \ "dcmiMetadata" \ "_").filter(Relation isRelation).filter(Relation isRelatedIdentifier), Relation toRelatedIdentifierValueObject)
-    addCompoundFieldMultipleValues(basicInformationFields, RELATED_ID_URL, (ddm \ "dcmiMetadata" \ "_").filter(Relation isRelation).filterNot(Relation isRelatedIdentifier), Relation toRelatedUrlValueObject)
-    addPrimitiveFieldMultipleValues(basicInformationFields, LANGUAGE_OF_FILES, ddm \ "dcmiMetadata" \ "language")
-    addCompoundFieldWithControlledVocabulary(basicInformationFields, LANGUAGE_OF_FILES_CV, (ddm \\ "language").filter(Language isISOLanguage), Language toBasicInformationBlockLanguageOfFiles)
-    addCompoundFieldMultipleValues(basicInformationFields, DATE, (ddm \ "dcmiMetadata" \ "_").filter(DateTypeElement isDate).filter(DateTypeElement hasW3CFormat), DateTypeElement toBasicInfoFormattedDateValueObject)
-    addCompoundFieldMultipleValues(basicInformationFields, DATE_FREE_FORMAT, (ddm \ "dcmiMetadata" \ "_").filter(DateTypeElement isDate).filterNot(DateTypeElement hasW3CFormat), DateTypeElement toBasicInfoFreeDateValue)
-    addCompoundFieldWithControlledVocabulary(basicInformationFields, SUBJECT_CV, ddm \ "profile" \ "audience", Audience toBasicInformationBlockSubjectCv(_, narcisClassification))
+    addPrimitiveFieldSingleValue(citationFields, DISTRIBUTION_DATE, ddm \ "profile" \ "available", DateTypeElement toYearMonthDayFormat)
+    addPrimitiveFieldMultipleValues(citationFields, DATA_SOURCES, ddm \ "dcmiMetadata" \ "source")
 
     // Archaeology specific
     addPrimitiveFieldMultipleValues(archaeologySpecificFields, ARCHIS_ZAAK_ID, ddm \ "dcmiMetadata" \ "identifier", IsFormatOf toArchisZaakId)
-    addCompoundFieldWithControlledVocabulary(archaeologySpecificFields, ABR_SUBJECT, (ddm \\ "subject").filter(SubjectAbr isAbrComplex), SubjectAbr toSubjectAbrObject)
-    addCompoundFieldWithControlledVocabulary(archaeologySpecificFields, ABR_PERIOD, (ddm \\ "temporal").filter(TemporalAbr isTemporalAbr), TemporalAbr toTemporalAbr)
+    addCompoundFieldWithControlledVocabulary(archaeologySpecificFields, ABR_RAPPORT_TYPE, (ddm \ "dcmiMetadata" \ "reportNumber").filter(AbrReportType isAbrReportType), AbrReportType toAbrRapportType)
+    addPrimitiveFieldMultipleValues(archaeologySpecificFields, ABR_RAPPORT_NUMMER, ddm \ "dcmiMetadata" \ "reportNumber")
+    addCompoundFieldWithControlledVocabulary(archaeologySpecificFields, ABR_VERWERVINGSWIJZE, (ddm \ "dcmiMetadata" \ "acquisitionMethod").filter(AbrAcquisitionMethod isAbrVerwervingswijze), AbrAcquisitionMethod toVerwervingswijze)
+    addCompoundFieldWithControlledVocabulary(archaeologySpecificFields, ABR_COMPLEX, (ddm \ "dcmiMetadata" \ "subject").filter(SubjectAbr isAbrComplex), SubjectAbr toAbrComplex)
+    addCompoundFieldWithControlledVocabulary(archaeologySpecificFields, ABR_PERIOD, (ddm \ "dcmiMetadata" \ "temporal").filter(TemporalAbr isAbrPeriod), TemporalAbr toAbrPeriod)
 
     // Temporal and spatial coverage
     addCompoundFieldMultipleValues(temporalSpatialFields, SPATIAL_POINT, ddm \ "dcmiMetadata" \ "spatial" \ "Point", SpatialPoint toEasyTsmSpatialPointValueObject)
     addCompoundFieldMultipleValues(temporalSpatialFields, SPATIAL_BOX, ddm \ "dcmiMetadata" \ "spatial" \ "boundedBy", SpatialBox toEasyTsmSpatialBoxValueObject)
 
-    //content type and file format
-    addCompoundFieldWithControlledVocabulary(contentTypeAndFileFormatFields, CONTENT_TYPE_CV, ddm \\ "type", Type toContentTypeAndFileFormatBlockType)
-    addCompoundFieldWithControlledVocabulary(contentTypeAndFileFormatFields, FORMAT_CV, ddm \\ "format", Format toContentTypeAndFileFormatBlockFormat)
+    // Rights
+    val rightsHolder = ddm \ "dcmiMetadata" \ "rightsHolder"
+    if (rightsHolder.isEmpty) throw MissingRequiredFieldException(RIGHTS_HOLDER)
+    addPrimitiveFieldMultipleValues(rightsFields, RIGHTS_HOLDER, ddm \ "dcmiMetadata" \ "rightsHolder", AnyElement toText)
 
     // Data vault
-    addVaultValue(dataVaultFields, DATAVERSE_PID, vaultMetadata.dataversePid)
     addVaultValue(dataVaultFields, BAG_ID, vaultMetadata.dataverseBagId)
     addVaultValue(dataVaultFields, NBN, vaultMetadata.dataverseNbn)
     addVaultValue(dataVaultFields, DANS_OTHER_ID, vaultMetadata.dataverseOtherId)
@@ -98,10 +101,9 @@ class DepositToDataverseMapper(narcisClassification: Elem) extends BlockCitation
   private def assembleDataverseDataset(): Dataset = {
     val versionMap = mutable.Map[String, MetadataBlock]()
     addMetadataBlock(versionMap, "citation", "Citation Metadata", citationFields)
-    addMetadataBlock(versionMap, "basicInformation", "Basic Information", basicInformationFields)
     addMetadataBlock(versionMap, "archaeologyMetadata", "Archaeology-Specific Metadata", archaeologySpecificFields)
     addMetadataBlock(versionMap, "temporal-spatial", "Temporal and Spatial Coverage", temporalSpatialFields)
-    addMetadataBlock(versionMap, "dansContentTypeAndFileFormat", "Content Type and File Format", contentTypeAndFileFormatFields)
+    addMetadataBlock(versionMap, "dansRights", "Rights Metadata", rightsFields)
     addMetadataBlock(versionMap, "dataVault", "Data Vault Metadata", dataVaultFields)
     val datasetVersion = DatasetVersion(metadataBlocks = versionMap.toMap)
     Dataset(datasetVersion)
