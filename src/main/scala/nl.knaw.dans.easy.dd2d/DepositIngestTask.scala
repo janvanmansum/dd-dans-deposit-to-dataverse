@@ -18,13 +18,14 @@ package nl.knaw.dans.easy.dd2d
 import better.files.File
 import nl.knaw.dans.easy.dd2d.dansbag.{ DansBagValidationResult, DansBagValidator }
 import nl.knaw.dans.easy.dd2d.mapping.JsonObject
-import nl.knaw.dans.lib.dataverse.DataverseInstance
-import nl.knaw.dans.lib.dataverse.model.dataset.{ CompoundField, PrimitiveSingleValueField, UpdateType, toFieldMap }
+import nl.knaw.dans.lib.dataverse.{ DataverseException, DataverseInstance }
+import nl.knaw.dans.lib.dataverse.model.dataset.{ PrimitiveSingleValueField, UpdateType, toFieldMap }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.Task
 
+import java.lang.Thread.sleep
 import scala.language.postfixOps
-import scala.util.{ Success, Try }
+import scala.util.{ Failure, Success, Try }
 import scala.xml.Elem
 
 /**
@@ -94,11 +95,32 @@ case class DepositIngestTask(deposit: Deposit,
   private def publishDataset(persistentId: String): Try[Unit] = {
     debug("Publishing dataset")
     for {
-      _ <- instance.dataset(persistentId).publish(UpdateType.major).map(_ => ())
+      _ <- attemptPublish(persistentId)
       _ <- instance.dataset(persistentId).awaitUnlock(
         maxNumberOfRetries = publishAwaitUnlockMaxNumberOfRetries,
         waitTimeInMilliseconds = publishAwaitUnlockMillisecondsBetweenRetries)
     } yield ()
+  }
+
+  private def attemptPublish(persistentId: String): Try[Unit] = {
+    debug("Publishing dataset")
+    var retries = 0
+
+    var maybePublished = instance.dataset(persistentId).publish(UpdateType.major).map(_ => ())
+    while (isReindexPending(maybePublished) && retries < 20) {
+      debug("Reindex pending. Retrying...")
+      sleep(3000)
+      retries += 1
+      maybePublished = instance.dataset(persistentId).publish(UpdateType.major).map(_ => ())
+    }
+    maybePublished
+  }
+
+  private def isReindexPending(tryPublish: Try[Unit]): Boolean = {
+    tryPublish match {
+      case Failure(DataverseException(409, _, _)) => true
+      case _ => false
+    }
   }
 
   private def keepOnDraft(): Try[Unit] = {
