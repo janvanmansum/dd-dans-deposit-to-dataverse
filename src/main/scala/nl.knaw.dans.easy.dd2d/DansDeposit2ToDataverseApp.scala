@@ -16,14 +16,12 @@
 package nl.knaw.dans.easy.dd2d
 
 import better.files.File
-import nl.knaw.dans.easy.dd2d.OutboxSubdir.{ FAILED, PROCESSED, REJECTED }
 import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.InboxWatcher
 
 import java.io.PrintStream
-import java.nio.file.Path
 import scala.util.Try
 
 class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnhancedLogging {
@@ -34,7 +32,6 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     connTimeoutMs = configuration.validatorConnectionTimeoutMs,
     readTimeoutMs = configuration.validatorReadTimeoutMs)
   private val inboxWatcher = {
-    initOutboxDirs(configuration.outboxDir)
     new InboxWatcher(new Inbox(configuration.inboxDir,
       dansBagValidator,
       dataverse,
@@ -53,31 +50,34 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     } yield ()
   }
 
-  def importSingleDeposit(deposit: File, autoPublish: Boolean, outboxDir: Path): Try[Unit] = {
-    initOutboxDirs(outboxDir)
-    new SingleDepositProcessor(deposit,
-      dansBagValidator,
-      dataverse,
-      autoPublish,
-      configuration.publishAwaitUnlockMaxNumberOfRetries,
-      configuration.publishAwaitUnlockMillisecondsBetweenRetries,
-      configuration.narcisClassification,
-      configuration.isoToDataverseLanguage,
-      outboxDir).process()
+  def importSingleDeposit(deposit: File, autoPublish: Boolean, outboxDir: File): Try[Unit] = {
+    for {
+      _ <- initOutboxDirs(outboxDir)
+      _ <- new SingleDepositProcessor(deposit,
+        dansBagValidator,
+        dataverse,
+        autoPublish,
+        configuration.publishAwaitUnlockMaxNumberOfRetries,
+        configuration.publishAwaitUnlockMillisecondsBetweenRetries,
+        configuration.narcisClassification,
+        configuration.isoToDataverseLanguage,
+        outboxDir).process()
+    } yield ()
   }
 
-  def importDeposits(inbox: File, autoPublish: Boolean, outboxDir: Path): Try[Unit] = {
-    initOutboxDirs(outboxDir)
-    new InboxProcessor(new Inbox(inbox,
-      dansBagValidator,
-      dataverse,
-      autoPublish,
-      configuration.publishAwaitUnlockMaxNumberOfRetries,
-      configuration.publishAwaitUnlockMillisecondsBetweenRetries,
-      configuration.narcisClassification,
-      configuration.isoToDataverseLanguage,
-      outboxDir)).process()
-    deleteEmptyDepositsDir(inbox)
+  def importDeposits(inbox: File, autoPublish: Boolean, outboxDir: File): Try[Unit] = {
+    for {
+      _ <- initOutboxDirs(outboxDir)
+      _ <- new InboxProcessor(new Inbox(inbox,
+        dansBagValidator,
+        dataverse,
+        autoPublish,
+        configuration.publishAwaitUnlockMaxNumberOfRetries,
+        configuration.publishAwaitUnlockMillisecondsBetweenRetries,
+        configuration.narcisClassification,
+        configuration.isoToDataverseLanguage,
+        outboxDir)).process()
+    } yield ()
   }
 
   def start(): Try[Unit] = {
@@ -88,16 +88,18 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     inboxWatcher.stop()
   }
 
-  private def initOutboxDirs(outboxDir: Path): Try[Unit] = Try {
-    if (!File(outboxDir).isEmpty)
-      throw NonEmptyOutboxDirException(outboxDir.toString)
+  private def initOutboxDirs(outboxDir: File): Try[Unit] = Try {
+    trace(outboxDir)
+    val subDirs = List(outboxDir / OutboxSubdir.PROCESSED.toString,
+      outboxDir / OutboxSubdir.FAILED.toString,
+      outboxDir / OutboxSubdir.REJECTED.toString)
 
-    File(outboxDir.toString.concat(PROCESSED.toString)).createDirectoryIfNotExists(true)
-    File(outboxDir.toString.concat(REJECTED.toString)).createDirectoryIfNotExists(true)
-    File(outboxDir.toString.concat(FAILED.toString)).createDirectoryIfNotExists(true)
-  }
+    if (outboxDir.isRegularFile)
+      throw OutboxDirIsRegularFileException(outboxDir)
+    if (subDirs.exists(d => d.isDirectory && d.nonEmpty))
+      throw ExistingResultsInOutboxException(outboxDir)
 
-  private def deleteEmptyDepositsDir(inbox: File): Try[Unit] = Try {
-    inbox.delete(true)
+    outboxDir.createDirectoryIfNotExists(createParents = true)
+    subDirs.foreach(_.createDirectories())
   }
 }
