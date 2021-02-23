@@ -56,9 +56,9 @@ class CommandLineOptions(args: Array[String], configuration: Configuration) exte
     descr("Imports one ore more deposits. Does not monitor for new deposits to arrive, but instead terminates after importing the batch.")
     val singleDeposit: ScallopOption[Boolean] = opt(name = "single", descr = "Single deposit instead of a deposits inbox")
     val draft: ScallopOption[Boolean] = opt(name = "draft", descr = "Do not publish the resulting datasets, but keep them on DRAFT status")
-    val outdir: ScallopOption[Path] = opt(name = "outdir", descr = "Directory where deposits are moved to after import.", required = true)
     val depositsInboxOrSingleDeposit: ScallopOption[Path] = trailArg(name = "inbox-or-single-deposit",
       descr = "Directory containing as sub-directories the deposit dirs to be imported or a single deposit")
+    val outdir: ScallopOption[Path] = trailArg(name = "outdir", descr = "Directory where deposits are moved to after import.", required = true)
     validatePathExists(depositsInboxOrSingleDeposit)
     footer(SUBCOMMAND_SEPARATOR)
   }

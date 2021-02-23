@@ -44,7 +44,7 @@ case class DepositIngestTask(deposit: Deposit,
                              publishAwaitUnlockMillisecondsBetweenRetries: Int,
                              narcisClassification: Elem,
                              isoToDataverseLanguage: Map[String, String],
-                             outboxDir: Path) extends Task[Deposit] with DebugEnhancedLogging {
+                             outboxDir: File) extends Task[Deposit] with DebugEnhancedLogging {
   trace(deposit, instance)
 
   private val mapper = new DepositToDataverseMapper(narcisClassification, isoToDataverseLanguage)
@@ -84,10 +84,9 @@ case class DepositIngestTask(deposit: Deposit,
 
   def moveDepositToOutbox(subDir: OutboxSubdir): Unit = {
     try {
-      deposit.dir.copyToDirectory(File(outboxDir) / subDir.toString)
-      deposit.dir.delete()
+      deposit.dir.moveToDirectory(outboxDir / subDir.toString)
     } catch {
-      case e: Exception => logger.info(s"Failed to move deposit: $deposit to the designated outbox : $e")
+      case e: Exception => logger.info(s"Failed to move deposit: $deposit to ${outboxDir / subDir.toString}", e)
     }
   }
 

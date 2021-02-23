@@ -32,7 +32,7 @@ class SingleDepositProcessor(deposit: File,
                              publishAwaitUnlockMillisecondsBetweenRetries: Int,
                              narcisClassification: Elem,
                              isoToDataverseLanage: Map[String, String],
-                             outboxDir: Path) {
+                             outboxDir: File) {
   def process(): Try[Unit] = Try {
     val ingestTasks = new PassiveTaskQueue[Deposit]()
     ingestTasks.add(

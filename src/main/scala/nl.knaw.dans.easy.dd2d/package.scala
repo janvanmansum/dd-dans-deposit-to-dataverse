@@ -56,13 +56,16 @@ package object dd2d {
   case class MissingRequiredFieldException(fieldName: String)
     extends Exception(s"No value found for required field: $fieldName")
 
-  case class NonEmptyOutboxDirException(outboxDir: String)
+  case class ExistingResultsInOutboxException(outboxDir: File)
     extends Exception(s"Output directory: $outboxDir already contains results")
+
+  case class OutboxDirIsRegularFileException(outboxDir: File)
+    extends Exception(s"Output directory: $outboxDir is a regular file.")
 
   object OutboxSubdir extends Enumeration {
     type OutboxSubdir = Value
-    val PROCESSED = Value("/deposits-processed")
-    val REJECTED = Value("/deposits-rejected")
-    val FAILED = Value("/deposits-failed")
+    val PROCESSED = Value("processed")
+    val REJECTED = Value("rejected")
+    val FAILED = Value("failed")
   }
 }
