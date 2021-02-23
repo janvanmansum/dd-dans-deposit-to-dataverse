@@ -16,12 +16,14 @@
 package nl.knaw.dans.easy.dd2d
 
 import better.files.File
+import nl.knaw.dans.easy.dd2d.OutboxSubdir.{ FAILED, PROCESSED, REJECTED }
 import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.InboxWatcher
 
 import java.io.PrintStream
+import java.nio.file.Path
 import scala.util.Try
 
 class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnhancedLogging {
@@ -31,7 +33,8 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     serviceUri = configuration.validatorServiceUrl,
     connTimeoutMs = configuration.validatorConnectionTimeoutMs,
     readTimeoutMs = configuration.validatorReadTimeoutMs)
-  private val inboxWatcher =
+  private val inboxWatcher = {
+    initOutboxDirs(configuration.outboxDir)
     new InboxWatcher(new Inbox(configuration.inboxDir,
       dansBagValidator,
       dataverse,
@@ -39,7 +42,9 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
       configuration.publishAwaitUnlockMaxNumberOfRetries,
       configuration.publishAwaitUnlockMillisecondsBetweenRetries,
       configuration.narcisClassification,
-      configuration.isoToDataverseLanguage))
+      configuration.isoToDataverseLanguage,
+      configuration.outboxDir))
+  }
 
   def checkPreconditions(): Try[Unit] = {
     for {
@@ -48,7 +53,8 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     } yield ()
   }
 
-  def importSingleDeposit(deposit: File, autoPublish: Boolean): Try[Unit] = {
+  def importSingleDeposit(deposit: File, autoPublish: Boolean, outboxDir: Path): Try[Unit] = {
+    initOutboxDirs(outboxDir)
     new SingleDepositProcessor(deposit,
       dansBagValidator,
       dataverse,
@@ -56,10 +62,12 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
       configuration.publishAwaitUnlockMaxNumberOfRetries,
       configuration.publishAwaitUnlockMillisecondsBetweenRetries,
       configuration.narcisClassification,
-      configuration.isoToDataverseLanguage).process()
+      configuration.isoToDataverseLanguage,
+      outboxDir).process()
   }
 
-  def importDeposits(inbox: File, autoPublish: Boolean): Try[Unit] = {
+  def importDeposits(inbox: File, autoPublish: Boolean, outboxDir: Path): Try[Unit] = {
+    initOutboxDirs(outboxDir)
     new InboxProcessor(new Inbox(inbox,
       dansBagValidator,
       dataverse,
@@ -67,7 +75,9 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
       configuration.publishAwaitUnlockMaxNumberOfRetries,
       configuration.publishAwaitUnlockMillisecondsBetweenRetries,
       configuration.narcisClassification,
-      configuration.isoToDataverseLanguage)).process()
+      configuration.isoToDataverseLanguage,
+      outboxDir)).process()
+    deleteEmptyDepositsDir(inbox)
   }
 
   def start(): Try[Unit] = {
@@ -76,5 +86,18 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
 
   def stop(): Try[Unit] = {
     inboxWatcher.stop()
+  }
+
+  private def initOutboxDirs(outboxDir: Path): Try[Unit] = Try {
+    if (!File(outboxDir).isEmpty)
+      throw NonEmptyOutboxDirException(outboxDir.toString)
+
+    File(outboxDir.toString.concat(PROCESSED.toString)).createDirectoryIfNotExists(true)
+    File(outboxDir.toString.concat(REJECTED.toString)).createDirectoryIfNotExists(true)
+    File(outboxDir.toString.concat(FAILED.toString)).createDirectoryIfNotExists(true)
+  }
+
+  private def deleteEmptyDepositsDir(inbox: File): Try[Unit] = Try {
+    inbox.delete(true)
   }
 }

@@ -16,13 +16,16 @@
 package nl.knaw.dans.easy.dd2d
 
 import better.files.File
+import nl.knaw.dans.easy.dd2d.OutboxSubdir.{ FAILED, OutboxSubdir, PROCESSED, REJECTED }
 import nl.knaw.dans.easy.dd2d.dansbag.{ DansBagValidationResult, DansBagValidator }
 import nl.knaw.dans.easy.dd2d.mapping.JsonObject
 import nl.knaw.dans.lib.dataverse.DataverseInstance
-import nl.knaw.dans.lib.dataverse.model.dataset.{ CompoundField, PrimitiveSingleValueField, UpdateType, toFieldMap }
+import nl.knaw.dans.lib.dataverse.model.dataset.{ PrimitiveSingleValueField, UpdateType, toFieldMap }
+import nl.knaw.dans.lib.error._
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.Task
 
+import java.nio.file.Path
 import scala.language.postfixOps
 import scala.util.{ Success, Try }
 import scala.xml.Elem
@@ -40,13 +43,21 @@ case class DepositIngestTask(deposit: Deposit,
                              publishAwaitUnlockMaxNumberOfRetries: Int,
                              publishAwaitUnlockMillisecondsBetweenRetries: Int,
                              narcisClassification: Elem,
-                             isoToDataverseLanguage: Map[String, String]) extends Task[Deposit] with DebugEnhancedLogging {
+                             isoToDataverseLanguage: Map[String, String],
+                             outboxDir: Path) extends Task[Deposit] with DebugEnhancedLogging {
   trace(deposit, instance)
 
   private val mapper = new DepositToDataverseMapper(narcisClassification, isoToDataverseLanguage)
   private val bagDirPath = File(deposit.bagDir.path)
 
-  override def run(): Try[Unit] = {
+  override def run(): Try[Unit] = doRun()
+    .doIfSuccess(_ => moveDepositToOutbox(PROCESSED))
+    .doIfFailure {
+      case _: RejectedDepositException => moveDepositToOutbox(REJECTED)
+      case _ => moveDepositToOutbox(FAILED)
+    }
+
+  private def doRun(): Try[Unit] = {
     trace(())
     logger.info(s"Ingesting $deposit into Dataverse")
 
@@ -69,6 +80,15 @@ case class DepositIngestTask(deposit: Deposit,
            else keepOnDraft()
     } yield ()
     // TODO: delete draft if something went wrong
+  }
+
+  def moveDepositToOutbox(subDir: OutboxSubdir): Unit = {
+    try {
+      deposit.dir.copyToDirectory(File(outboxDir) / subDir.toString))
+      deposit.dir.delete()
+    } catch {
+      case e: Exception => logger.info(s"Failed to move deposit: $deposit to the designated outbox : $e")
+    }
   }
 
   private def rejectIfInvalid(validationResult: DansBagValidationResult): Try[Unit] = Try {

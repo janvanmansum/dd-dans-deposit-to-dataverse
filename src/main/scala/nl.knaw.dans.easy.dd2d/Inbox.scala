@@ -21,6 +21,7 @@ import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.AbstractInbox
 
+import java.nio.file.Path
 import scala.xml.Elem
 
 /**
@@ -36,7 +37,8 @@ class Inbox(dir: File,
             publishAwaitUnlockMaxNumberOfRetries: Int,
             publishAwaitUnlockMillisecondsBetweenRetries: Int,
             narcisClassification: Elem,
-            isoToDataverseLanage: Map[String, String]) extends AbstractInbox[Deposit](dir) with DebugEnhancedLogging {
+            isoToDataverseLanage: Map[String, String],
+            outboxDir: Path) extends AbstractInbox[Deposit](dir) with DebugEnhancedLogging {
   override def createTask(f: File): Option[DepositIngestTask] = {
     try {
       Some(DepositIngestTask(
@@ -47,7 +49,8 @@ class Inbox(dir: File,
         publishAwaitUnlockMaxNumberOfRetries,
         publishAwaitUnlockMillisecondsBetweenRetries,
         narcisClassification,
-        isoToDataverseLanage))
+        isoToDataverseLanage,
+        outboxDir: Path))
     }
     catch {
       case e: InvalidDepositException =>
