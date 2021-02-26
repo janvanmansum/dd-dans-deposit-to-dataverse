@@ -45,6 +45,6 @@ object TemporalAbr extends BlockArchaeologySpecific with AbrScheme with DebugEnh
   def isAbrPeriod(node: Node): Boolean = {
     // TODO: also take attribute namespace into account (should be ddm)
     // TODO: correct the scheme: should be 'ABR Period' ??
-    node.label == "subject" && hasAttribute(node, "subjectScheme", SCHEME_ABR_PERIOD) && hasAttribute(node, "schemeURI", SCHEME_URI_ABR_PERIOD)
+    node.label == "temporal" && hasAttribute(node, "subjectScheme", SCHEME_ABR_PERIOD) && hasAttribute(node, "schemeURI", SCHEME_URI_ABR_PERIOD)
   }
 }
