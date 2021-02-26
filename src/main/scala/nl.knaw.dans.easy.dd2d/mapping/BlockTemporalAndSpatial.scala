@@ -27,4 +27,6 @@ trait BlockTemporalAndSpatial {
   val SPATIAL_BOX_EAST = "dansSpatialBoxEast"
   val SPATIAL_BOX_SOUTH = "dansSpatialBoxSouth"
   val SPATIAL_BOX_WEST = "dansSpatialBoxWest"
+  val SPATIAL_COVERAGE_CONTROLLED = "dansSpatialCoverageControlled"
+  val SPATIAL_COVERAGE_UNCONTROLLED = "dansSpatialCoverageText"
 }

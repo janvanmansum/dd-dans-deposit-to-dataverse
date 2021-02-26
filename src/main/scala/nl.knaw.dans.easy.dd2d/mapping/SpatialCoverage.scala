@@ -17,18 +17,21 @@ package nl.knaw.dans.easy.dd2d.mapping
 
 import scala.xml.Node
 
-object SpatialPoint extends Spatial with BlockTemporalAndSpatial {
-  def toEasyTsmSpatialPointValueObject(spatial: Node): JsonObject = {
-    val isRD = isRd(spatial) // TODO: improve error handling
-    // TODO: Only one Point expected here, but should be more robust
-    val pointElem = (spatial \ "Point").head
-    val p = getPoint(pointElem)
-    val m = FieldMap()
+object SpatialCoverage extends Spatial with BlockTemporalAndSpatial {
+  private val controlledValues = List(
+    "Netherlands",
+    "United Kingdom",
+    "Belgium",
+    "Germany"
+  )
 
-    m.addCvField(SPATIAL_POINT_SCHEME, if (isRD) RD_SCHEME
-                                       else LATLON_SCHEME)
-    m.addPrimitiveField(SPATIAL_POINT_X, p.x)
-    m.addPrimitiveField(SPATIAL_POINT_Y, p.y)
-    m.toJsonObject
+  def toControlledSpatialValue(node: Node): Option[String] = {
+    if (controlledValues.contains(node.text)) Some(node.text)
+    else Option.empty
+  }
+
+  def toUncontrolledSpatialValue(node: Node): Option[String] = {
+    if (controlledValues.contains(node.text)) Option.empty
+    else Some(node.text)
   }
 }

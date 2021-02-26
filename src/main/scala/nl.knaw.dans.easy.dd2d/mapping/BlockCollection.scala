@@ -15,20 +15,10 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import scala.xml.Node
-
-object SpatialPoint extends Spatial with BlockTemporalAndSpatial {
-  def toEasyTsmSpatialPointValueObject(spatial: Node): JsonObject = {
-    val isRD = isRd(spatial) // TODO: improve error handling
-    // TODO: Only one Point expected here, but should be more robust
-    val pointElem = (spatial \ "Point").head
-    val p = getPoint(pointElem)
-    val m = FieldMap()
-
-    m.addCvField(SPATIAL_POINT_SCHEME, if (isRD) RD_SCHEME
-                                       else LATLON_SCHEME)
-    m.addPrimitiveField(SPATIAL_POINT_X, p.x)
-    m.addPrimitiveField(SPATIAL_POINT_Y, p.y)
-    m.toJsonObject
-  }
+trait BlockCollection {
+  val COLLECTION = "dansCollection"
+  val COLLECTION_VOCABULARY = "dansCollectionVocabulary"
+  val COLLECTION_VOCABULARY_URI = "dansCollectionVocabularyURI"
+  val COLLECTION_TERM = "dansCollectionTerm"
+  val COLLECTION_TERM_URI = "dansCollectionTermURI"
 }

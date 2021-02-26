@@ -33,6 +33,7 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     readTimeoutMs = configuration.validatorReadTimeoutMs)
   private val inboxWatcher = {
     new InboxWatcher(new Inbox(configuration.inboxDir,
+      getActiveMetadataBlocks.get,
       dansBagValidator,
       dataverse,
       configuration.autoPublish,
@@ -52,8 +53,10 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
 
   def importSingleDeposit(deposit: File, autoPublish: Boolean, outboxDir: File): Try[Unit] = {
     for {
-      _ <- initOutboxDirs(outboxDir)
+      _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults = false)
+      - <- mustNotExist(OutboxSubdir.values.map(_.toString).map(subdir => outboxDir / subdir / deposit.name).toList)
       _ <- new SingleDepositProcessor(deposit,
+        getActiveMetadataBlocks.get,
         dansBagValidator,
         dataverse,
         autoPublish,
@@ -69,6 +72,7 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     for {
       _ <- initOutboxDirs(outboxDir)
       _ <- new InboxProcessor(new Inbox(inbox,
+        getActiveMetadataBlocks.get,
         dansBagValidator,
         dataverse,
         autoPublish,
@@ -88,18 +92,34 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     inboxWatcher.stop()
   }
 
-  private def initOutboxDirs(outboxDir: File): Try[Unit] = Try {
+  private def initOutboxDirs(outboxDir: File, requireAbsenceOfResults: Boolean = true): Try[Unit] = Try {
     trace(outboxDir)
     val subDirs = List(outboxDir / OutboxSubdir.PROCESSED.toString,
       outboxDir / OutboxSubdir.FAILED.toString,
       outboxDir / OutboxSubdir.REJECTED.toString)
 
-    if (outboxDir.isRegularFile)
-      throw OutboxDirIsRegularFileException(outboxDir)
-    if (subDirs.exists(d => d.isDirectory && d.nonEmpty))
-      throw ExistingResultsInOutboxException(outboxDir)
-
+    mustBeDirectory(outboxDir)
+    if (requireAbsenceOfResults) mustBeEmptyDirectories(subDirs)
     outboxDir.createDirectoryIfNotExists(createParents = true)
     subDirs.foreach(_.createDirectories())
+  }
+
+  private def mustBeEmptyDirectories(dirs: List[File]): Try[Unit] = Try {
+    dirs.find(d => d.isDirectory && d.nonEmpty).map(d => throw ExistingResultsInOutboxException(d))
+  }
+
+  private def mustBeDirectory(d: File): Try[Unit] = Try {
+    if (d.isRegularFile) throw OutboxDirIsRegularFileException(d)
+  }
+
+  private def mustNotExist(fs: List[File]): Try[Unit] = Try {
+    fs.find(_.exists).map(d => throw ExistingResultsInOutboxException(d))
+  }
+
+  private def getActiveMetadataBlocks: Try[List[String]] = {
+    for {
+      result <- dataverse.dataverse("root").listMetadataBocks()
+      blocks <- result.data
+    } yield blocks.map(_.name)
   }
 }
