@@ -34,7 +34,8 @@ class IndexSpec extends TestSupportFixture {
     publishAwaitUnlockMaxNumberOfRetries = 3,
     publishAwaitUnlockMillisecondsBetweenRetries = 500,
     narcisClassification = null,
-    isoToDataverseLanguage = null
+    isoToDataverseLanguage = null,
+    rapportIdToTerm = null,
   )
   private val clo = new CommandLineOptions(Array[String](), configuration) {
     // avoids System.exit() in case of invalid arguments or "--help"

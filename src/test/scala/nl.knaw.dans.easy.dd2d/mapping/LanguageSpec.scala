@@ -22,7 +22,10 @@ import nl.knaw.dans.easy.dd2d.{ Configuration, TestSupportFixture }
 import java.nio.file.Paths
 
 class LanguageSpec extends TestSupportFixture {
-  private val isoToDataverseLanguage = Configuration.loadIso639ToDataverseMap(File(Paths.get("src/main/assembly/dist/install/iso639-2-to-dv.csv").toAbsolutePath)).get
+  private val isoToDataverseLanguage = Configuration
+    .loadCsvToMap(File(Paths.get("src/main/assembly/dist/install/iso639-2-to-dv.csv").toAbsolutePath),
+      keyColumn = "ISO639-2",
+      valueColumn = "Dataverse-language").get
 
   "toCitationBlockLanguage" should "return English as the language name" in {
     val language = <dc:language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ISO639-2">eng</dc:language>

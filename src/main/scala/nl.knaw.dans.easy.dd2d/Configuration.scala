@@ -39,7 +39,8 @@ case class Configuration(version: String,
                          publishAwaitUnlockMaxNumberOfRetries: Int,
                          publishAwaitUnlockMillisecondsBetweenRetries: Int,
                          narcisClassification: Elem,
-                         isoToDataverseLanguage: Map[String, String]
+                         isoToDataverseLanguage: Map[String, String],
+                         rapportIdToTerm: Map[String, String]
                         )
 
 object Configuration {
@@ -55,17 +56,17 @@ object Configuration {
       load((cfgPath / "application.properties").toJava)
     }
 
-    val narcisClassificationPath = Seq(
-      root / "opt" / "dans.knaw.nl" / "dd-dans-deposit-to-dataverse" / "install" / "narcis_classification.xml",
-      home / "install" / "narcis_classification.xml")
-      .find(_.exists)
-      .getOrElse { throw new IllegalStateException("No Narcis Classification file found") }.canonicalPath
-    val narcisClassification = XML.loadFile(narcisClassificationPath)
-    val isoToDataverseLanguageMappingFile = Seq(
-      root / "opt" / "dans.knaw.nl" / "dd-dans-deposit-to-dataverse" / "install" / "iso639-2-to-dv.csv",
-      home / "install" / "iso639-2-to-dv.csv")
-      .find(_.exists)
-      .getOrElse { throw new IllegalStateException("No ISO639-2 to Dataverse language terms mapping file found") }
+    def findFileInInstall(name: String): File = {
+      Seq(
+        root / "opt" / "dans.knaw.nl" / "dd-dans-deposit-to-dataverse" / "install" / name,
+        home / "install" / name)
+        .find(_.exists)
+        .getOrElse { throw new IllegalStateException(s"File $name not find in APPHOME/install directory") }
+    }
+    val narcisClassificationFile = findFileInInstall("narcis_classification.xml")
+    val narcisClassification = XML.loadFile(narcisClassificationFile.toJava)
+    val isoToDataverseLanguageMappingFile = findFileInInstall("iso639-2-to-dv.csv")
+    val rapportIdToTermMappingFile = findFileInInstall("ABR-reports.csv")
 
     new Configuration(
       version = (home / "bin" / "version").contentAsString.stripLineEnd,
@@ -88,16 +89,17 @@ object Configuration {
       publishAwaitUnlockMaxNumberOfRetries = properties.getInt("dataverse.publish.await-unlock-max-retries"),
       publishAwaitUnlockMillisecondsBetweenRetries = properties.getInt("dataverse.publish.await-unlock-wait-time-ms"),
       narcisClassification,
-      isoToDataverseLanguage = loadIso639ToDataverseMap(isoToDataverseLanguageMappingFile).get
+      isoToDataverseLanguage = loadCsvToMap(isoToDataverseLanguageMappingFile, keyColumn = "ISO639-2", valueColumn = "Dataverse-language").get,
+      rapportIdToTerm = loadCsvToMap(rapportIdToTermMappingFile,keyColumn = "URI-suffix", valueColumn = "Term").get
     )
   }
 
-  def loadIso639ToDataverseMap(csvFile: File): Try[Map[String, String]] = {
+  def loadCsvToMap(csvFile: File, keyColumn: String, valueColumn: String): Try[Map[String, String]] = {
     import resource.managed
 
     def csvParse(csvParser: CSVParser): Map[String, String] = {
       csvParser.iterator().asScala
-        .map { r => (r.get("ISO639-2"), r.get("Dataverse-language")) }.toMap
+        .map { r => (r.get(keyColumn), r.get(valueColumn)) }.toMap
     }
 
     managed(CSVParser.parse(
