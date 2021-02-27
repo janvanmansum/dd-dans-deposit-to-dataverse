@@ -26,10 +26,17 @@ import scala.util.Try
 import scala.xml.{ Elem, Node, NodeSeq }
 
 /**
- * Maps DANS Dataset Metadata to Dataverse JSON.
+ * Creates dataset level metadata for Dataverse from information in the deposit.
+ *
+ * @param activeMetadataBlocks the metadata blocks that are active in the target dataverse
+ * @param narcisClassification NARCIS classification SKOS, currently not used
+ * @param isoToDataverseLanguage map from ISO639-2 to the Dataverse language terms
+ * @param reportIdToTerm map from Cultureel Erfgoed Report Type ID to the human readable term
  */
-// TODO: Rename if we also need to take elements from EMD
-class DepositToDataverseMapper(activeMetadataBlocks: List[String], narcisClassification: Elem, isoToDataverseLanguage: Map[String, String], reportIdToTerm: Map[String, String]) extends BlockCitation
+class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
+                                       narcisClassification: Elem,
+                                       isoToDataverseLanguage: Map[String, String],
+                                       reportIdToTerm: Map[String, String]) extends BlockCitation
   with BlockArchaeologySpecific
   with BlockTemporalAndSpatial
   with BlockRights

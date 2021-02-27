@@ -47,9 +47,9 @@ case class DepositIngestTask(deposit: Deposit,
                              isoToDataverseLanguage: Map[String, String],
                              repordIdToTerm: Map[String, String],
                              outboxDir: File) extends Task[Deposit] with DebugEnhancedLogging {
-  trace(deposit, instance)
+  trace(deposit)
 
-  private val mapper = new DepositToDataverseMapper(activeMetadataBlocks, narcisClassification, isoToDataverseLanguage, repordIdToTerm)
+  private val datasetMetadataMapper = new DepositToDvDatasetMetadataMapper(activeMetadataBlocks, narcisClassification, isoToDataverseLanguage, repordIdToTerm)
   private val bagDirPath = File(deposit.bagDir.path)
 
   override def run(): Try[Unit] = doRun()
@@ -73,7 +73,7 @@ case class DepositIngestTask(deposit: Deposit,
       datasetContacts <- createDatasetContacts(user.displayName, user.email)
       ddm <- deposit.tryDdm
       optAgreements <- deposit.tryOptAgreementsXml
-      dataverseDataset <- mapper.toDataverseDataset(ddm, optAgreements, datasetContacts, deposit.vaultMetadata)
+      dataverseDataset <- datasetMetadataMapper.toDataverseDataset(ddm, optAgreements, datasetContacts, deposit.vaultMetadata)
       isUpdate <- deposit.isUpdate
       _ = debug(s"isUpdate? = $isUpdate")
       editor = if (isUpdate) new DatasetUpdater(deposit, dataverseDataset.datasetVersion.metadataBlocks, instance)
