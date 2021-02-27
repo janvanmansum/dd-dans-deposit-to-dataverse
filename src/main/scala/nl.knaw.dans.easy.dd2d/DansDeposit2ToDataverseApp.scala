@@ -22,7 +22,7 @@ import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.InboxWatcher
 
 import java.io.PrintStream
-import scala.util.Try
+import scala.util.{ Success, Try }
 
 class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnhancedLogging {
   private implicit val resultOutput: PrintStream = Console.out
@@ -51,7 +51,8 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     } yield ()
   }
 
-  def importSingleDeposit(deposit: File, autoPublish: Boolean, outboxDir: File): Try[Unit] = {
+  def importSingleDeposit(deposit: File, outboxDir: File, autoPublish: Boolean): Try[Unit] = {
+    trace(deposit, outboxDir, autoPublish)
     for {
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults = false)
       - <- mustNotExist(OutboxSubdir.values.map(_.toString).map(subdir => outboxDir / subdir / deposit.name).toList)
@@ -68,9 +69,10 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     } yield ()
   }
 
-  def importDeposits(inbox: File, autoPublish: Boolean, outboxDir: File): Try[Unit] = {
+  def importDeposits(inbox: File, outboxDir: File, autoPublish: Boolean, requireAbsenceOfResults: Boolean = true): Try[Unit] = {
+    trace(inbox, outboxDir, autoPublish, requireAbsenceOfResults)
     for {
-      _ <- initOutboxDirs(outboxDir)
+      _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults)
       _ <- new InboxProcessor(new Inbox(inbox,
         getActiveMetadataBlocks.get,
         dansBagValidator,
@@ -85,23 +87,27 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
   }
 
   def start(): Try[Unit] = {
+    trace(())
     inboxWatcher.start(Some(new DepositSorter()))
   }
 
   def stop(): Try[Unit] = {
+    trace(())
     inboxWatcher.stop()
   }
 
-  private def initOutboxDirs(outboxDir: File, requireAbsenceOfResults: Boolean = true): Try[Unit] = Try {
-    trace(outboxDir)
+  private def initOutboxDirs(outboxDir: File, requireAbsenceOfResults: Boolean = true): Try[Unit] = {
+    trace(outboxDir, requireAbsenceOfResults)
     val subDirs = List(outboxDir / OutboxSubdir.PROCESSED.toString,
       outboxDir / OutboxSubdir.FAILED.toString,
       outboxDir / OutboxSubdir.REJECTED.toString)
 
-    mustBeDirectory(outboxDir)
-    if (requireAbsenceOfResults) mustBeEmptyDirectories(subDirs)
-    outboxDir.createDirectoryIfNotExists(createParents = true)
-    subDirs.foreach(_.createDirectories())
+    for {
+     _ <- mustBeDirectory(outboxDir)
+     _ <- if (requireAbsenceOfResults) mustBeEmptyDirectories(subDirs) else Success(())
+     _ = outboxDir.createDirectoryIfNotExists(createParents = true)
+     _ = subDirs.foreach(_.createDirectories())
+    } yield ()
   }
 
   private def mustBeEmptyDirectories(dirs: List[File]): Try[Unit] = Try {

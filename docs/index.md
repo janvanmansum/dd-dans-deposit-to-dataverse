@@ -6,8 +6,8 @@ SYNOPSIS
 --------
 
     dd-dans-deposit-to-dataverse run-service
-    dd-dans-deposit-to-dataverse import [-d,--draft] <inbox>
-    dd-dans-deposit-to-dataverse import [-d,--draft] -s <single-deposit>
+    dd-dans-deposit-to-dataverse import [-d,--draft] [-c,--continue] <inbox> <outbox>
+    dd-dans-deposit-to-dataverse import [-d,--draft] -s <single-deposit> <outbox>
 
 DESCRIPTION
 -----------
