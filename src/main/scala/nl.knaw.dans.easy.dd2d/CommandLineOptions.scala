@@ -61,7 +61,7 @@ class CommandLineOptions(args: Array[String], configuration: Configuration) exte
       descr = "Directory containing as sub-directories the deposit dirs to be imported or a single deposit")
     val outdir: ScallopOption[Path] = trailArg(name = "outdir", descr = "Directory where deposits are moved to after import.", required = true)
     validatePathExists(depositsInboxOrSingleDeposit)
-    mutuallyExclusive(singleDeposit, outdir)
+    mutuallyExclusive(singleDeposit, continue)
     footer(SUBCOMMAND_SEPARATOR)
   }
   addSubcommand(importCommand)

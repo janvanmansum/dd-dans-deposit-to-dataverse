@@ -22,17 +22,30 @@ import org.json4s.{ DefaultFormats, Formats }
 
 class FileElementSpec extends TestSupportFixture {
   "toFileMetadata" should "strip data/ prefix from path to get directoryLabel" in {
-    val filesXml =
+    val xml =
       <file filepath="data/this/is/the/directoryLabel/filename.txt">
       </file>
-    val result = FileElement.toFileMeta(filesXml, defaultRestrict = true)
-    result shouldBe(
-      FileMeta(
-        directoryLabel = Option("this/is/the/directoryLabel"),
-        label = Option("filename.txt"),
-        restrict = Option(true)
-      )
-
+    val result = FileElement.toFileMeta(xml, defaultRestrict = true)
+    result shouldBe FileMeta(
+      directoryLabel = Option("this/is/the/directoryLabel"),
+      label = Option("filename.txt"),
+      restrict = Option(true)
     )
   }
+
+  it should "represent key-value pairs in the description, for keys on the fixed keys list" in {
+    val xml =
+      <file filepath="data/test.txt">
+        <othmat_codebook>the code book</othmat_codebook>
+      </file>
+    val result = FileElement.toFileMeta(xml, defaultRestrict = true)
+    result shouldBe FileMeta(
+      directoryLabel = None,
+      label = Option("test.txt"),
+      description = Option("""othmat_codebook: "the code book""""),
+      restrict = Option(true))
+  }
+
+  // TODO: write more unit tests
+
 }

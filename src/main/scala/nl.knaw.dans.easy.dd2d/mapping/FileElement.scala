@@ -15,10 +15,10 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import java.nio.file.Paths
-
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
 
+import java.nio.file.Paths
+import scala.collection.mutable
 import scala.xml.Node
 
 object FileElement {
@@ -30,21 +30,60 @@ object FileElement {
   )
 
   def toFileMeta(node: Node, defaultRestrict: Boolean): FileMeta = {
+
     val pathAttr = node.attribute("filepath").flatMap(_.headOption).getOrElse { throw new RuntimeException("File node without a filepath attribute") }.text
     if (!pathAttr.startsWith("data/")) throw new RuntimeException(s"file outside data folder: $pathAttr")
     val fileName = Option(Paths.get(pathAttr.substring("data/".length)).getFileName).map(_.toString)
     val dirPath = Option(Paths.get(pathAttr.substring("data/".length)).getParent).map(_.toString)
-    val descr = (node \ "description").headOption.map(_.text)
-    val cats = (node \ "subject").map(_.text).toList
     val restr = (node \ "accessibleToRights").headOption.map(_.text).flatMap(accessibilityToRestrict.get).orElse(Some(defaultRestrict))
+    val keyValuePairs = getKeyValuePairs(node, fileName.get)
+    val descr = if (keyValuePairs.nonEmpty) Option(formatKeyValuePairs(keyValuePairs)) else None
 
     FileMeta(
       label = fileName,
       directoryLabel = dirPath,
       description = descr,
       restrict = restr,
-      // TODO: what do we use categories for, if anything?
-      //      categories = cats
     )
   }
+  def formatKeyValuePairs(pairs: Map[String, List[String]]): String = {
+    pairs.map { case (k, vs) => s"""$k: ${vs.mkString("\"", ",", "\"")}""" }.mkString("; ")
+  }
+
+  def getKeyValuePairs(node: Node, fileName: String): Map[String, List[String]] = {
+    val m = mutable.HashMap[String, mutable.ListBuffer[String]]()
+    val fixedKeys = List(
+      "hardware",
+      "original_OS",
+      "software",
+      "notes",
+      "case_quantity",
+      "file_category",
+      "data_format",
+      "file_name",
+      "description",
+      "othmat_codebook",
+      "data_collector",
+      "collection_date",
+      "time_period",
+      "geog_cover",
+      "geog_unit",
+      "local_georef",
+      "mapprojection",
+      "analytic_units",
+      "isFormatOf",
+      "requires",
+      "abstract")
+
+    fixedKeys.foreach { key =>
+      (node \ key).toList.foreach(n => m.getOrElseUpdate(key, mutable.ListBuffer[String]()).append(n.text))
+    }
+
+    (node \ "keyvaluepair").toList.foreach(n => m.getOrElseUpdate((n \ "key").head.text, mutable.ListBuffer[String]()).append((n \ "value").text))
+    (node \ "title").filterNot(_.text.toLowerCase == fileName.toLowerCase).foreach(n => m.getOrElseUpdate("title", mutable.ListBuffer[String]()).append(n.text))
+
+    m.map { case (k, v) => (k, v.toList) }.toMap
+  }
+
+
 }
