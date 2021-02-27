@@ -41,6 +41,7 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
       configuration.publishAwaitUnlockMillisecondsBetweenRetries,
       configuration.narcisClassification,
       configuration.isoToDataverseLanguage,
+      configuration.reportIdToTerm,
       configuration.outboxDir))
   }
 
@@ -65,6 +66,7 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
         configuration.publishAwaitUnlockMillisecondsBetweenRetries,
         configuration.narcisClassification,
         configuration.isoToDataverseLanguage,
+        configuration.reportIdToTerm,
         outboxDir).process()
     } yield ()
   }
@@ -82,6 +84,7 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
         configuration.publishAwaitUnlockMillisecondsBetweenRetries,
         configuration.narcisClassification,
         configuration.isoToDataverseLanguage,
+        configuration.reportIdToTerm,
         outboxDir)).process()
     } yield ()
   }

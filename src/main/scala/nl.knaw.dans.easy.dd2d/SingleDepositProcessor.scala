@@ -33,6 +33,7 @@ class SingleDepositProcessor(deposit: File,
                              publishAwaitUnlockMillisecondsBetweenRetries: Int,
                              narcisClassification: Elem,
                              isoToDataverseLanage: Map[String, String],
+                             reportIdToTerm: Map[String, String],
                              outboxDir: File) {
   def process(): Try[Unit] = Try {
     val ingestTasks = new PassiveTaskQueue[Deposit]()
@@ -47,6 +48,7 @@ class SingleDepositProcessor(deposit: File,
         publishAwaitUnlockMillisecondsBetweenRetries,
         narcisClassification,
         isoToDataverseLanage,
+        reportIdToTerm,
         outboxDir))
     ingestTasks.process()
   }

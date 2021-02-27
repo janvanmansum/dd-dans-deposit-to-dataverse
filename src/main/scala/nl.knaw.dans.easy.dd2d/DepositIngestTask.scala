@@ -45,10 +45,11 @@ case class DepositIngestTask(deposit: Deposit,
                              publishAwaitUnlockMillisecondsBetweenRetries: Int,
                              narcisClassification: Elem,
                              isoToDataverseLanguage: Map[String, String],
+                             repordIdToTerm: Map[String, String],
                              outboxDir: File) extends Task[Deposit] with DebugEnhancedLogging {
   trace(deposit, instance)
 
-  private val mapper = new DepositToDataverseMapper(activeMetadataBlocks, narcisClassification, isoToDataverseLanguage)
+  private val mapper = new DepositToDataverseMapper(activeMetadataBlocks, narcisClassification, isoToDataverseLanguage, repordIdToTerm)
   private val bagDirPath = File(deposit.bagDir.path)
 
   override def run(): Try[Unit] = doRun()

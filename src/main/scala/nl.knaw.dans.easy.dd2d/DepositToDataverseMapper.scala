@@ -29,7 +29,7 @@ import scala.xml.{ Elem, Node, NodeSeq }
  * Maps DANS Dataset Metadata to Dataverse JSON.
  */
 // TODO: Rename if we also need to take elements from EMD
-class DepositToDataverseMapper(activeMetadataBlocks: List[String], narcisClassification: Elem, isoToDataverseLanguage: Map[String, String]) extends BlockCitation
+class DepositToDataverseMapper(activeMetadataBlocks: List[String], narcisClassification: Elem, isoToDataverseLanguage: Map[String, String], reportIdToTerm: Map[String, String]) extends BlockCitation
   with BlockArchaeologySpecific
   with BlockTemporalAndSpatial
   with BlockRights
@@ -98,7 +98,7 @@ class DepositToDataverseMapper(activeMetadataBlocks: List[String], narcisClassif
 
     if (activeMetadataBlocks.contains("dansArchaeologyMetadata")) {
       addPrimitiveFieldMultipleValues(archaeologySpecificFields, ARCHIS_ZAAK_ID, ddm \ "dcmiMetadata" \ "identifier", IsFormatOf toArchisZaakId)
-      addCompoundFieldMultipleValues(archaeologySpecificFields, ABR_RAPPORT_TYPE, (ddm \ "dcmiMetadata" \ "reportNumber").filter(AbrReportType isAbrReportType), AbrReportType toAbrRapportType)
+      addCompoundFieldMultipleValues(archaeologySpecificFields, ABR_RAPPORT_TYPE, (ddm \ "dcmiMetadata" \ "reportNumber").filter(AbrReportType isAbrReportType), AbrReportType toAbrRapportType(reportIdToTerm))
       addPrimitiveFieldMultipleValues(archaeologySpecificFields, ABR_RAPPORT_NUMMER, ddm \ "dcmiMetadata" \ "reportNumber")
       addCompoundFieldMultipleValues(archaeologySpecificFields, ABR_VERWERVINGSWIJZE, (ddm \ "dcmiMetadata" \ "acquisitionMethod").filter(AbrAcquisitionMethod isAbrVerwervingswijze), AbrAcquisitionMethod toVerwervingswijze)
       addCompoundFieldMultipleValues(archaeologySpecificFields, ABR_COMPLEX, (ddm \ "dcmiMetadata" \ "subject").filter(SubjectAbr isAbrComplex), SubjectAbr toAbrComplex)

@@ -39,6 +39,7 @@ class Inbox(dir: File,
             publishAwaitUnlockMillisecondsBetweenRetries: Int,
             narcisClassification: Elem,
             isoToDataverseLanage: Map[String, String],
+            reportIdToTerm: Map[String, String],
             outboxDir: File) extends AbstractInbox[Deposit](dir) with DebugEnhancedLogging {
   override def createTask(f: File): Option[DepositIngestTask] = {
     try {
@@ -52,6 +53,7 @@ class Inbox(dir: File,
         publishAwaitUnlockMillisecondsBetweenRetries,
         narcisClassification,
         isoToDataverseLanage,
+        reportIdToTerm,
         outboxDir: File))
     }
     catch {

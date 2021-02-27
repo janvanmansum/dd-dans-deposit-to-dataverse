@@ -40,7 +40,7 @@ case class Configuration(version: String,
                          publishAwaitUnlockMillisecondsBetweenRetries: Int,
                          narcisClassification: Elem,
                          isoToDataverseLanguage: Map[String, String],
-                         rapportIdToTerm: Map[String, String]
+                         reportIdToTerm: Map[String, String]
                         )
 
 object Configuration {
@@ -90,7 +90,7 @@ object Configuration {
       publishAwaitUnlockMillisecondsBetweenRetries = properties.getInt("dataverse.publish.await-unlock-wait-time-ms"),
       narcisClassification,
       isoToDataverseLanguage = loadCsvToMap(isoToDataverseLanguageMappingFile, keyColumn = "ISO639-2", valueColumn = "Dataverse-language").get,
-      rapportIdToTerm = loadCsvToMap(rapportIdToTermMappingFile,keyColumn = "URI-suffix", valueColumn = "Term").get
+      reportIdToTerm = loadCsvToMap(rapportIdToTermMappingFile,keyColumn = "URI-suffix", valueColumn = "Term").get
     )
   }
 

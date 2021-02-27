@@ -17,16 +17,19 @@ package nl.knaw.dans.easy.dd2d.mapping
 
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
+import java.net.URI
+import java.nio.file.Paths
 import scala.xml.Node
 
 object AbrReportType extends BlockArchaeologySpecific with AbrScheme with DebugEnhancedLogging {
 
-  def toAbrRapportType(node: Node): JsonObject = {
+  def toAbrRapportType(reportIdToTerm: Map[String, String])(node: Node): JsonObject = {
     // TODO: also take attribute namespace into account (should be ddm)
     val optSubjectScheme = node.attribute("subjectScheme").flatMap(_.headOption).map(_.text).doIfNone(() => logger.error("Missing subjectScheme attribute on ddm:reportNumber node"))
     val optSchemeUri = node.attribute("schemeURI").flatMap(_.headOption).map(_.text).doIfNone(() => logger.error("Missing schemeURI attribute on ddm:reportNumber node"))
     val optValueUri = node.attribute("valueURI").flatMap(_.headOption).map(_.text).doIfNone(() => logger.error("Missing valueURI attribute on ddm:reportNumber node"))
-    val term = node.text
+    val valueId = getIdFormValueUri(new URI(optValueUri.get))
+    val term = reportIdToTerm.getOrElse(valueId, node.text.trim)
 
     val m = FieldMap()
     m.addPrimitiveField(ABR_RAPPORT_TYPE_VOCABULARY, optSubjectScheme.get)
@@ -35,6 +38,11 @@ object AbrReportType extends BlockArchaeologySpecific with AbrScheme with DebugE
     m.addPrimitiveField(ABR_RAPPORT_TYPE_TERM_URI, optValueUri.get)
     m.toJsonObject
   }
+
+  def getIdFormValueUri(uri: URI): String = {
+    Paths.get(uri.getPath).getFileName.toString
+  }
+
 
   /**
    *  Predicate to select only the elements that can be processed by [[AbrReportType.toAbrRapportType]].
