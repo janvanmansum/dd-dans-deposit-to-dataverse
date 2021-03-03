@@ -60,7 +60,6 @@ object FileElement {
       "case_quantity",
       "file_category",
       "data_format",
-      "file_name",
       "description",
       "othmat_codebook",
       "data_collector",

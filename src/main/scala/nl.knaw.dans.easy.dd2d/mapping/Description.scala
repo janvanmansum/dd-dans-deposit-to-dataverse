@@ -15,8 +15,6 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.mapping.DateTypeElement.labelToDateType
-
 import scala.xml.Node
 
 object Description extends BlockCitation {
@@ -27,10 +25,9 @@ object Description extends BlockCitation {
     "modified" -> "Modified",
     "dateAccepted" -> "Date Accepted",
     "dateCopyrighted" -> "Date Copyrighted",
+    "dateSubmitted" -> "Date Submitted",
     "coverage" -> "Coverage"
   )
-
-
 
   def toDescriptionValueObject(node: Node): JsonObject = {
     val m = FieldMap()
@@ -42,8 +39,7 @@ object Description extends BlockCitation {
   def toPrefixedDescription(node: Node): JsonObject = {
     val prefix = labelToPrefix.getOrElse(node.label, node.label)
     val m = FieldMap()
-    m.addPrimitiveField(DESCRIPTION_VALUE, s"$prefix: ${node.text}")
+    m.addPrimitiveField(DESCRIPTION_VALUE, s"$prefix: ${ node.text }")
     m.toJsonObject
   }
-
 }
