@@ -28,37 +28,37 @@ class LanguageSpec extends TestSupportFixture {
       valueColumn = "Dataverse-language").get
 
   "toCitationBlockLanguage" should "return English as the language name" in {
-    val language = <dc:language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ISO639-2">eng</dc:language>
+    val language = <dc:language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ISO639-2" code="eng">Not used</dc:language>
     toCitationBlockLanguage(isoToDataverseLanguage)(language) shouldBe Some("English")
   }
 
   it should "return Dutch as the language name" in {
-    val language = <dc:language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ISO639-2">nld</dc:language>
+    val language = <dc:language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ISO639-2" code="nld">Not used</dc:language>
     toCitationBlockLanguage(isoToDataverseLanguage)(language) shouldBe Some("Dutch")
   }
 
   it should "return French as the language name" in {
-    val language = <dc:language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ISO639-2">fre</dc:language>
+    val language = <dc:language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ISO639-2" code="fre">Not used</dc:language>
     toCitationBlockLanguage(isoToDataverseLanguage)(language) shouldBe Some("French")
   }
 
   it should "return German as the language name" in {
-    val language = <dc:language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ISO639-2">deu</dc:language>
+    val language = <dc:language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ISO639-2" code="deu">Not used</dc:language>
     toCitationBlockLanguage(isoToDataverseLanguage)(language) shouldBe Some("German")
   }
 
   it should "return None when type attribute is not prefixed" in {
-    val language = <dc:language type="ISO639-2">eng</dc:language>
+    val language = <dc:language type="ISO639-2" code="eng">Not used</dc:language>
     toCitationBlockLanguage(isoToDataverseLanguage)(language) shouldBe None
   }
 
   it should "return None when prefix in type attribute is not the correct one" in {
-    val language = <dc:language xmlns:xsi="http://some.thing.else" xsi:type="ISO639-2">eng</dc:language>
+    val language = <dc:language xmlns:xsi="http://some.thing.else" xsi:type="ISO639-2" code="eng">Not used</dc:language>
     toCitationBlockLanguage(isoToDataverseLanguage)(language) shouldBe None
   }
 
   it should "map languages with diacritical marks correctly" in {
-    val language = <dc:language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="something:ISO639-2">san</dc:language>
+    val language = <dc:language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="something:ISO639-2" code="san">Not used</dc:language>
     val `Latin Small Letter M with Dot Above` = "\u1e41" // https://unicode-table.com/en/1E41/
     val `Latin Small Letter R with Dot Below` = "\u1e5b" // https://unicode-table.com/en/1E5B/
 
@@ -67,7 +67,7 @@ class LanguageSpec extends TestSupportFixture {
   }
 
   it should "also accept the encodingScheme attribute to indicate ISO639-2" in {
-    val language = <dc:language encodingScheme="ISO639-2">deu</dc:language>
+    val language = <dc:language encodingScheme="ISO639-2" code="deu">Not used</dc:language>
     toCitationBlockLanguage(isoToDataverseLanguage)(language) shouldBe Some("German")
   }
 }
