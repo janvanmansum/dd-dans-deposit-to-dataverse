@@ -25,7 +25,6 @@ object Language extends BlockCitation with DebugEnhancedLogging {
   }
 
   def toCitationBlockLanguage(isoToDataverse: Map[String, String])(node: Node): Option[String] = {
-    if (isISOLanguage(node)) isoToDataverse.get(node.text)
-    else Option.empty[String]
+    node.attribute("code").flatMap(_.headOption.flatMap(a => isoToDataverse.get(a.text)))
   }
 }
