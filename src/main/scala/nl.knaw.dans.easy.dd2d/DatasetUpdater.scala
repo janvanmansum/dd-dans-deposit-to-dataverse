@@ -70,7 +70,7 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
       optSha1Manifest = bag.getPayLoadManifests.asScala.find(_.getAlgorithm == StandardSupportedAlgorithms.SHA1)
       _ = if (optSha1Manifest.isEmpty) throw new IllegalArgumentException("Deposit bag does not have SHA-1 payload manifest")
       sha1ToFilePath = optSha1Manifest.get.getFileToChecksumMap.asScala.map { case (p, c) => (c, deposit.bagDir.path relativize p) }
-      sha1ToFileInfo = sha1ToFilePath.map { case (sha1, path) => (sha1 -> pathToFileInfo(path)) }.toMap
+      sha1ToFileInfo = sha1ToFilePath.map { case (sha1, path) => (sha1 -> pathToFileInfo(path)) }.toMap // TODO: Note this will erase duplicate files in a dataset
     } yield sha1ToFileInfo
   }
 

@@ -61,28 +61,7 @@ abstract class DatasetEditor(deposit: Deposit, instance: DataverseInstance) exte
   }
 
 
-  protected def addFiles2(persistentId: String, files: List[FileInfo2], prestagedFiles: Map[String, DataFile]): Try[Unit] = {
-    trace(persistentId, files)
-    import scala.language.postfixOps
-    trace(persistentId)
-    files
-      .map(f => {
-        debug(s"Adding file, directoryLabel = ${ f.metadata.directoryLabel }, label = ${ f.metadata.label }")
-        for {
-          fm <- addFile(persistentId, f)
-          _ <- instance.file(fm.dataFile.get.id) // TODO: check if dataFile is defined
-            .updateMetadata(f.metadata)
-        } yield ()
-      }).collectResults.map(_ => ())
-  }
 
-  private def addFile(datasetId: String, fileInfo: FileInfo2): Try[FileMeta] = {
-    if (fileInfo.prestagedFile.isDefined) {}// pre-staged
-    else {} // not pre-stage
-    // checksumToPrestagedFile.get(fileInfo.sha1Sum).map -> "add prestaged"
-    // orElse -> "add data"
-    ???
-  }
 
 
   /**
