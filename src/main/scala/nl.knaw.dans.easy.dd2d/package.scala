@@ -17,6 +17,7 @@ package nl.knaw.dans.easy
 
 import better.files.File
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
+import nl.knaw.dans.lib.dataverse.model.file.prestaged
 import org.apache.commons.lang.StringUtils
 
 import scala.collection.mutable
@@ -43,6 +44,8 @@ package object dd2d {
   }
 
   case class FileInfo(file: File, metadata: FileMeta)
+
+  case class FileInfo2(file: Option[File], prestagedFile: Option[prestaged.DataFile], metadata: FileMeta)
 
   case class RejectedDepositException(deposit: Deposit, msg: String, cause: Throwable = null)
     extends Exception(s"Rejected ${ deposit.dir }: $msg", cause)

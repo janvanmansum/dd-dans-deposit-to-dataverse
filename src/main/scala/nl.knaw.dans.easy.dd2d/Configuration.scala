@@ -17,6 +17,7 @@ package nl.knaw.dans.easy.dd2d
 
 import better.files.File
 import better.files.File.root
+import nl.knaw.dans.easy.dd2d.migrationinfo.MigrationInfoConfig
 import nl.knaw.dans.lib.dataverse.DataverseInstanceConfig
 import org.apache.commons.configuration.PropertiesConfiguration
 import org.apache.commons.csv.{ CSVFormat, CSVParser }
@@ -35,6 +36,7 @@ case class Configuration(version: String,
                          validatorConnectionTimeoutMs: Int,
                          validatorReadTimeoutMs: Int,
                          dataverse: DataverseInstanceConfig,
+                         migrationInfo: MigrationInfoConfig,
                          autoPublish: Boolean,
                          publishAwaitUnlockMaxNumberOfRetries: Int,
                          publishAwaitUnlockMillisecondsBetweenRetries: Int,
@@ -63,6 +65,7 @@ object Configuration {
         .find(_.exists)
         .getOrElse { throw new IllegalStateException(s"File $name not find in APPHOME/install directory") }
     }
+
     val narcisClassificationFile = findFileInInstall("narcis_classification.xml")
     val narcisClassification = XML.loadFile(narcisClassificationFile.toJava)
     val isoToDataverseLanguageMappingFile = findFileInInstall("iso639-2-to-dv.csv")
@@ -78,21 +81,31 @@ object Configuration {
       dataverse = DataverseInstanceConfig(
         connectionTimeout = properties.getInt("dataverse.connection-timeout-ms"),
         readTimeout = properties.getInt("dataverse.read-timeout-ms"),
-        baseUrl = new URI(properties.getString("dataverse.base-url")),
+        baseUrl = new URI(appendSlash(properties.getString("dataverse.base-url"))),
         apiToken = properties.getString("dataverse.api-key"),
         apiVersion = properties.getString("dataverse.api-version"),
         unblockKey = Option(properties.getString("dataverse.admin-api-unblock-key")),
         awaitLockStateMaxNumberOfRetries = Option(properties.getInt("dataverse.await-unlock-max-retries")).getOrElse(10),
         awaitLockStateMillisecondsBetweenRetries = Option(properties.getInt("dataverse.await-unlock-wait-time-ms")).getOrElse(1000),
       ),
+      migrationInfo = MigrationInfoConfig(
+        baseUrl = new URI(appendSlash(properties.getString("migration-info.base-url"))),
+        connectionTimeout = properties.getInt("migration-info.connection-timeout-ms"),
+        readTimeout = properties.getInt("migration-info.read-timeout-ms")),
       autoPublish = properties.getString("deposits.auto-publish").toBoolean,
       publishAwaitUnlockMaxNumberOfRetries = properties.getInt("dataverse.publish.await-unlock-max-retries"),
       publishAwaitUnlockMillisecondsBetweenRetries = properties.getInt("dataverse.publish.await-unlock-wait-time-ms"),
       narcisClassification,
       isoToDataverseLanguage = loadCsvToMap(isoToDataverseLanguageMappingFile, keyColumn = "ISO639-2", valueColumn = "Dataverse-language").get,
-      reportIdToTerm = loadCsvToMap(rapportIdToTermMappingFile,keyColumn = "URI-suffix", valueColumn = "Term").get
+      reportIdToTerm = loadCsvToMap(rapportIdToTermMappingFile, keyColumn = "URI-suffix", valueColumn = "Term").get
     )
   }
+
+  private def appendSlash(url: String): String = {
+    if (url.endsWith("/")) url
+    else url + "/"
+  }
+
 
   def loadCsvToMap(csvFile: File, keyColumn: String, valueColumn: String): Try[Map[String, String]] = {
     import resource.managed

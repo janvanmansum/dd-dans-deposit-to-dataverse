@@ -34,7 +34,8 @@ class DatasetCreator(deposit: Deposit, dataverseDataset: Dataset, instance: Data
                   else instance.dataverse("root").createDataset(dataverseDataset)
       persistentId <- getPersistentId(response)
       fileInfos <- deposit.getPathToFileInfo
-      _ <- addFiles(persistentId, fileInfos.values.toList)
+      // prestagedFiles <- migrationInfo.getPrestagedFilesFor(deposit.doi)
+      _ <- addFiles(persistentId, fileInfos.values.toList) // , prestagedFiles)
     } yield persistentId
   }
 

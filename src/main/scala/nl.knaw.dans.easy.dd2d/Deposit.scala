@@ -106,8 +106,28 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
   }
 
   def toFileInfos(node: Node, defaultRestrict: Boolean): Try[Map[Path, FileInfo]] = Try {
-    (node \ "file").map(n => (getFilePath(n), FileInfo(getFile(n), FileElement.toFileMeta(n, defaultRestrict)))).toMap
+    (node \ "file").map(n => (getFilePath(n), FileInfo(getFile(n), FileElement.toFileMeta(n, defaultRestrict)))).toMap // Add checksum
   }
+
+
+//  def getPathToFileInfo2(prestagedFiles: List[prestaged.DataFile]): Try[Map[Path, FileInfo2]] = {
+//    import scala.language.postfixOps
+//
+//    for {
+//      filesXml <- tryFilesXml
+//      ddm <- tryDdm
+//      defaultRestrict = (ddm \ "profile" \ "accessRights").headOption.forall(AccessRights toDefaultRestrict)
+//      files <- toFileInfos2(filesXml, defaultRestrict)
+//    } yield files
+//
+//  }
+//  def toFileInfos2(node: Node, defaultRestrict: Boolean): Try[Map[Path, FileInfo2]] = Try {
+//    (node \ "file").map(n => (getFilePath(n), FileInfo2(Option(getFile(n)), None , FileElement.toFileMeta(n, defaultRestrict)))).toMap
+//  }
+
+
+
+
 
   private def getFilePath(node: Node): Path = {
     Paths.get(node.attribute("filepath").flatMap(_.headOption).getOrElse { throw new RuntimeException("File node without a filepath attribute") }.text)
