@@ -37,20 +37,42 @@ abstract class DatasetEditor(deposit: Deposit, instance: DataverseInstance) exte
    */
   def performEdit(): Try[PersistendId]
 
-  protected def addFiles(persistentId: String, files: List[FileInfo]): Try[Unit] = {
+  protected def addFiles(persistentId: String, files: List[FileInfo], checksumToPrestagedFile: Map[String, DataFile] = Map.empty): Try[Unit] = {
     trace(persistentId, files)
     import scala.language.postfixOps
     trace(persistentId)
-    for {
-      _ <- files
-        .map(f => {
-          debug(s"Adding file, directoryLabel = ${f.metadata.directoryLabel}, label = ${f.metadata.label}")
-          instance.dataset(persistentId)
-            .addFile(Option(f.file), Option(f.metadata))
-            .map(_ => instance.dataset(persistentId).awaitUnlock())
-        })
-        .collectResults
-    } yield ()
+    files
+      .map(f => {
+        debug(s"Adding file, SHA-1 = ${ f.checksum }, directoryLabel = ${ f.metadata.directoryLabel }, label = ${ f.metadata.label }")
+        for {
+          id <- addFile(persistentId, f, checksumToPrestagedFile)
+          _ <- instance.dataset(persistentId).awaitUnlock()
+          _ <- updateFileMetadata(id, f)
+        } yield ()
+      })
+      .collectResults.map(_ => ())
+  }
+
+  private def addFile(doi: String, fileInfo: FileInfo, checksumToPrestagedFile: Map[String, DataFile]): Try[Int] = {
+    val result =
+      for {
+        r <-
+          if (checksumToPrestagedFile.contains(fileInfo.checksum)) {
+            debug(s"Adding prestaged file: $fileInfo")
+            instance.dataset(doi).registerPrestagedFile(checksumToPrestagedFile(fileInfo.checksum))
+          }
+          else {
+            debug(s"Uploading file: $fileInfo")
+            instance.dataset(doi).addFile(Option(fileInfo.file))
+          }
+        files <- r.data
+        id = files.files.headOption.flatMap(_.dataFile.map(_.id))
+      } yield id
+    result.map(_.getOrElse(throw new IllegalStateException("Could not get DataFile ID from response")))
+  }
+
+  private def updateFileMetadata(id: Int, fileInfo: FileInfo): Try[Unit] = {
+    instance.file(id).updateMetadata(fileInfo.metadata).map(_ => ())
   }
 
   protected def deleteFiles(databaseIds: List[DatabaseId]): Try[Unit] = {
@@ -59,10 +81,6 @@ abstract class DatasetEditor(deposit: Deposit, instance: DataverseInstance) exte
       instance.sword().deleteFile(id).map(_ => dataset.awaitUnlock())
     }).collectResults.map(_ => ())
   }
-
-
-
-
 
   /**
    * Replace files indicated by the checksum pairs. The first member of each pair is the old SHA-1 hash and the second the new SHA-1. The old hash is used

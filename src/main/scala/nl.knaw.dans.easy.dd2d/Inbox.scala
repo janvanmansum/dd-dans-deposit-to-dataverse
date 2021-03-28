@@ -17,6 +17,7 @@ package nl.knaw.dans.easy.dd2d
 
 import better.files.File
 import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
+import nl.knaw.dans.easy.dd2d.migrationinfo.MigrationInfo
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.AbstractInbox
@@ -34,7 +35,9 @@ import scala.xml.Elem
 class Inbox(dir: File,
             activeMetadataBlocks: List[String],
             dansBagValidator: DansBagValidator,
-            dataverse: DataverseInstance, autoPublish: Boolean = true,
+            dataverse: DataverseInstance,
+            migrationInfo: Option[MigrationInfo],
+            autoPublish: Boolean = true,
             publishAwaitUnlockMaxNumberOfRetries: Int,
             publishAwaitUnlockMillisecondsBetweenRetries: Int,
             narcisClassification: Elem,
@@ -48,6 +51,7 @@ class Inbox(dir: File,
         activeMetadataBlocks,
         dansBagValidator,
         dataverse,
+        migrationInfo,
         autoPublish,
         publishAwaitUnlockMaxNumberOfRetries,
         publishAwaitUnlockMillisecondsBetweenRetries,

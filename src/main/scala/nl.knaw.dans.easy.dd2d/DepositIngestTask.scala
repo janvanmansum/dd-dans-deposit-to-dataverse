@@ -19,6 +19,7 @@ import better.files.File
 import nl.knaw.dans.easy.dd2d.OutboxSubdir.{ FAILED, OutboxSubdir, PROCESSED, REJECTED }
 import nl.knaw.dans.easy.dd2d.dansbag.{ DansBagValidationResult, DansBagValidator }
 import nl.knaw.dans.easy.dd2d.mapping.JsonObject
+import nl.knaw.dans.easy.dd2d.migrationinfo.MigrationInfo
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.dataverse.model.dataset.{ PrimitiveSingleValueField, UpdateType, toFieldMap }
 import nl.knaw.dans.lib.error._
@@ -34,12 +35,13 @@ import scala.xml.Elem
  * Checks one deposit and then ingests it into Dataverse.
  *
  * @param deposit  the deposit to ingest
- * @param instance the Dataverse instance to ingest in
+ * @param dataverse the Dataverse instance to ingest in
  */
 case class DepositIngestTask(deposit: Deposit,
                              activeMetadataBlocks: List[String],
                              dansBagValidator: DansBagValidator,
-                             instance: DataverseInstance,
+                             dataverse: DataverseInstance,
+                             migrationInfo: Option[MigrationInfo] = Option.empty,
                              publish: Boolean = true,
                              publishAwaitUnlockMaxNumberOfRetries: Int,
                              publishAwaitUnlockMillisecondsBetweenRetries: Int,
@@ -68,7 +70,7 @@ case class DepositIngestTask(deposit: Deposit,
       _ <- rejectIfInvalid(validationResult)
 
       // TODO: base contact on owner of deposit
-      response <- instance.admin().getSingleUser("dataverseAdmin")
+      response <- dataverse.admin().getSingleUser("dataverseAdmin")
       user <- response.data
       datasetContacts <- createDatasetContacts(user.displayName, user.email)
       ddm <- deposit.tryDdm
@@ -76,8 +78,8 @@ case class DepositIngestTask(deposit: Deposit,
       dataverseDataset <- datasetMetadataMapper.toDataverseDataset(ddm, optAgreements, datasetContacts, deposit.vaultMetadata)
       isUpdate <- deposit.isUpdate
       _ = debug(s"isUpdate? = $isUpdate")
-      editor = if (isUpdate) new DatasetUpdater(deposit, dataverseDataset.datasetVersion.metadataBlocks, instance)
-               else new DatasetCreator(deposit, dataverseDataset, instance)
+      editor = if (isUpdate) new DatasetUpdater(deposit, dataverseDataset.datasetVersion.metadataBlocks, dataverse)
+               else new DatasetCreator(deposit, dataverseDataset, dataverse, migrationInfo)
       persistentId <- editor.performEdit()
       _ <- if (publish) publishDataset(persistentId)
            else keepOnDraft()
@@ -116,8 +118,8 @@ case class DepositIngestTask(deposit: Deposit,
   private def publishDataset(persistentId: String): Try[Unit] = {
     debug("Publishing dataset")
     for {
-      _ <- instance.dataset(persistentId).publish(UpdateType.major).map(_ => ())
-      _ <- instance.dataset(persistentId).awaitUnlock(
+      _ <- dataverse.dataset(persistentId).publish(UpdateType.major).map(_ => ())
+      _ <- dataverse.dataset(persistentId).awaitUnlock(
         maxNumberOfRetries = publishAwaitUnlockMaxNumberOfRetries,
         waitTimeInMilliseconds = publishAwaitUnlockMillisecondsBetweenRetries)
     } yield ()

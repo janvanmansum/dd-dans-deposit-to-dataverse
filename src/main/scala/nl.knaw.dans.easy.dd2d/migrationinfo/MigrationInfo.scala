@@ -28,7 +28,7 @@ class MigrationInfo(config: MigrationInfoConfig) extends DebugEnhancedLogging {
   private implicit val jsonFormats: Formats = DefaultFormats
 
   def checkConnection(): Try[Unit] = {
-    logger.info(s"Checking if migration-info service can be reached at ${config.baseUrl.toASCIIString}")
+    logger.info(s"Checking if migration-info service can be reached at ${ config.baseUrl.toASCIIString }")
     Try {
       Http(config.baseUrl.toASCIIString)
         .timeout(connTimeoutMs = config.connectionTimeout, readTimeoutMs = config.readTimeout)
@@ -37,19 +37,28 @@ class MigrationInfo(config: MigrationInfoConfig) extends DebugEnhancedLogging {
       case r if r.code == 200 =>
         logger.info("OK: migration-info service is reachable.")
         ()
-      case r => throw new RuntimeException(s"Connection to migration-info service could not be established. Status: ${r.code}")
+      case r => throw new RuntimeException(s"Connection to migration-info service could not be established. Status: ${ r.code }")
     }
   }
 
-  def getDataFilesForDoi(doi: String): Try[List[DataFile]] = Try {
+  def getPrestagedDataFilesFor(doi: String): Try[Map[String, DataFile]] = {
     trace(doi)
-    val response = Http((new URI(config.baseUrl + "/") resolve "datasets/:persistentId/datafiles").toASCIIString)
-      .param("persistentId", doi)
-      .timeout(connTimeoutMs = config.connectionTimeout, readTimeoutMs = config.readTimeout)
-      .asString
-    // TODO: Handle: Not Found
-
-    val json = JsonMethods.parse(response.body)
-    json.extract[List[DataFile]]
+    val url = (new URI(config.baseUrl + "/") resolve s"datasets/:persistentId/datafiles").toASCIIString
+    debug(s"Retrieving pre-staged files for $doi from $url")
+    Try {
+      Http(url)
+        .params("persistentId" -> s"doi:$doi")
+        .timeout(connTimeoutMs = config.connectionTimeout, readTimeoutMs = config.readTimeout)
+        .asString
+    } map {
+      case r if r.code == 200 =>
+        val json = JsonMethods.parse(r.body)
+        val datafiles = json.extract[List[DataFile]]
+        datafiles.map(d => d.checksum.`@value` -> d).toMap
+      case r if r.code == 404 =>
+        logger.warn(s"No pre-staged files could be found for dataset $doi. Returning empty result.")
+        Map.empty
+      case r => throw new RuntimeException(s"Could not retrieve pre-staged files. Status: ${r.code}, Message: ${r.body}")
+    }
   }
 }
