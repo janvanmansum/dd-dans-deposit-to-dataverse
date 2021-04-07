@@ -54,7 +54,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
 
     if (activeMetadataBlocks.contains("citation")) {
       val titles = ddm \ "profile" \ "title"
-      if (titles.isEmpty) throw MissingRequiredFieldException("title")
+      checkRequiredField(TITLE, titles)
 
       val alternativeTitles = (ddm \ "dcmiMetadata" \ "title") ++ (ddm \ "dcmiMetadata" \ "alternative")
 
@@ -82,7 +82,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       checkRequiredField(SUBJECT, ddm \ "profile" \ "audience")
       addCvFieldMultipleValues(citationFields, SUBJECT, ddm \ "profile" \ "audience", Audience toCitationBlockSubject)
       addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "subject").filter(Subject hasNoCvAttributes), Subject toKeyWordValue)
-
+      addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "language").filterNot(Language isISOLanguage), Language toKeywordValue)
       addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(isoToDataverseLanguage))
       addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
       addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, ddm \ "dcmiMetadata" \ "contributorDetails" \ "author", DcxDaiAuthor toContributorValueObject)
