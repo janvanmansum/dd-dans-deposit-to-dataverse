@@ -46,4 +46,36 @@ class IdentifierSpec extends TestSupportFixture with BlockCitation {
     Identifier canBeMappedToOtherId <identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="id-type:DOI">10.5072/test</identifier> shouldBe false
   }
 
+  "isRelatedPublication" should "return true of xsi:type is id-type ISBN" in {
+    Identifier isRelatedPublication <identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="id-type:ISBN">12345</identifier> shouldBe true
+  }
+
+  it should "return true if id-type prefix is absent for ISBN" in {
+    Identifier isRelatedPublication <identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ISBN">12345</identifier> shouldBe true
+  }
+
+  it should "return true of xsi:type is id-type ISSN" in {
+    Identifier isRelatedPublication <identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="id-type:ISSN">12345</identifier> shouldBe true
+  }
+
+  it should "return true if id-type prefix is absent for ISSN" in {
+    Identifier isRelatedPublication <identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ISSN">12345</identifier> shouldBe true
+  }
+
+  it should "return false if id-type is DOI" in {
+    Identifier isRelatedPublication <identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="id-type:DOI">10.1234/12345</identifier> shouldBe false
+  }
+
+  it should "return if there is not xsi:type" in {
+    Identifier isRelatedPublication <identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">whatever</identifier> shouldBe false
+  }
+
+  "toRelatedPublicationValue" should "map xsi:type to ID type and node text to ID number" in {
+    val result = Serialization.writePretty(Identifier toRelatedPublicationValue <identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ISSN">12345</identifier>)
+    getPathAsString(result, "$.publicationCitation.value") shouldBe ""
+    getPathAsString(result, "$.publicationIDType.value") shouldBe "issn"
+    getPathAsString(result, "$.publicationIDNumber.value") shouldBe "12345"
+    getPathAsString(result, "$.publicationURL.value") shouldBe ""
+  }
+
 }

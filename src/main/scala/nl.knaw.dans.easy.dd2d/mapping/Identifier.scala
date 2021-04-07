@@ -15,12 +15,9 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.mapping.Creator.OTHER_ID_AGENCY
-import nl.knaw.dans.easy.dd2d.mapping.IsFormatOf.OTHER_ID_VALUE
-
 import scala.xml.Node
 
-object Identifier {
+object Identifier extends BlockCitation {
   def canBeMappedToOtherId(node: Node): Boolean = {
     hasXsiType(node, "EASY2") || !attributeExists(node, XML_SCHEMA_INSTANCE_URI, "type")
   }
@@ -36,5 +33,22 @@ object Identifier {
       m.addPrimitiveField(OTHER_ID_VALUE, node.text)
     }
     m.toJsonObject
+  }
+
+  def isRelatedPublication(node: Node): Boolean = {
+    hasXsiType(node, "ISBN") || hasXsiType(node, "ISSN")
+  }
+
+  def toRelatedPublicationValue(node: Node): JsonObject = {
+    val m = FieldMap()
+    m.addPrimitiveField(PUBLICATION_CITATION, "")
+    m.addPrimitiveField(PUBLICATION_ID_NUMBER, node.text)
+    m.addCvField(PUBLICATION_ID_TYPE, getIdType(node))
+    m.addPrimitiveField(PUBLICATION_URL, "")
+    m.toJsonObject
+  }
+
+  private def getIdType(node: Node): String = {
+    node.attribute(XML_SCHEMA_INSTANCE_URI, "type").map(_.text.toLowerCase).map(s => s.substring(s.indexOf(':') + 1)).getOrElse("")
   }
 }
