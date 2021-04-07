@@ -15,11 +15,21 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-object Identifier {
-  // TODO: can ArchisZaakId be in an identifier element?
+import nl.knaw.dans.easy.dd2d.mapping.Creator.OTHER_ID_AGENCY
+import nl.knaw.dans.easy.dd2d.mapping.IsFormatOf.OTHER_ID_VALUE
 
-  //  def toArchisZaakId(node: Node): Option[String] = {
-  //    if (hasXsiType(node, "ARCHIS-ZAAK-IDENTIFICATIE")) Some(node.text)
-  //    else Option.empty
-  //  }
+import scala.xml.Node
+
+object Identifier {
+  def toOtherIdValue(node: Node): JsonObject = {
+    val m = FieldMap()
+    if (hasXsiType(node, "EASY2")) {
+      m.addPrimitiveField(OTHER_ID_AGENCY, "DANS-KNAW")
+    }
+    else {
+      m.addPrimitiveField(OTHER_ID_AGENCY, "")
+    }
+    m.addPrimitiveField(OTHER_ID_VALUE, node.text)
+    m.toJsonObject
+  }
 }

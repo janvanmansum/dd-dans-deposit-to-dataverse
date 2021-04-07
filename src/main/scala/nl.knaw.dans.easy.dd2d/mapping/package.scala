@@ -42,6 +42,13 @@ package object mapping extends DebugEnhancedLogging {
     node.attribute(name).exists(_.text == value)
   }
 
+  def hasAttribute(node: Node, namespace: String, name: String, value: String): Boolean = {
+    node.attribute(namespace, name).exists(_.text == value)
+  }
+
+  def attributeExists(node: Node, namespace: String, name: String): Boolean = {
+    node.attribute(namespace, name).isDefined
+  }
 
   case class FieldMap() {
     private val fields = mutable.Map[String, MetadataField]()
