@@ -81,9 +81,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
 
       checkRequiredField(SUBJECT, ddm \ "profile" \ "audience")
       addCvFieldMultipleValues(citationFields, SUBJECT, ddm \ "profile" \ "audience", Audience toCitationBlockSubject)
-
-
-
+      addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "subject").filter(Subject hasNoCvAttributes), Subject toKeyWordValue)
 
       addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(isoToDataverseLanguage))
       addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
