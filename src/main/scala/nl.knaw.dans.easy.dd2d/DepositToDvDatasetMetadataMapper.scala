@@ -82,7 +82,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       checkRequiredField(SUBJECT, ddm \ "profile" \ "audience")
       addCvFieldMultipleValues(citationFields, SUBJECT, ddm \ "profile" \ "audience", Audience toCitationBlockSubject)
       addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "subject").filter(Subject hasNoCvAttributes), Subject toKeyWordValue)
-      addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "language").filterNot(Language isISOLanguage), Language toKeywordValue)
+      addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "language").filterNot(Language isIsoLanguage), Language toKeywordValue)
       addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(isoToDataverseLanguage))
       addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
       addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, ddm \ "dcmiMetadata" \ "contributorDetails" \ "author", DcxDaiAuthor toContributorValueObject)
@@ -91,6 +91,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       addPrimitiveFieldMultipleValues(citationFields, DATA_SOURCES, ddm \ "dcmiMetadata" \ "source")
 
       addCompoundFieldMultipleValues(citationFields, PUBLICATION, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier isRelatedPublication), Identifier toRelatedPublicationValue)
+      addCompoundFieldMultipleValues(citationFields, GRANT_NUMBER, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier isNwoGrantNumber), Identifier toNwoGrantNumberValue)
     }
     else {
       throw new IllegalStateException("Metadatablock citation should always be active")

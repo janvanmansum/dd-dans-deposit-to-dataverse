@@ -51,4 +51,16 @@ object Identifier extends BlockCitation {
   private def getIdType(node: Node): String = {
     node.attribute(XML_SCHEMA_INSTANCE_URI, "type").map(_.text.toLowerCase).map(s => s.substring(s.indexOf(':') + 1)).getOrElse("")
   }
+
+  def isNwoGrantNumber(node: Node): Boolean = {
+    hasXsiType(node, "NWO-PROJECTNR")
+  }
+
+  def toNwoGrantNumberValue(node: Node): JsonObject = {
+    val m = FieldMap()
+    m.addPrimitiveField(GRANT_NUMBER_AGENCY, "NWO")
+    m.addPrimitiveField(GRANT_NUMBER_VALUE, node.text)
+    m.toJsonObject
+  }
+
 }

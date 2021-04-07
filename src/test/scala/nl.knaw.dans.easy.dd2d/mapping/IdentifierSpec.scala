@@ -78,4 +78,14 @@ class IdentifierSpec extends TestSupportFixture with BlockCitation {
     getPathAsString(result, "$.publicationURL.value") shouldBe ""
   }
 
+  "isNwoGrantNumber" should "return true if xsi:type is NWO-PROJECTNR" in {
+    Identifier isNwoGrantNumber <identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="id-type:NWO-PROJECTNR">12345</identifier> shouldBe true
+  }
+
+  "toNwoGrantNumber" should "fill in subfields correctly" in {
+    val result = Serialization.writePretty(Identifier toNwoGrantNumberValue <identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="id-type:NWO-PROJECTNR">12345</identifier>)
+    getPathAsString(result, "$.grantNumberAgency.value") shouldBe "NWO"
+    getPathAsString(result, "$.grantNumberValue.value") shouldBe "12345"
+  }
+
 }

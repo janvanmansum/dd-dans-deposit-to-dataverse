@@ -20,12 +20,12 @@ import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import scala.xml.Node
 
 object Language extends BlockCitation with DebugEnhancedLogging {
-  def isISOLanguage(node: Node): Boolean = {
+  def isIsoLanguage(node: Node): Boolean = {
     hasXsiType(node, "ISO639-2") || node.attribute("encodingScheme").flatMap(_.headOption.map(_.text == "ISO639-2")).getOrElse(false)
   }
 
   def toCitationBlockLanguage(isoToDataverse: Map[String, String])(node: Node): Option[String] = {
-    if (isISOLanguage(node)) node.attribute("code").flatMap(_.headOption.flatMap(a => isoToDataverse.get(a.text)))
+    if (isIsoLanguage(node)) node.attribute("code").flatMap(_.headOption.flatMap(a => isoToDataverse.get(a.text)))
     else Option.empty[String]
   }
 
