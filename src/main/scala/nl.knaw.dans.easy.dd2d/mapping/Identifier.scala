@@ -63,4 +63,10 @@ object Identifier extends BlockCitation {
     m.toJsonObject
   }
 
+
+  def toArchisZaakId(node: Node): Option[String] = {
+    if (hasXsiType(node, "ARCHIS-ZAAK-IDENTIFICATIE")) Some(node.text)
+    else Option.empty
+  }
+
 }

@@ -15,11 +15,9 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import nl.knaw.dans.easy.dd2d.mapping.Creator.OTHER_ID_AGENCY
-import nl.knaw.dans.easy.dd2d.mapping.IsFormatOf.OTHER_ID_VALUE
 import org.apache.commons.lang.StringUtils
 
-object DepositPropertiesVaultMetadata {
+object DepositPropertiesVaultMetadata extends BlockCitation {
   def toOtherIdValue(dansVaultMetadataOtherId: String): Option[JsonObject] = {
     if (StringUtils.isBlank(dansVaultMetadataOtherId)) Option.empty
     else {
