@@ -60,7 +60,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
 
       addPrimitiveFieldSingleValue(citationFields, TITLE, titles.head)
       addPrimitiveFieldSingleValue(citationFields, ALTERNATIVE_TITLE, alternativeTitles)
-
+      addCompoundFieldMultipleValues(citationFields, OTHER_ID, DepositPropertiesVaultMetadata.toOtherIdValue(vaultMetadata.dataverseOtherId).toList)
 
 
       addCompoundFieldMultipleValues(citationFields, AUTHOR, ddm \ "profile" \ "creatorDetails" \ "author", DcxDaiAuthor toAuthorValueObject)
@@ -168,6 +168,15 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
   private def addPrimitiveFieldSingleValue(metadataBlockFields: mutable.HashMap[String, AbstractFieldBuilder], name: String, value: Option[String]): Unit = {
     value.foreach { v =>
       metadataBlockFields.getOrElseUpdate(name, new PrimitiveFieldBuilder(name, multipleValues = false)) match {
+        case b: PrimitiveFieldBuilder => b.addValue(v)
+        case _ => throw new IllegalArgumentException("Trying to add non-primitive value(s) to primitive field")
+      }
+    }
+  }
+
+  private def addPrimitiveFieldMultipleValues(metadataBlockFields: mutable.HashMap[String, AbstractFieldBuilder], name: String, values: List[String]): Unit = {
+    values.foreach { v =>
+      metadataBlockFields.getOrElseUpdate(name, new PrimitiveFieldBuilder(name, multipleValues = true)) match {
         case b: PrimitiveFieldBuilder => b.addValue(v)
         case _ => throw new IllegalArgumentException("Trying to add non-primitive value(s) to primitive field")
       }

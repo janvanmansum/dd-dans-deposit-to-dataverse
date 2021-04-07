@@ -23,10 +23,4 @@ object IsFormatOf extends BlockCitation {
     if (hasXsiType(node, "ARCHIS-ZAAK-IDENTIFICATIE")) Some(node.text)
     else Option.empty
   }
-
-  def toOtherIdValueObject(node: Node): JsonObject = {
-    val m = FieldMap()
-    m.addPrimitiveField(OTHER_ID_VALUE, node.text)
-    m.toJsonObject
-  }
 }
