@@ -21,15 +21,20 @@ import nl.knaw.dans.easy.dd2d.mapping.IsFormatOf.OTHER_ID_VALUE
 import scala.xml.Node
 
 object Identifier {
+  def canBeMappedToOtherId(node: Node): Boolean = {
+    hasXsiType(node, "EASY2") || !attributeExists(node, XML_SCHEMA_INSTANCE_URI, "type")
+  }
+
   def toOtherIdValue(node: Node): JsonObject = {
     val m = FieldMap()
     if (hasXsiType(node, "EASY2")) {
       m.addPrimitiveField(OTHER_ID_AGENCY, "DANS-KNAW")
+      m.addPrimitiveField(OTHER_ID_VALUE, node.text)
     }
-    else {
+    else if (!attributeExists(node, XML_SCHEMA_INSTANCE_URI, "type")) {
       m.addPrimitiveField(OTHER_ID_AGENCY, "")
+      m.addPrimitiveField(OTHER_ID_VALUE, node.text)
     }
-    m.addPrimitiveField(OTHER_ID_VALUE, node.text)
     m.toJsonObject
   }
 }

@@ -61,8 +61,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       addPrimitiveFieldSingleValue(citationFields, TITLE, titles.head)
       addPrimitiveFieldSingleValue(citationFields, ALTERNATIVE_TITLE, alternativeTitles)
       addCompoundFieldMultipleValues(citationFields, OTHER_ID, DepositPropertiesVaultMetadata.toOtherIdValue(vaultMetadata.dataverseOtherId).toList)
-      addCompoundFieldMultipleValues(citationFields, OTHER_ID, ddm \ "dcmiMetadata" \ "identifier", Identifier toOtherIdValue)
-
+      addCompoundFieldMultipleValues(citationFields, OTHER_ID, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier canBeMappedToOtherId), Identifier toOtherIdValue)
       addCompoundFieldMultipleValues(citationFields, AUTHOR, ddm \ "profile" \ "creatorDetails" \ "author", DcxDaiAuthor toAuthorValueObject)
       addCompoundFieldMultipleValues(citationFields, AUTHOR, ddm \ "profile" \ "creatorDetails" \ "organization", DcxDaiOrganization toAuthorValueObject)
       addCompoundFieldMultipleValues(citationFields, AUTHOR, ddm \ "profile" \ "creator", Creator toAuthorValueObject)
@@ -82,6 +81,10 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
 
       checkRequiredField(SUBJECT, ddm \ "profile" \ "audience")
       addCvFieldMultipleValues(citationFields, SUBJECT, ddm \ "profile" \ "audience", Audience toCitationBlockSubject)
+
+
+
+
       addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(isoToDataverseLanguage))
       addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
       addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, ddm \ "dcmiMetadata" \ "contributorDetails" \ "author", DcxDaiAuthor toContributorValueObject)

@@ -33,4 +33,17 @@ class IdentifierSpec extends TestSupportFixture with BlockCitation {
     getPathAsString(result, "$.otherIdAgency.value") shouldBe "DANS-KNAW"
     getPathAsString(result, "$.otherIdValue.value") shouldBe "easy-dataset:1234"
   }
+
+  "canBeMappedToOtherId" should "return true if EASY2 is xsi:type" in {
+    Identifier canBeMappedToOtherId <identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="id-type:EASY2">easy-dataset:1234</identifier> shouldBe true
+  }
+
+  it should "return true if no xsi:type is present" in {
+    Identifier canBeMappedToOtherId <identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">1234</identifier> shouldBe true
+  }
+
+  it should "return false for identifiers with other xsi:types" in {
+    Identifier canBeMappedToOtherId <identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="id-type:DOI">10.5072/test</identifier> shouldBe false
+  }
+
 }
