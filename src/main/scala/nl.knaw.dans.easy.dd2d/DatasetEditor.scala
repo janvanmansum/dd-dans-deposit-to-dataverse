@@ -38,20 +38,24 @@ abstract class DatasetEditor(deposit: Deposit, instance: DataverseInstance) exte
    */
   def performEdit(): Try[PersistendId]
 
-  protected def addFiles(persistentId: String, files: List[FileInfo], checksumToPrestagedFile: Map[String, DataFile] = Map.empty): Try[Unit] = {
+  /**
+   * Adds files to the dataset. If the file is pre-staged it is registered instead of uploaded.
+   *
+   * @param persistentId            the dataset dOI
+   * @param files                   list of FileInfo objects
+   * @param checksumToPrestagedFile map of checksum to pre-staged DataFile object
+   * @return a Map from file database ID to FileInfo of the added file
+   */
+  protected def addFiles(persistentId: String, files: List[FileInfo], checksumToPrestagedFile: Map[String, DataFile] = Map.empty): Try[Map[Int, FileInfo]] = {
     trace(persistentId, files)
-    import scala.language.postfixOps
-    trace(persistentId)
     files
       .map(f => {
         debug(s"Adding file, SHA-1 = ${ f.checksum }, directoryLabel = ${ f.metadata.directoryLabel }, label = ${ f.metadata.label }")
         for {
           id <- addFile(persistentId, f, checksumToPrestagedFile)
           _ <- instance.dataset(persistentId).awaitUnlock()
-          _ <- updateFileMetadata(id, f)
-        } yield ()
-      })
-      .collectResults.map(_ => ())
+        } yield (id -> f)
+      }).collectResults.map(_.toMap)
   }
 
   private def addFile(doi: String, fileInfo: FileInfo, checksumToPrestagedFile: Map[String, DataFile]): Try[Int] = {
@@ -72,8 +76,8 @@ abstract class DatasetEditor(deposit: Deposit, instance: DataverseInstance) exte
     result.map(_.getOrElse(throw new IllegalStateException("Could not get DataFile ID from response")))
   }
 
-  private def updateFileMetadata(id: Int, fileInfo: FileInfo): Try[Unit] = {
-    instance.file(id).updateMetadata(fileInfo.metadata).map(_ => ())
+  protected def updateFileMetadata(databaseIdToFileInfo: Map[Int, FileInfo]): Try[Unit] = {
+    databaseIdToFileInfo.map { case (id, fileInfo) => instance.file(id).updateMetadata(fileInfo.metadata) }.collectResults.map(_ => ())
   }
 
   protected def deleteFiles(databaseIds: List[DatabaseId]): Try[Unit] = {
@@ -83,33 +87,13 @@ abstract class DatasetEditor(deposit: Deposit, instance: DataverseInstance) exte
     }).collectResults.map(_ => ())
   }
 
-  /**
-   * Replace files indicated by the checksum pairs. The first member of each pair is the old SHA-1 hash and the second the new SHA-1. The old hash is used
-   * to look up the databaseId of the file to be replaced, the new one is used to look up the file + metadata to place over that old file.
-   *
-   * @param checksumPairsToReplace            the (old, new) SHA-1 pairs
-   * @param checksumToFileMetaInLatestVersion map from SHA-1 hash to FileMeta for each file in the latest dataset version
-   * @param checksumToFileInfoInDeposit       map from SHA-1 hash to FileInfo for each payload file in the deposited bag
-   * @return
-   */
-  protected def replaceFiles(checksumPairsToReplace: List[(Sha1Hash, Sha1Hash)], checksumToFileMetaInLatestVersion: Map[Sha1Hash, FileMeta], checksumToFileInfoInDeposit: Map[Sha1Hash, FileInfo]): Try[Unit] = {
-    checksumPairsToReplace.map {
-      case (oldChecksum, newChecksum) =>
-        val fileApi = instance.file(checksumToFileMetaInLatestVersion(oldChecksum).dataFile.get.id)
-        val newFileInfo = checksumToFileInfoInDeposit(newChecksum)
-        debug(s"Replacing file, directoryLabel = ${ newFileInfo.metadata.directoryLabel }, label = ${ newFileInfo.metadata.label }")
-        fileApi.replace(newFileInfo.file, newFileInfo.metadata)
-        dataset.awaitUnlock()
-    }.collectResults.map(_ => ())
-  }
-
-  protected def replaceFiles2(databaseIdToNewFile: Map[Int, File]): Try[Unit] = {
+  protected def replaceFiles(databaseIdToNewFile: Map[Int, File]): Try[Unit] = {
+    trace(databaseIdToNewFile)
     databaseIdToNewFile.map {
       case (id, file) =>
         val fileApi = instance.file(id)
-        fileApi.replace(file, null) // TOOD: create new API
+        fileApi.replace(Option(file))
         dataset.awaitUnlock()
-      }.collectResults.map(_ => ())
+    }.collectResults.map(_ => ())
   }
-
 }
