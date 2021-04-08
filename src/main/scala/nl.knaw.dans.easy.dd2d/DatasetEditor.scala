@@ -15,6 +15,7 @@
  */
 package nl.knaw.dans.easy.dd2d
 
+import better.files.File
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
 import nl.knaw.dans.lib.dataverse.model.file.prestaged.DataFile
 import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance }
@@ -101,4 +102,14 @@ abstract class DatasetEditor(deposit: Deposit, instance: DataverseInstance) exte
         dataset.awaitUnlock()
     }.collectResults.map(_ => ())
   }
+
+  protected def replaceFiles2(databaseIdToNewFile: Map[Int, File]): Try[Unit] = {
+    databaseIdToNewFile.map {
+      case (id, file) =>
+        val fileApi = instance.file(id)
+        fileApi.replace(file, null) // TOOD: create new API
+        dataset.awaitUnlock()
+      }.collectResults.map(_ => ())
+  }
+
 }
