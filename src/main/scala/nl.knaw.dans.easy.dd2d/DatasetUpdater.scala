@@ -30,7 +30,6 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
     for {
       _ <- dataset.awaitUnlock()
       _ <- dataset.updateMetadata(metadataBlocks)
-
       _ <- dataset.awaitUnlock()
       bagPathToFileInfo <- deposit.getPathToFileInfo
       pathToFileInfo = bagPathToFileInfo.map { case (bagPath, fileInfo) => (Paths.get("data").relativize(bagPath) -> fileInfo) }
@@ -39,8 +38,8 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
       _ = debug(s"pathToFileMetaInLatestVersion = $pathToFileMetaInLatestVersion")
       _ <- validateFileMetas(pathToFileMetaInLatestVersion.values.toList)
 
-      fileReplacements <- getFilesToReplace(pathToFileInfo, pathToFileMetaInLatestVersion)
-      replacedFiles <- replaceFiles(fileReplacements.mapValues(fileInfo => fileInfo.file))
+      filesToReplace <- getFilesToReplace(pathToFileInfo, pathToFileMetaInLatestVersion)
+      fileReplacements <- replaceFiles(filesToReplace.mapValues(fileInfo => fileInfo.file))
 
       oldToNewPathMovedFiles <- getOldToNewPathOfFilesToMove(pathToFileMetaInLatestVersion, pathToFileInfo)
       fileMovements = oldToNewPathMovedFiles.map { case (old, newPath) => (pathToFileMetaInLatestVersion(old).dataFile.get.id, pathToFileInfo(newPath).metadata) }
@@ -53,7 +52,7 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
       pathsToAdd = pathToFileInfo.keySet diff pathToFileMetaInLatestVersion.keySet diff oldToNewPathMovedFiles.values.toSet
       fileAdditions <- addFiles(deposit.dataversePid, pathsToAdd.map(pathToFileInfo).toList).map(_.mapValues(_.metadata))
 
-      _ <- updateFileMetadata(replacedFiles ++ fileMovements ++ fileAdditions)
+      _ <- updateFileMetadata(fileReplacements ++ fileMovements ++ fileAdditions)
     } yield deposit.dataversePid
   }
 
