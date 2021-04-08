@@ -76,8 +76,8 @@ abstract class DatasetEditor(deposit: Deposit, instance: DataverseInstance) exte
     result.map(_.getOrElse(throw new IllegalStateException("Could not get DataFile ID from response")))
   }
 
-  protected def updateFileMetadata(databaseIdToFileInfo: Map[Int, FileInfo]): Try[Unit] = {
-    databaseIdToFileInfo.map { case (id, fileInfo) => instance.file(id).updateMetadata(fileInfo.metadata) }.collectResults.map(_ => ())
+  protected def updateFileMetadata(databaseIdToFileInfo: Map[Int, FileMeta]): Try[Unit] = {
+    databaseIdToFileInfo.map { case (id, fileMeta) => instance.file(id).updateMetadata(fileMeta) }.collectResults.map(_ => ())
   }
 
   protected def deleteFiles(databaseIds: List[DatabaseId]): Try[Unit] = {
@@ -87,13 +87,18 @@ abstract class DatasetEditor(deposit: Deposit, instance: DataverseInstance) exte
     }).collectResults.map(_ => ())
   }
 
-  protected def replaceFiles(databaseIdToNewFile: Map[Int, File]): Try[Unit] = {
+  protected def replaceFiles(databaseIdToNewFile: Map[Int, File]): Try[Map[Int, FileMeta]] = {
     trace(databaseIdToNewFile)
     databaseIdToNewFile.map {
       case (id, file) =>
         val fileApi = instance.file(id)
-        fileApi.replace(Option(file))
-        dataset.awaitUnlock()
-    }.collectResults.map(_ => ())
+
+        for {
+          r <- fileApi.replace(Option(file))
+          d <- r.data
+          _ <- dataset.awaitUnlock()
+        } yield (d.files.head.dataFile.get.id, d.files.head)
+    }.collectResults.map(_.toMap)
   }
+
 }

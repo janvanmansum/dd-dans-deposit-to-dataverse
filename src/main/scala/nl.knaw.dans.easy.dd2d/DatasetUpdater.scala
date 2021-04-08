@@ -32,15 +32,18 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
       _ <- dataset.updateMetadata(metadataBlocks)
 
       _ <- dataset.awaitUnlock()
-      pathToFileInfo <- deposit.getPathToFileInfo
+      bagPathToFileInfo <- deposit.getPathToFileInfo
+      pathToFileInfo = bagPathToFileInfo.map { case (bagPath, fileInfo) => (Paths.get("data").relativize(bagPath) -> fileInfo) }
+      _ = debug(s"pathToFileInfo = $pathToFileInfo")
       pathToFileMetaInLatestVersion <- getFilesInLatestVersion
+      _ = debug(s"pathToFileMetaInLatestVersion = $pathToFileMetaInLatestVersion")
       _ <- validateFileMetas(pathToFileMetaInLatestVersion.values.toList)
 
       fileReplacements <- getFilesToReplace(pathToFileInfo, pathToFileMetaInLatestVersion)
-      _ <- replaceFiles(fileReplacements.mapValues(fileInfo => fileInfo.file))
+      replacedFiles <- replaceFiles(fileReplacements.mapValues(fileInfo => fileInfo.file))
 
       oldToNewPathMovedFiles <- getOldToNewPathOfFilesToMove(pathToFileMetaInLatestVersion, pathToFileInfo)
-      fileMovements = oldToNewPathMovedFiles.map { case (old, newPath) => (pathToFileMetaInLatestVersion(old).dataFile.get.id, pathToFileInfo(newPath)) }
+      fileMovements = oldToNewPathMovedFiles.map { case (old, newPath) => (pathToFileMetaInLatestVersion(old).dataFile.get.id, pathToFileInfo(newPath).metadata) }
       // Movement will be realized by updating label and directoryLabel attributes of the file
 
       pathsToDelete = pathToFileMetaInLatestVersion.keySet diff pathToFileInfo.keySet diff oldToNewPathMovedFiles.keySet
@@ -48,9 +51,9 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
       _ <- deleteFiles(fileDeletions.toList)
 
       pathsToAdd = pathToFileInfo.keySet diff pathToFileMetaInLatestVersion.keySet diff oldToNewPathMovedFiles.values.toSet
-      fileAdditions <- addFiles(deposit.dataversePid, pathsToAdd.map(pathToFileInfo).toList)
+      fileAdditions <- addFiles(deposit.dataversePid, pathsToAdd.map(pathToFileInfo).toList).map(_.mapValues(_.metadata))
 
-      _ <- updateFileMetadata(fileReplacements ++ fileMovements ++ fileAdditions)
+      _ <- updateFileMetadata(replacedFiles ++ fileMovements ++ fileAdditions)
     } yield deposit.dataversePid
   }
 
