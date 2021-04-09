@@ -19,6 +19,7 @@ import better.files.File
 import nl.knaw.dans.easy.dd2d.OutboxSubdir.{ FAILED, OutboxSubdir, PROCESSED, REJECTED }
 import nl.knaw.dans.easy.dd2d.dansbag.{ DansBagValidationResult, DansBagValidator }
 import nl.knaw.dans.easy.dd2d.mapping.JsonObject
+import nl.knaw.dans.easy.dd2d.migrationinfo.MigrationInfo
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.dataverse.model.dataset.{ PrimitiveSingleValueField, UpdateType, toFieldMap }
 import nl.knaw.dans.lib.error._
@@ -39,6 +40,7 @@ case class DepositIngestTask(deposit: Deposit,
                              activeMetadataBlocks: List[String],
                              dansBagValidator: DansBagValidator,
                              instance: DataverseInstance,
+                             migrationInfo: Option[MigrationInfo] = Option.empty,
                              publish: Boolean = true,
                              publishAwaitUnlockMaxNumberOfRetries: Int,
                              publishAwaitUnlockMillisecondsBetweenRetries: Int,
@@ -76,7 +78,7 @@ case class DepositIngestTask(deposit: Deposit,
       isUpdate <- deposit.isUpdate
       _ = debug(s"isUpdate? = $isUpdate")
       editor = if (isUpdate) new DatasetUpdater(deposit, dataverseDataset.datasetVersion.metadataBlocks, instance)
-               else new DatasetCreator(deposit, dataverseDataset, instance)
+               else new DatasetCreator(deposit, dataverseDataset, instance, migrationInfo)
       persistentId <- editor.performEdit()
       _ <- if (publish) publishDataset(persistentId)
            else keepOnDraft()

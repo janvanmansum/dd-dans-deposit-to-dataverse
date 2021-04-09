@@ -17,6 +17,7 @@ package nl.knaw.dans.easy.dd2d
 
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
+import nl.knaw.dans.lib.dataverse.model.file.prestaged.DataFile
 import nl.knaw.dans.lib.error.TraversableTryExtensions
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
@@ -35,21 +36,28 @@ abstract class DatasetEditor(instance: DataverseInstance) extends DebugEnhancedL
    */
   def performEdit(): Try[PersistendId]
 
-  protected def addFiles(persistentId: String, files: List[FileInfo]): Try[Map[Int, FileInfo]] = {
+  protected def addFiles(persistentId: String, files: List[FileInfo], checksumToPrestagedFile: Map[String, DataFile] = Map.empty): Try[Map[Int, FileInfo]] = {
     trace(persistentId, files)
     files
       .map(f => {
         debug(s"Adding file, directoryLabel = ${ f.metadata.directoryLabel }, label = ${ f.metadata.label }")
         for {
-          id <- addFile(persistentId, f)
+          id <- addFile(persistentId, f, checksumToPrestagedFile)
           _ <- instance.dataset(persistentId).awaitUnlock()
         } yield (id -> f)
       }).collectResults.map(_.toMap)
   }
 
-  private def addFile(doi: String, fileInfo: FileInfo): Try[Int] = {
+  private def addFile(doi: String, fileInfo: FileInfo, checksumToPrestagedFile: Map[String, DataFile]): Try[Int] = {
     val result = for {
-      r <- instance.dataset(doi).addFile(Option(fileInfo.file))
+      r <- if (checksumToPrestagedFile.contains(fileInfo.checksum)) {
+        debug(s"Adding prestaged file: $fileInfo")
+        instance.dataset(doi).registerPrestagedFile(checksumToPrestagedFile(fileInfo.checksum))
+      }
+           else {
+             debug(s"Uploading file: $fileInfo")
+             instance.dataset(doi).addFile(Option(fileInfo.file))
+           }
       files <- r.data
       id = files.files.headOption.flatMap(_.dataFile.map(_.id))
       _ <- instance.dataset(doi).awaitUnlock()

@@ -17,6 +17,7 @@ package nl.knaw.dans.easy.dd2d
 
 import better.files.File
 import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
+import nl.knaw.dans.easy.dd2d.migrationinfo.MigrationInfo
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.InboxWatcher
@@ -27,6 +28,7 @@ import scala.util.{ Success, Try }
 class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnhancedLogging {
   private implicit val resultOutput: PrintStream = Console.out
   private val dataverse = new DataverseInstance(configuration.dataverse)
+  private val migrationInfo = new MigrationInfo(configuration.migrationInfo)
   private val dansBagValidator = new DansBagValidator(
     serviceUri = configuration.validatorServiceUrl,
     connTimeoutMs = configuration.validatorConnectionTimeoutMs,
@@ -36,6 +38,7 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
       getActiveMetadataBlocks.get,
       dansBagValidator,
       dataverse,
+      Option.empty,
       configuration.autoPublish,
       configuration.publishAwaitUnlockMaxNumberOfRetries,
       configuration.publishAwaitUnlockMillisecondsBetweenRetries,
@@ -55,12 +58,14 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
   def importSingleDeposit(deposit: File, outboxDir: File, autoPublish: Boolean): Try[Unit] = {
     trace(deposit, outboxDir, autoPublish)
     for {
+      _ <- migrationInfo.checkConnection()
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults = false)
       - <- mustNotExist(OutboxSubdir.values.map(_.toString).map(subdir => outboxDir / subdir / deposit.name).toList)
       _ <- new SingleDepositProcessor(deposit,
         getActiveMetadataBlocks.get,
         dansBagValidator,
         dataverse,
+        Option(migrationInfo),
         autoPublish,
         configuration.publishAwaitUnlockMaxNumberOfRetries,
         configuration.publishAwaitUnlockMillisecondsBetweenRetries,
@@ -74,11 +79,13 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
   def importDeposits(inbox: File, outboxDir: File, autoPublish: Boolean, requireAbsenceOfResults: Boolean = true): Try[Unit] = {
     trace(inbox, outboxDir, autoPublish, requireAbsenceOfResults)
     for {
+      _ <- migrationInfo.checkConnection()
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults)
       _ <- new InboxProcessor(new Inbox(inbox,
         getActiveMetadataBlocks.get,
         dansBagValidator,
         dataverse,
+        Option(migrationInfo),
         autoPublish,
         configuration.publishAwaitUnlockMaxNumberOfRetries,
         configuration.publishAwaitUnlockMillisecondsBetweenRetries,
@@ -106,11 +113,10 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
       outboxDir / OutboxSubdir.REJECTED.toString)
 
     for {
-      _ <- mustBeDirectory(outboxDir)
-      _ <- if (requireAbsenceOfResults) mustBeEmptyDirectories(subDirs)
-           else Success(())
-      _ = outboxDir.createDirectoryIfNotExists(createParents = true)
-      _ = subDirs.foreach(_.createDirectories())
+     _ <- mustBeDirectory(outboxDir)
+     _ <- if (requireAbsenceOfResults) mustBeEmptyDirectories(subDirs) else Success(())
+     _ = outboxDir.createDirectoryIfNotExists(createParents = true)
+     _ = subDirs.foreach(_.createDirectories())
     } yield ()
   }
 

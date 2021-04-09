@@ -15,13 +15,15 @@
  */
 package nl.knaw.dans.easy.dd2d
 
+import nl.knaw.dans.easy.dd2d.migrationinfo.MigrationInfo
 import nl.knaw.dans.lib.dataverse.model.dataset.{ Dataset, DatasetCreationResult }
+import nl.knaw.dans.lib.dataverse.model.file.prestaged.DataFile
 import nl.knaw.dans.lib.dataverse.{ DataverseInstance, DataverseResponse }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
-import scala.util.Try
+import scala.util.{ Success, Try }
 
-class DatasetCreator(deposit: Deposit, dataverseDataset: Dataset, instance: DataverseInstance) extends DatasetEditor(instance) with DebugEnhancedLogging {
+class DatasetCreator(deposit: Deposit, dataverseDataset: Dataset, instance: DataverseInstance, migrationInfo: Option[MigrationInfo]) extends DatasetEditor(instance) with DebugEnhancedLogging {
   trace(deposit)
 
   override def performEdit(): Try[PersistendId] = {
@@ -34,7 +36,8 @@ class DatasetCreator(deposit: Deposit, dataverseDataset: Dataset, instance: Data
                   else instance.dataverse("root").createDataset(dataverseDataset)
       persistentId <- getPersistentId(response)
       fileInfos <- deposit.getPathToFileInfo
-      databaseIdsToFileInfo <- addFiles(persistentId, fileInfos.values.toList)
+      prestagedFiles <-  migrationInfo.map(_.getPrestagedDataFilesFor(deposit.doi)).getOrElse(Success((Map.empty[String, DataFile])))
+      databaseIdsToFileInfo <- addFiles(persistentId, fileInfos.values.toList, prestagedFiles)
       _ <- updateFileMetadata(databaseIdsToFileInfo.mapValues(_.metadata))
     } yield persistentId
   }

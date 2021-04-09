@@ -17,6 +17,7 @@ package nl.knaw.dans.easy.dd2d
 
 import better.files.File
 import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
+import nl.knaw.dans.easy.dd2d.migrationinfo.MigrationInfo
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.taskqueue.PassiveTaskQueue
 
@@ -27,6 +28,7 @@ class SingleDepositProcessor(deposit: File,
                              activeMetadataBlocks: List[String],
                              dansBagValidator: DansBagValidator,
                              dataverse: DataverseInstance,
+                             migrationInfo: Option[MigrationInfo],
                              autoPublish: Boolean = true,
                              publishAwaitUnlockMaxNumberOfRetries: Int,
                              publishAwaitUnlockMillisecondsBetweenRetries: Int,
@@ -42,6 +44,7 @@ class SingleDepositProcessor(deposit: File,
         activeMetadataBlocks,
         dansBagValidator,
         dataverse,
+        migrationInfo,
         publish = autoPublish,
         publishAwaitUnlockMaxNumberOfRetries,
         publishAwaitUnlockMillisecondsBetweenRetries,
