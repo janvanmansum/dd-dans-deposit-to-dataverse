@@ -34,15 +34,12 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
       _ <- dataset.awaitUnlock()
       _ <- dataset.updateMetadata(metadataBlocks)
       _ <- dataset.awaitUnlock()
-
       bagPathToFileInfo <- deposit.getPathToFileInfo
       pathToFileInfo = bagPathToFileInfo.map { case (bagPath, fileInfo) => (Paths.get("data").relativize(bagPath) -> fileInfo) }
       _ = debug(s"pathToFileInfo = $pathToFileInfo")
       pathToFileMetaInLatestVersion <- getFilesInLatestVersion
       _ = debug(s"pathToFileMetaInLatestVersion = $pathToFileMetaInLatestVersion")
       _ <- validateFileMetas(pathToFileMetaInLatestVersion.values.toList)
-
-      // get basicFileMetas for seq nr = number of published versions + 1
 
       filesToReplace <- getFilesToReplace(pathToFileInfo, pathToFileMetaInLatestVersion)
       fileReplacements <- replaceFiles(filesToReplace.mapValues(fileInfo => fileInfo.file))
