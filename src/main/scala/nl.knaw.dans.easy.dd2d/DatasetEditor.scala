@@ -15,7 +15,6 @@
  */
 package nl.knaw.dans.easy.dd2d
 
-import better.files.File
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
 import nl.knaw.dans.lib.error.TraversableTryExtensions

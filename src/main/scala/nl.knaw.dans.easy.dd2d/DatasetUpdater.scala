@@ -16,9 +16,9 @@
 package nl.knaw.dans.easy.dd2d
 
 import better.files.File
-import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance }
 import nl.knaw.dans.lib.dataverse.model.dataset.MetadataBlocks
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
+import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance }
 import nl.knaw.dans.lib.error.TraversableTryExtensions
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
