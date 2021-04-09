@@ -52,6 +52,7 @@ abstract class DatasetEditor(instance: DataverseInstance) extends DebugEnhancedL
       r <- instance.dataset(doi).addFile(Option(fileInfo.file))
       files <- r.data
       id = files.files.headOption.flatMap(_.dataFile.map(_.id))
+      _ <- instance.dataset(doi).awaitUnlock()
     } yield id
     result.map(_.getOrElse(throw new IllegalStateException("Could not get DataFile ID from response")))
   }

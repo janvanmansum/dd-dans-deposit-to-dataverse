@@ -110,6 +110,7 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
     databaseIds.map(id => {
       debug(s"Deleting file, databaseId = $id")
       instance.sword().deleteFile(id)
+      dataset.awaitUnlock()
     }).collectResults.map(_ => ())
   }
 
