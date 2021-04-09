@@ -46,7 +46,7 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
 
       oldToNewPathMovedFiles <- getOldToNewPathOfFilesToMove(pathToFileMetaInLatestVersion, pathToFileInfo)
       fileMovements = oldToNewPathMovedFiles.map { case (old, newPath) => (pathToFileMetaInLatestVersion(old).dataFile.get.id, pathToFileInfo(newPath).metadata) }
-      // Movement will be realized by updating label and directoryLabel attributes of the file
+      // Movement will be realized by updating label and directoryLabel attributes of the file; there is no separate "move-file" API endpoint.
 
       pathsToDelete = pathToFileMetaInLatestVersion.keySet diff pathToFileInfo.keySet diff oldToNewPathMovedFiles.keySet
       fileDeletions <- getFileDeletions(pathsToDelete, pathToFileMetaInLatestVersion)
@@ -84,6 +84,16 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
     checksumsDiffer.map(p => (pathToFileMetaInLatestVersion(p).dataFile.get.id, pathToFileInfo(p))).toMap
   }
 
+  /**
+   * Creatings a mapping for moving files to a new location. To determine this, the file needs to be unique in the old and the new version, because
+   * its checksum is used to locate it. Files that occur multiple times in either the old or the new version cannot be moved in this way. They
+   * will appear to have been deleted in the old version and added in the new. This has the same net result, except that the "Changes" overview in
+   * Dataverse does not record that the file was effectively moved.
+   *
+   * @param pathToFileMetaInLatestVersion map from path to file metadata in the old version
+   * @param pathToFileInfo map from path to file info in the new version (i.e. the deposit).
+   * @return
+   */
   private def getOldToNewPathOfFilesToMove(pathToFileMetaInLatestVersion: Map[Path, FileMeta], pathToFileInfo: Map[Path, FileInfo]): Try[Map[Path, Path]] = {
     for {
       checksumsToPathNonDuplicatedFilesInDeposit <- getChecksumsToPathOfNonDuplicateFiles(pathToFileInfo.mapValues(_.checksum))
