@@ -36,6 +36,7 @@ class DatasetCreator(deposit: Deposit, dataverseDataset: Dataset, instance: Data
                   else instance.dataverse("root").createDataset(dataverseDataset)
       persistentId <- getPersistentId(response)
       fileInfos <- deposit.getPathToFileInfo
+      // Replace with: get basicFileMetas of seq nr 1
       prestagedFiles <-  migrationInfo.map(_.getPrestagedDataFilesFor(deposit.doi)).getOrElse(Success((Map.empty[String, DataFile])))
       databaseIdsToFileInfo <- addFiles(persistentId, fileInfos.values.toList, prestagedFiles)
       _ <- updateFileMetadata(databaseIdsToFileInfo.mapValues(_.metadata))

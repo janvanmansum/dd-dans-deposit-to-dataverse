@@ -15,6 +15,7 @@
  */
 package nl.knaw.dans.easy.dd2d
 
+import nl.knaw.dans.easy.dd2d.migrationinfo.BasicFileMeta
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
 import nl.knaw.dans.lib.dataverse.model.file.prestaged.DataFile
@@ -36,6 +37,7 @@ abstract class DatasetEditor(instance: DataverseInstance) extends DebugEnhancedL
    */
   def performEdit(): Try[PersistendId]
 
+  //
   protected def addFiles(persistentId: String, files: List[FileInfo], checksumToPrestagedFile: Map[String, DataFile] = Map.empty): Try[Map[Int, FileInfo]] = {
     trace(persistentId, files)
     files
@@ -63,6 +65,18 @@ abstract class DatasetEditor(instance: DataverseInstance) extends DebugEnhancedL
       _ <- instance.dataset(doi).awaitUnlock()
     } yield id
     result.map(_.getOrElse(throw new IllegalStateException("Could not get DataFile ID from response")))
+  }
+
+  private def getPrestagedFileFor(fileInfo: FileInfo, basicFileMetas: Set[BasicFileMeta]): Option[DataFile] = {
+    val matchingChecksums = basicFileMetas.filter(_.dataFile.checksum.`@value` == fileInfo.checksum)
+    if (matchingChecksums.size == 1) Option(matchingChecksums.head.dataFile)
+    else if (matchingChecksums.isEmpty) Option.empty
+         else {
+           val matchingPaths = basicFileMetas.filter(bfm => bfm.label == fileInfo.metadata.label && bfm.directoryLabel == fileInfo.metadata.directoryLabel)
+           if (matchingPaths.size == 1) Option(matchingPaths.head.dataFile)
+           else if (matchingPaths.isEmpty) Option.empty
+                else throw new IllegalArgumentException("Found multiple basic file metas with the same path in a single dataset version")
+         }
   }
 
   protected def updateFileMetadata(databaseIdToFileInfo: Map[Int, FileMeta]): Try[Unit] = {
