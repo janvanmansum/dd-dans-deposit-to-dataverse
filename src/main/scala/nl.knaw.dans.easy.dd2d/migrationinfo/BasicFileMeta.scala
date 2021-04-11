@@ -19,7 +19,7 @@ import nl.knaw.dans.lib.dataverse.model.file.prestaged.DataFile
 
 import java.nio.file.Path
 
-case class BasicFileMeta(datasetSequenceNumber: Int,
-                         label: Option[String],
+case class BasicFileMeta(versionSequenceNumber: Int,
+                         label: String,
                          directoryLabel: Option[String],
                          dataFile: DataFile)

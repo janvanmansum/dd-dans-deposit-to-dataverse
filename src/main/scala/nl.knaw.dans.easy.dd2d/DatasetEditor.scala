@@ -72,7 +72,7 @@ abstract class DatasetEditor(instance: DataverseInstance) extends DebugEnhancedL
     if (matchingChecksums.size == 1) Option(matchingChecksums.head.dataFile)
     else if (matchingChecksums.isEmpty) Option.empty
          else {
-           val matchingPaths = basicFileMetas.filter(bfm => bfm.label == fileInfo.metadata.label && bfm.directoryLabel == fileInfo.metadata.directoryLabel)
+           val matchingPaths = basicFileMetas.filter(bfm => bfm.label == fileInfo.metadata.label.get && bfm.directoryLabel == fileInfo.metadata.directoryLabel)
            if (matchingPaths.size == 1) Option(matchingPaths.head.dataFile)
            else if (matchingPaths.isEmpty) Option.empty
                 else throw new IllegalArgumentException("Found multiple basic file metas with the same path in a single dataset version")
