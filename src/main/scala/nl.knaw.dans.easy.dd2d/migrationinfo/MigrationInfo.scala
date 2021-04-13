@@ -41,9 +41,9 @@ class MigrationInfo(config: MigrationInfoConfig) extends DebugEnhancedLogging {
     }
   }
 
-  def getPrestagedDataFilesFor(doi: String): Try[Map[String, DataFile]] = {
+  def getPrestagedDataFilesFor(doi: String, seq: Int): Try[Set[BasicFileMeta]] = {
     trace(doi)
-    val url = (new URI(config.baseUrl + "/") resolve s"datasets/:persistentId/datafiles").toASCIIString
+    val url = (config.baseUrl resolve s"datasets/:persistentId/seq/$seq/basic-file-metas").toASCIIString
     debug(s"Retrieving pre-staged files for $doi from $url")
     Try {
       Http(url)
@@ -53,11 +53,10 @@ class MigrationInfo(config: MigrationInfoConfig) extends DebugEnhancedLogging {
     } map {
       case r if r.code == 200 =>
         val json = JsonMethods.parse(r.body)
-        val datafiles = json.extract[List[DataFile]]
-        datafiles.map(d => d.checksum.`@value` -> d).toMap
+        json.extract[List[BasicFileMeta]].toSet
       case r if r.code == 404 =>
         logger.warn(s"No pre-staged files could be found for dataset $doi. Returning empty result.")
-        Map.empty
+        Set.empty
       case r => throw new RuntimeException(s"Could not retrieve pre-staged files. Status: ${r.code}, Message: ${r.body}")
     }
   }

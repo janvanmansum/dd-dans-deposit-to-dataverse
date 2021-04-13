@@ -81,7 +81,7 @@ object Configuration {
       dataverse = DataverseInstanceConfig(
         connectionTimeout = properties.getInt("dataverse.connection-timeout-ms"),
         readTimeout = properties.getInt("dataverse.read-timeout-ms"),
-        baseUrl = new URI(properties.getString("dataverse.base-url")),
+        baseUrl = new URI(appendSlash(properties.getString("dataverse.base-url"))),
         apiToken = properties.getString("dataverse.api-key"),
         apiVersion = properties.getString("dataverse.api-version"),
         unblockKey = Option(properties.getString("dataverse.admin-api-unblock-key")),
@@ -105,7 +105,6 @@ object Configuration {
     if (url.endsWith("/")) url
     else url + "/"
   }
-
 
   def loadCsvToMap(csvFile: File, keyColumn: String, valueColumn: String): Try[Map[String, String]] = {
     import resource.managed

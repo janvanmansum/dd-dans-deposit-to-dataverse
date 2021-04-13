@@ -37,29 +37,27 @@ abstract class DatasetEditor(instance: DataverseInstance) extends DebugEnhancedL
    */
   def performEdit(): Try[PersistendId]
 
-  //
-  protected def addFiles(persistentId: String, files: List[FileInfo], checksumToPrestagedFile: Map[String, DataFile] = Map.empty): Try[Map[Int, FileInfo]] = {
+  protected def addFiles(persistentId: String, files: List[FileInfo], prestagedFiles: Set[BasicFileMeta] = Set.empty): Try[Map[Int, FileInfo]] = {
     trace(persistentId, files)
     files
       .map(f => {
         debug(s"Adding file, directoryLabel = ${ f.metadata.directoryLabel }, label = ${ f.metadata.label }")
         for {
-          id <- addFile(persistentId, f, checksumToPrestagedFile)
+          id <- addFile2(persistentId, f, prestagedFiles)
           _ <- instance.dataset(persistentId).awaitUnlock()
         } yield (id -> f)
       }).collectResults.map(_.toMap)
   }
 
-  private def addFile(doi: String, fileInfo: FileInfo, checksumToPrestagedFile: Map[String, DataFile]): Try[Int] = {
+  private def addFile2(doi: String, fileInfo: FileInfo, prestagedFiles: Set[BasicFileMeta]): Try[Int] = {
     val result = for {
-      r <- if (checksumToPrestagedFile.contains(fileInfo.checksum)) {
+      r <- getPrestagedFileFor(fileInfo, prestagedFiles).map { dataFile =>
         debug(s"Adding prestaged file: $fileInfo")
-        instance.dataset(doi).registerPrestagedFile(checksumToPrestagedFile(fileInfo.checksum))
+        instance.dataset(doi).registerPrestagedFile(dataFile)
+      }.getOrElse {
+        debug(s"Uploading file: $fileInfo")
+        instance.dataset(doi).addFile(Option(fileInfo.file))
       }
-           else {
-             debug(s"Uploading file: $fileInfo")
-             instance.dataset(doi).addFile(Option(fileInfo.file))
-           }
       files <- r.data
       id = files.files.headOption.flatMap(_.dataFile.map(_.id))
       _ <- instance.dataset(doi).awaitUnlock()
