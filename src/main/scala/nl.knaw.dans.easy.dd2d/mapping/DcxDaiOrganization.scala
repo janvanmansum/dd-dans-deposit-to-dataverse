@@ -15,6 +15,8 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
+import nl.knaw.dans.easy.dd2d.mapping.DcxDaiAuthor.{ formatName, parseAuthor }
+
 import scala.xml.Node
 
 object DcxDaiOrganization extends Contributor with BlockCitation {
@@ -40,6 +42,16 @@ object DcxDaiOrganization extends Contributor with BlockCitation {
       m.addCvField(CONTRIBUTOR_TYPE, organization.role.map(contributoreRoleToContributorType.getOrElse(_, "Other")).getOrElse("Other"))
     }
     m.toJsonObject
+  }
+
+  def isRightsHolder(node: Node): Boolean = {
+    val organization = parseOrganization(node)
+    organization.role.contains("RightsHolder")
+  }
+
+  def toRightsHolder(node: Node): Option[String] = {
+    val organization = parseOrganization(node)
+    organization.name
   }
 
   def toAuthorValueObject(node: Node): JsonObject = {

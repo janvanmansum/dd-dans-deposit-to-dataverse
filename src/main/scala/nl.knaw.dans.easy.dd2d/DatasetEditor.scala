@@ -53,7 +53,7 @@ abstract class DatasetEditor(instance: DataverseInstance) extends DebugEnhancedL
     val result = for {
       r <- getPrestagedFileFor(fileInfo, prestagedFiles).map { dataFile =>
         debug(s"Adding prestaged file: $fileInfo")
-        instance.dataset(doi).registerPrestagedFile(dataFile)
+        instance.dataset(doi).addPrestagedFile(dataFile)
       }.getOrElse {
         debug(s"Uploading file: $fileInfo")
         instance.dataset(doi).addFile(Option(fileInfo.file))

@@ -100,6 +100,11 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
     depositProperties.getString("identifier.doi", "")
   }
 
+  def depositorUserId: String = {
+    depositProperties.getString("depositor.userId")
+  }
+
+
   def isUpdate: Try[Boolean] = {
     for {
       bag <- tryBag

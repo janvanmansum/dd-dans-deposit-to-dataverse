@@ -82,8 +82,8 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       addCvFieldMultipleValues(citationFields, SUBJECT, ddm \ "profile" \ "audience", Audience toCitationBlockSubject)
       addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(isoToDataverseLanguage))
       addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
-      addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, ddm \ "dcmiMetadata" \ "contributorDetails" \ "author", DcxDaiAuthor toContributorValueObject)
-      addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization", DcxDaiOrganization toContributorValueObject)
+      addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "author").filterNot(DcxDaiAuthor isRightsHolder), DcxDaiAuthor toContributorValueObject)
+      addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization").filterNot(DcxDaiOrganization isRightsHolder), DcxDaiOrganization toContributorValueObject)
       addPrimitiveFieldSingleValue(citationFields, DISTRIBUTION_DATE, ddm \ "profile" \ "available", DateTypeElement toYearMonthDayFormat)
       addPrimitiveFieldMultipleValues(citationFields, DATA_SOURCES, ddm \ "dcmiMetadata" \ "source")
     }
@@ -96,6 +96,8 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       optAgreements.foreach { agreements =>
         addCvFieldSingleValue(rightsFields, PERSONAL_DATA_PRESENT, agreements \ "personalDataStatement", PersonalStatement toHasPersonalDataValue)
       }
+      addPrimitiveFieldMultipleValues(rightsFields, RIGHTS_HOLDER, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "author").filter(DcxDaiAuthor isRightsHolder), DcxDaiAuthor toRightsHolder)
+      addPrimitiveFieldMultipleValues(rightsFields, RIGHTS_HOLDER, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization").filter(DcxDaiOrganization isRightsHolder), DcxDaiOrganization toRightsHolder)
     }
 
     if (activeMetadataBlocks.contains("dansCollectionMetadata")) {
