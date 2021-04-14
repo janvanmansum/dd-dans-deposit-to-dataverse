@@ -50,6 +50,7 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
   private val ddmPath = bagDir / "metadata" / "dataset.xml"
   private val filesXmlPath = bagDir / "metadata" / "files.xml"
   private val agreementsXmlPath = bagDir / "metadata" / "depositor-info" / "agreements.xml"
+  private val amdPath = bagDir / "metadata" / "amd.xml"
   private val depositProperties = new PropertiesConfiguration() {
     setDelimiterParsingDisabled(true)
     load((dir / "deposit.properties").toJava)
@@ -96,6 +97,20 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
     } yield result
   }
 
+  lazy val tryOptAmd: Try[Option[Node]] = Try {
+    val amdFile = bagDir / amdPath.toString
+    if (amdFile.exists) {
+      Option(Utility.trim {
+        XML.loadFile((bagDir / amdPath.toString).toJava)
+      })
+    }
+    else {
+      Option.empty[Node]
+    }
+  }.recoverWith {
+    case t: Throwable => Failure(new IllegalArgumentException(s"Unparseable XML: ${ t.getMessage }"))
+  }
+
   def doi: String = {
     depositProperties.getString("identifier.doi", "")
   }
@@ -103,7 +118,6 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
   def depositorUserId: String = {
     depositProperties.getString("depositor.userId")
   }
-
 
   def isUpdate: Try[Boolean] = {
     for {

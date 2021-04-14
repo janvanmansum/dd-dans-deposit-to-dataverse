@@ -49,7 +49,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
   lazy val temporalSpatialFields = new mutable.HashMap[String, AbstractFieldBuilder]()
   lazy val dataVaultFields = new mutable.HashMap[String, AbstractFieldBuilder]()
 
-  def toDataverseDataset(ddm: Node, optAgreements: Option[Node], contactData: List[JsonObject], vaultMetadata: VaultMetadata): Try[Dataset] = Try {
+  def toDataverseDataset(ddm: Node, optAgreements: Option[Node], optAmd: Option[Node], contactData: List[JsonObject], vaultMetadata: VaultMetadata): Try[Dataset] = Try {
     // Please, keep ordered by order in Dataverse UI as much as possible (note, if display-on-create is not set for all fields, some may be hidden initally)
 
     if (activeMetadataBlocks.contains("citation")) {
@@ -85,7 +85,14 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "author").filterNot(DcxDaiAuthor isRightsHolder), DcxDaiAuthor toContributorValueObject)
       addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization").filterNot(DcxDaiOrganization isRightsHolder), DcxDaiOrganization toContributorValueObject)
       addPrimitiveFieldSingleValue(citationFields, DISTRIBUTION_DATE, ddm \ "profile" \ "available", DateTypeElement toYearMonthDayFormat)
+
+      //      optAmd.map { amd =>
+      //        addPrimitiveFieldSingleValue(citationFields, DATE_OF_DEPOSIT, amd)
+      //      }.orElse {
+      //        // TODO: set to current date
+      //      }
       addPrimitiveFieldMultipleValues(citationFields, DATA_SOURCES, ddm \ "dcmiMetadata" \ "source")
+      addCompoundFieldMultipleValues(citationFields, DISTRIBUTOR, (ddm \ "dcmiMetadata" \ "publisher").filterNot(n => n.text == "DANS" || n.text == "DANS-KNAW"), Publisher toDistributorValue)
     }
     else {
       throw new IllegalStateException("Metadatablock citation should always be active")

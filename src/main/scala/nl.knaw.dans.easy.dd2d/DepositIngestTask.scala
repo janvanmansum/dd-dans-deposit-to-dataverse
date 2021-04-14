@@ -73,7 +73,8 @@ case class DepositIngestTask(deposit: Deposit,
       datasetContacts <- createDatasetContacts(user.displayName, user.email, user.affiliation)
       ddm <- deposit.tryDdm
       optAgreements <- deposit.tryOptAgreementsXml
-      dataverseDataset <- datasetMetadataMapper.toDataverseDataset(ddm, optAgreements, datasetContacts, deposit.vaultMetadata)
+      optAmd <- deposit.tryOptAmd
+      dataverseDataset <- datasetMetadataMapper.toDataverseDataset(ddm, optAgreements, optAmd, datasetContacts, deposit.vaultMetadata)
       isUpdate <- deposit.isUpdate
       _ = debug(s"isUpdate? = $isUpdate")
       editor = if (isUpdate) new DatasetUpdater(deposit, dataverseDataset.datasetVersion.metadataBlocks, instance)
