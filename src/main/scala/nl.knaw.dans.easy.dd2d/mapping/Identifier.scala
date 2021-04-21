@@ -17,7 +17,14 @@ package nl.knaw.dans.easy.dd2d.mapping
 
 import scala.xml.Node
 
-object Identifier extends BlockCitation {
+object Identifier extends BlockCitation with BlockArchaeologySpecific {
+  val archisNumberTypeToCvItem = Map(
+    "ARCHIS-ONDERZOEK" -> "onderzoek",
+    "ARCHIS-VONDSTMELDING" -> "vondstmelding",
+    "ARCHIS-MONUMENT" -> "monument",
+    "ARCHIS-WAARNEMING" -> "waarneming"
+  )
+
   def canBeMappedToOtherId(node: Node): Boolean = {
     hasXsiType(node, "EASY2") || !attributeExists(node, XML_SCHEMA_INSTANCE_URI, "type")
   }
@@ -63,10 +70,33 @@ object Identifier extends BlockCitation {
     m.toJsonObject
   }
 
+  def isArchisZaakId(node: Node): Boolean = {
+    hasXsiType(node, "ARCHIS-ZAAK-IDENTIFICATIE")
+  }
 
   def toArchisZaakId(node: Node): Option[String] = {
     if (hasXsiType(node, "ARCHIS-ZAAK-IDENTIFICATIE")) Some(node.text)
     else Option.empty
   }
 
+  def isArchisNumber(node: Node): Boolean = {
+    hasXsiType(node, "ARCHIS-ONDERZOEK") ||
+      hasXsiType(node, "ARCHIS-VONDSTMELDING") ||
+      hasXsiType(node, "ARCHIS-MONUMENT") ||
+      hasXsiType(node, "ARCHIS-WAARNEMING")
+  }
+
+  def toArchisNumberValue(node: Node): JsonObject = {
+    val m = FieldMap()
+    val optArchisNumberType = node.attribute(XML_SCHEMA_INSTANCE_URI, "type").map(_.text)
+    val optArchisNumberId = node.text
+
+    if (optArchisNumberType.isEmpty) throw new IllegalArgumentException("Archis number without type")
+    if (optArchisNumberId.trim.isEmpty) throw new IllegalArgumentException("Archis number without ID")
+    val archisNumberType = optArchisNumberType.get
+
+    m.addCvField(ARCHIS_NUMBER_TYPE, archisNumberTypeToCvItem(archisNumberType.substring(archisNumberType.indexOf(":") + 1)))
+    m.addPrimitiveField(ARCHIS_NUMBER_ID, optArchisNumberId)
+    m.toJsonObject
+  }
 }

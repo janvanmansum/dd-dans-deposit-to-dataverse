@@ -119,7 +119,8 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
     }
 
     if (activeMetadataBlocks.contains("dansArchaeologyMetadata")) {
-      addPrimitiveFieldMultipleValues(archaeologySpecificFields, ARCHIS_ZAAK_ID, ddm \ "dcmiMetadata" \ "identifier", Identifier toArchisZaakId)
+      addPrimitiveFieldMultipleValues(archaeologySpecificFields, ARCHIS_ZAAK_ID, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier isArchisZaakId), Identifier toArchisZaakId)
+      addCompoundFieldMultipleValues(archaeologySpecificFields, ARCHIS_NUMBER, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier isArchisNumber), Identifier toArchisNumberValue)
       addCompoundFieldMultipleValues(archaeologySpecificFields, ABR_RAPPORT_TYPE, (ddm \ "dcmiMetadata" \ "reportNumber").filter(AbrReportType isAbrReportType), AbrReportType toAbrRapportType (reportIdToTerm))
       addPrimitiveFieldMultipleValues(archaeologySpecificFields, ABR_RAPPORT_NUMMER, ddm \ "dcmiMetadata" \ "reportNumber")
       addCompoundFieldMultipleValues(archaeologySpecificFields, ABR_VERWERVINGSWIJZE, (ddm \ "dcmiMetadata" \ "acquisitionMethod").filter(AbrAcquisitionMethod isAbrVerwervingswijze), AbrAcquisitionMethod toVerwervingswijze)
