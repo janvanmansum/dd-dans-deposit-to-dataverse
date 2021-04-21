@@ -89,11 +89,11 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization").filterNot(DcxDaiOrganization isRightsHolder), DcxDaiOrganization toContributorValueObject)
       addPrimitiveFieldSingleValue(citationFields, DISTRIBUTION_DATE, ddm \ "profile" \ "available", DateTypeElement toYearMonthDayFormat)
 
-      //      optAmd.map { amd =>
-      //        addPrimitiveFieldSingleValue(citationFields, DATE_OF_DEPOSIT, amd)
-      //      }.orElse {
-      //        // TODO: set to current date
-      //      }
+      optAmd.foreach { amd =>
+        addPrimitiveFieldSingleValue(citationFields, DATE_OF_DEPOSIT, amd, Amd toDateOfDeposit)
+      }
+      // TODO: what to set dateOfDeposit to for SWORD or multi-deposits? Take from deposit.properties?
+
       addPrimitiveFieldMultipleValues(citationFields, DATA_SOURCES, ddm \ "dcmiMetadata" \ "source")
 
       addCompoundFieldMultipleValues(citationFields, PUBLICATION, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier isRelatedPublication), Identifier toRelatedPublicationValue)
@@ -118,7 +118,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
 
     if (activeMetadataBlocks.contains("dansArchaeologyMetadata")) {
       addPrimitiveFieldMultipleValues(archaeologySpecificFields, ARCHIS_ZAAK_ID, ddm \ "dcmiMetadata" \ "identifier", Identifier toArchisZaakId)
-      addCompoundFieldMultipleValues(archaeologySpecificFields, ABR_RAPPORT_TYPE, (ddm \ "dcmiMetadata" \ "reportNumber").filter(AbrReportType isAbrReportType), AbrReportType toAbrRapportType(reportIdToTerm))
+      addCompoundFieldMultipleValues(archaeologySpecificFields, ABR_RAPPORT_TYPE, (ddm \ "dcmiMetadata" \ "reportNumber").filter(AbrReportType isAbrReportType), AbrReportType toAbrRapportType (reportIdToTerm))
       addPrimitiveFieldMultipleValues(archaeologySpecificFields, ABR_RAPPORT_NUMMER, ddm \ "dcmiMetadata" \ "reportNumber")
       addCompoundFieldMultipleValues(archaeologySpecificFields, ABR_VERWERVINGSWIJZE, (ddm \ "dcmiMetadata" \ "acquisitionMethod").filter(AbrAcquisitionMethod isAbrVerwervingswijze), AbrAcquisitionMethod toVerwervingswijze)
       addCompoundFieldMultipleValues(archaeologySpecificFields, ABR_COMPLEX, (ddm \ "dcmiMetadata" \ "subject").filter(SubjectAbr isAbrComplex), SubjectAbr toAbrComplex)

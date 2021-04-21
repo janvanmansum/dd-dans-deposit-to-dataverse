@@ -43,7 +43,7 @@ class DepositToDataverseMapperSpec extends TestSupportFixture {
         </ddm:dcmiMetadata>
       </ddm:DDM>
 
-    val result = mapper.toDataverseDataset(ddm, optAgreements, null, contactData, vaultMetadata)
+    val result = mapper.toDataverseDataset(ddm, optAgreements, None, contactData, vaultMetadata)
     result shouldBe a[Success[_]]
     inside(result) {
       case Success(Dataset(dsv)) =>
@@ -67,7 +67,7 @@ class DepositToDataverseMapperSpec extends TestSupportFixture {
         </ddm:dcmiMetadata>
       </ddm:DDM>
 
-    val result = mapper.toDataverseDataset(ddm, optAgreements, null, contactData, vaultMetadata)
+    val result = mapper.toDataverseDataset(ddm, optAgreements, None, contactData, vaultMetadata)
     result shouldBe a[Success[_]]
     inside(result) {
       case Success(Dataset(dsv)) =>
@@ -114,7 +114,7 @@ class DepositToDataverseMapperSpec extends TestSupportFixture {
           </ddm:dcmiMetadata>
       </ddm:DDM>
 
-    val result = mapper.toDataverseDataset(ddm, optAgreements, null, contactData, vaultMetadata)
+    val result = mapper.toDataverseDataset(ddm, optAgreements, None, contactData, vaultMetadata)
     result shouldBe a[Success[_]]
     inside(result) {
       case Success(Dataset(dsv)) =>
