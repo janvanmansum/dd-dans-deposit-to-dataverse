@@ -25,6 +25,7 @@ import nl.knaw.dans.lib.error._
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.Task
 
+import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 import scala.util.{ Success, Try }
 import scala.xml.Elem
@@ -65,14 +66,13 @@ case class DepositIngestTask(deposit: Deposit,
     for {
       validationResult <- dansBagValidator.validateBag(bagDirPath)
       _ <- rejectIfInvalid(validationResult)
-
-      // TODO: base contact on owner of deposit
-      response <- instance.admin().getSingleUser("dataverseAdmin")
+      response <- instance.admin().getSingleUser(deposit.depositorUserId)
       user <- response.data
-      datasetContacts <- createDatasetContacts(user.displayName, user.email)
+      datasetContacts <- createDatasetContacts(user.displayName, user.email, user.affiliation)
       ddm <- deposit.tryDdm
       optAgreements <- deposit.tryOptAgreementsXml
-      dataverseDataset <- datasetMetadataMapper.toDataverseDataset(ddm, optAgreements, datasetContacts, deposit.vaultMetadata)
+      optAmd <- deposit.tryOptAmd
+      dataverseDataset <- datasetMetadataMapper.toDataverseDataset(ddm, optAgreements, optAmd, datasetContacts, deposit.vaultMetadata)
       isUpdate <- deposit.isUpdate
       _ = debug(s"isUpdate? = $isUpdate")
       editor = if (isUpdate) new DatasetUpdater(deposit, dataverseDataset.datasetVersion.metadataBlocks, instance)
@@ -105,11 +105,12 @@ case class DepositIngestTask(deposit: Deposit,
     case (nr, msg) => s" - [$nr] $msg"
   }
 
-  private def createDatasetContacts(name: String, email: String): Try[List[JsonObject]] = Try {
-    List(toFieldMap(
-      PrimitiveSingleValueField("datasetContactName", name),
-      PrimitiveSingleValueField("datasetContactEmail", email)
-    ))
+  private def createDatasetContacts(name: String, email: String, optAffiliation: Option[String] = None): Try[List[JsonObject]] = Try {
+    val subfields = ListBuffer[PrimitiveSingleValueField]()
+    subfields.append(PrimitiveSingleValueField("datasetContactName", name))
+    subfields.append(PrimitiveSingleValueField("datasetContactEmail", email))
+    optAffiliation.foreach(affiliation => subfields.append(PrimitiveSingleValueField("datasetContactAffiliation", affiliation)))
+    List(toFieldMap(subfields:_*))
   }
 
   private def publishDataset(persistentId: String): Try[Unit] = {

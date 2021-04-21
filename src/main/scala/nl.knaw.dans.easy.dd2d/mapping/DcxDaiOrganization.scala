@@ -42,6 +42,16 @@ object DcxDaiOrganization extends Contributor with BlockCitation {
     m.toJsonObject
   }
 
+  def isRightsHolder(node: Node): Boolean = {
+    val organization = parseOrganization(node)
+    organization.role.contains("RightsHolder")
+  }
+
+  def toRightsHolder(node: Node): Option[String] = {
+    val organization = parseOrganization(node)
+    organization.name
+  }
+
   def toAuthorValueObject(node: Node): JsonObject = {
     val m = FieldMap()
     val organization = parseOrganization(node)

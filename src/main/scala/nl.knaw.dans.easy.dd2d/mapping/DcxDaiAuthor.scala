@@ -85,6 +85,16 @@ object DcxDaiAuthor extends Contributor with BlockCitation {
     m.toJsonObject
   }
 
+  def toRightsHolder(node: Node): Option[String] = {
+    val author = parseAuthor(node)
+    Option(formatName(author))
+  }
+
+  def isRightsHolder(node: Node): Boolean = {
+    val author = parseAuthor(node)
+    author.role.contains("RightsHolder")
+  }
+
   private def formatName(author: Author): String = {
     List(author.titles.getOrElse(""),
       author.initials.getOrElse(""),
