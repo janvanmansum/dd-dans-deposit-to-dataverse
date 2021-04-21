@@ -18,4 +18,5 @@ package nl.knaw.dans.easy.dd2d.mapping
 trait BlockRights {
   val RIGHTS_HOLDER = "dansRightsHolder"
   val PERSONAL_DATA_PRESENT = "dansPersonalDataPresent"
+  val LANGUAGE_OF_METADATA = "dansMetadataLanguage"
 }

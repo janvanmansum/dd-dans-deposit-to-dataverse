@@ -29,6 +29,10 @@ object Language extends BlockCitation with DebugEnhancedLogging {
     else Option.empty[String]
   }
 
+  def langAttributeToMetadataLanguage(isoToDataverse: Map[String, String])(node: Node): Option[String] = {
+    node.attribute(XML_NAMESPACE_URI, "lang").flatMap(_.headOption.flatMap(a => isoToDataverse.get(a.text)))
+  }
+
   def toKeywordValue(node: Node): JsonObject = {
     val m = FieldMap()
     m.addPrimitiveField(KEYWORD_VALUE, node.text)

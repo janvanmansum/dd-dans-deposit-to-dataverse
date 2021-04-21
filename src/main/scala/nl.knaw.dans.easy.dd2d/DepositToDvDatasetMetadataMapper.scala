@@ -44,7 +44,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
   with BlockDataVaultMetadata {
   lazy val citationFields = new mutable.HashMap[String, AbstractFieldBuilder]()
   lazy val rightsFields = new mutable.HashMap[String, AbstractFieldBuilder]()
-  lazy val collectionFields = new mutable.HashMap[String, AbstractFieldBuilder]()
+  lazy val relationFields = new mutable.HashMap[String, AbstractFieldBuilder]()
   lazy val archaeologySpecificFields = new mutable.HashMap[String, AbstractFieldBuilder]()
   lazy val temporalSpatialFields = new mutable.HashMap[String, AbstractFieldBuilder]()
   lazy val dataVaultFields = new mutable.HashMap[String, AbstractFieldBuilder]()
@@ -110,10 +110,11 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       }
       addPrimitiveFieldMultipleValues(rightsFields, RIGHTS_HOLDER, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "author").filter(DcxDaiAuthor isRightsHolder), DcxDaiAuthor toRightsHolder)
       addPrimitiveFieldMultipleValues(rightsFields, RIGHTS_HOLDER, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization").filter(DcxDaiOrganization isRightsHolder), DcxDaiOrganization toRightsHolder)
+      addCvFieldMultipleValues(rightsFields, LANGUAGE_OF_METADATA, (ddm \ "profile" \ "_") ++ (ddm \ "dcmiMetadata" \ "_"), Language.langAttributeToMetadataLanguage(isoToDataverseLanguage))
     }
 
-    if (activeMetadataBlocks.contains("dansCollectionMetadata")) {
-      addCompoundFieldMultipleValues(collectionFields, COLLECTION, ddm \ "dcmiMetadata" \ "inCollection", Collection toCollection)
+    if (activeMetadataBlocks.contains("dansRelationMetadata")) {
+      addCompoundFieldMultipleValues(relationFields, COLLECTION, ddm \ "dcmiMetadata" \ "inCollection", Collection toCollection)
     }
 
     if (activeMetadataBlocks.contains("dansArchaeologyMetadata")) {
@@ -155,7 +156,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
     val versionMap = mutable.Map[String, MetadataBlock]()
     addMetadataBlock(versionMap, "citation", "Citation Metadata", citationFields)
     addMetadataBlock(versionMap, "dansRights", "Rights Metadata", rightsFields)
-    addMetadataBlock(versionMap, "dansCollection", "Collection Metadata", collectionFields)
+    addMetadataBlock(versionMap, "dansRelationMetadata", "Relation Metadata", relationFields)
     addMetadataBlock(versionMap, "dansArchaeologyMetadata", "Archaeology-Specific Metadata", archaeologySpecificFields)
     addMetadataBlock(versionMap, "dansTemporalSpatial", "Temporal and Spatial Coverage", temporalSpatialFields)
     addMetadataBlock(versionMap, "dansDataVaultMetadata", "Data Vault Metadata", dataVaultFields)

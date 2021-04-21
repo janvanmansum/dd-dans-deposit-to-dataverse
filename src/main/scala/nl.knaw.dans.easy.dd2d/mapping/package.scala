@@ -23,6 +23,7 @@ import scala.xml.Node
 
 package object mapping extends DebugEnhancedLogging {
   val XML_SCHEMA_INSTANCE_URI = "http://www.w3.org/2001/XMLSchema-instance"
+  val XML_NAMESPACE_URI = "http://www.w3.org/XML/1998/namespace"
 
   type JsonObject = Map[String, MetadataField]
   case class TermAndUrl(term: String, url: String)
