@@ -20,6 +20,7 @@ import nl.knaw.dans.easy.dd2d.OutboxSubdir.{ FAILED, OutboxSubdir, PROCESSED, RE
 import nl.knaw.dans.easy.dd2d.dansbag.{ DansBagValidationResult, DansBagValidator }
 import nl.knaw.dans.easy.dd2d.mapping.JsonObject
 import nl.knaw.dans.lib.dataverse.DataverseInstance
+import nl.knaw.dans.lib.dataverse.model.{ DefaultRole, RoleAssignment }
 import nl.knaw.dans.lib.dataverse.model.dataset.{ PrimitiveSingleValueField, UpdateType, toFieldMap }
 import nl.knaw.dans.lib.error._
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
@@ -78,6 +79,9 @@ case class DepositIngestTask(deposit: Deposit,
       editor = if (isUpdate) new DatasetUpdater(deposit, dataverseDataset.datasetVersion.metadataBlocks, instance)
                else new DatasetCreator(deposit, dataverseDataset, instance)
       persistentId <- editor.performEdit()
+      _ = debug(s"Assigning curator role to ${deposit.depositorUserId}")
+      _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${deposit.depositorUserId}", DefaultRole.curator.toString))
+      _ <- instance.dataset(persistentId).awaitUnlock()
       _ <- if (publish) publishDataset(persistentId)
            else keepOnDraft()
     } yield ()
