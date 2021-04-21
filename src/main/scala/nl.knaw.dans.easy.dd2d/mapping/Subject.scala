@@ -15,8 +15,21 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-trait BlockRights {
-  val RIGHTS_HOLDER = "dansRightsHolder"
-  val PERSONAL_DATA_PRESENT = "dansPersonalDataPresent"
-  val LANGUAGE_OF_METADATA = "dansMetadataLanguage"
+import scala.xml.Node
+
+object Subject extends BlockCitation {
+
+  def hasNoCvAttributes(node: Node): Boolean = {
+    node.attribute("subjectScheme").isEmpty && node.attribute("schemeURI").isEmpty
+  }
+
+  def toKeyWordValue(node: Node): JsonObject = {
+    val m = FieldMap()
+    m.addPrimitiveField(KEYWORD_VALUE, node.text)
+    m.addPrimitiveField(KEYWORD_VOCABULARY, "")
+    m.addPrimitiveField(KEYWORD_VOCABULARY_URI, "")
+    m.toJsonObject
+  }
+
+
 }

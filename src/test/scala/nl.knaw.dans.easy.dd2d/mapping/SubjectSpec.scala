@@ -16,16 +16,20 @@
 package nl.knaw.dans.easy.dd2d.mapping
 
 import nl.knaw.dans.easy.dd2d.TestSupportFixture
-import org.json4s.native.Serialization
 import org.json4s.{ DefaultFormats, Formats }
 
-class IsFormatOfSpec extends TestSupportFixture with BlockCitation {
-  private implicit val jsonFormats: Formats = new DefaultFormats {}
+class SubjectSpec extends TestSupportFixture with BlockCitation {
+  private implicit val jsonFormats: Formats = DefaultFormats
 
-  "toOtherIdValueObject" should "create Json object for the other id value" in {
-    val description = <dcterms:isFormatOf>https://test.example/1</dcterms:isFormatOf>
-    val result = Serialization.writePretty(IsFormatOf.toOtherIdValueObject(description))
-    findObject(result, s"$OTHER_ID_VALUE") shouldBe Map("typeName" -> "otherIdValue", "multiple" -> false, "typeClass" -> "primitive", "value" -> "https://test.example/1")
+  "hasNoCvAttributes" should "return false for ABR subjects" in {
+    val node = <ddm:subject  xml:lang="nl" valueURI="https://data.cultureelerfgoed.nl/term/id/abr/2179d872-888f-4807-a6d5-5e5afaa616c4" subjectScheme="ABR Complextypen" schemeURI="https://data.cultureelerfgoed.nl/term/id/abr/e9546020-4b28-4819-b0c2-29e7c864c5c0">
+                bewoning (inclusief verdediging)
+               </ddm:subject>
+    Subject hasNoCvAttributes node shouldBe false
   }
 
+  it should "return true for a subject with no subjectScheme and schemeURI attributes" in {
+    val node = <ddm:subject>Test</ddm:subject>
+    Subject hasNoCvAttributes node shouldBe true
+  }
 }

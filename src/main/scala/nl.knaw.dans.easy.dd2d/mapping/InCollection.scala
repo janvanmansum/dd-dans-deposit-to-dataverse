@@ -19,7 +19,7 @@ import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
 import scala.xml.Node
 
-object Collection extends BlockCollection with DebugEnhancedLogging {
+object InCollection extends BlockRelation with DebugEnhancedLogging {
   def toCollection(node: Node): JsonObject = {
     // TODO: also take attribute namespace into account (should be ddm)
     val optSubjectScheme = node.attribute("subjectScheme").flatMap(_.headOption).map(_.text).doIfNone(() => logger.error("Missing subjectScheme attribute on ddm:inCollection node"))

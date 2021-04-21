@@ -37,7 +37,10 @@ object FileElement {
     val dirPath = Option(Paths.get(pathAttr.substring("data/".length)).getParent).map(_.toString)
     val restr = (node \ "accessibleToRights").headOption.map(_.text).flatMap(accessibilityToRestrict.get).orElse(Some(defaultRestrict))
     val keyValuePairs = getKeyValuePairs(node, fileName.get)
-    val descr = if (keyValuePairs.nonEmpty) Option(formatKeyValuePairs(keyValuePairs))
+    val descr = if (keyValuePairs.nonEmpty) {
+      if (keyValuePairs.size == 1 && keyValuePairs.keySet.contains("description")) Option(keyValuePairs("description").head)
+      else Option(formatKeyValuePairs(keyValuePairs))
+    }
                 else None
 
     FileMeta(
@@ -61,7 +64,6 @@ object FileElement {
       "notes",
       "case_quantity",
       "file_category",
-      "data_format",
       "description",
       "othmat_codebook",
       "data_collector",
@@ -71,10 +73,7 @@ object FileElement {
       "geog_unit",
       "local_georef",
       "mapprojection",
-      "analytic_units",
-      "isFormatOf",
-      "requires",
-      "abstract")
+      "analytic_units")
 
     fixedKeys.foreach { key =>
       (node \ key).toList.foreach(n => m.getOrElseUpdate(key, mutable.ListBuffer[String]()).append(n.text))

@@ -17,6 +17,7 @@ package nl.knaw.dans.easy.dd2d
 
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.{ Task, TaskSorter }
+import org.apache.commons.configuration.PropertiesConfiguration
 
 import java.io.FileInputStream
 import java.time.LocalDateTime
@@ -46,9 +47,11 @@ class DepositSorter extends TaskSorter[Deposit] with DebugEnhancedLogging {
 
   private def getDepositSortInfo(depositIngestTask: DepositIngestTask): DepositsSortInfo = {
     val bagInfoFile = depositIngestTask.deposit.dir.list(_.isRegularFile, 2).filter(_.name == BAG_INFO_FILE).toList.head
-    val properties = new Properties()
-    properties.load(new FileInputStream(bagInfoFile.pathAsString));
-    val timeStamp = parseTimestamp(properties.getProperty(CREATED))
+    val properties = new PropertiesConfiguration() {
+      setDelimiterParsingDisabled(true)
+      load(bagInfoFile.toJava);
+    }
+    val timeStamp = parseTimestamp(properties.getString(CREATED))
     val isVersionOf: Option[String] = properties.getProperty(IS_VERSION_OF) match {
       case null => None
       case uuid: String => Some(uuid)

@@ -23,6 +23,7 @@ import scala.xml.Node
 
 package object mapping extends DebugEnhancedLogging {
   val XML_SCHEMA_INSTANCE_URI = "http://www.w3.org/2001/XMLSchema-instance"
+  val XML_NAMESPACE_URI = "http://www.w3.org/XML/1998/namespace"
 
   type JsonObject = Map[String, MetadataField]
   case class TermAndUrl(term: String, url: String)
@@ -40,6 +41,14 @@ package object mapping extends DebugEnhancedLogging {
 
   def hasAttribute(node: Node, name: String, value: String): Boolean = {
     node.attribute(name).exists(_.text == value)
+  }
+
+  def hasAttribute(node: Node, namespace: String, name: String, value: String): Boolean = {
+    node.attribute(namespace, name).exists(_.text == value)
+  }
+
+  def attributeExists(node: Node, namespace: String, name: String): Boolean = {
+    node.attribute(namespace, name).isDefined
   }
 
   case class FieldMap() {

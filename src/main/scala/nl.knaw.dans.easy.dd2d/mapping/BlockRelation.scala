@@ -15,18 +15,15 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-import scala.xml.Node
+trait BlockRelation {
+  val COLLECTION = "dansCollection"
+  val COLLECTION_VOCABULARY = "dansCollectionVocabulary"
+  val COLLECTION_VOCABULARY_URI = "dansCollectionVocabularyURI"
+  val COLLECTION_TERM = "dansCollectionTerm"
+  val COLLECTION_TERM_URI = "dansCollectionTermURI"
 
-object IsFormatOf extends BlockCitation {
-
-  def toArchisZaakId(node: Node): Option[String] = {
-    if (hasXsiType(node, "ARCHIS-ZAAK-IDENTIFICATIE")) Some(node.text)
-    else Option.empty
-  }
-
-  def toOtherIdValueObject(node: Node): JsonObject = {
-    val m = FieldMap()
-    m.addPrimitiveField(OTHER_ID_VALUE, node.text)
-    m.toJsonObject
-  }
+  val RELATION = "dansRelation"
+  val RELATION_TYPE = "dansRelationType"
+  val RELATION_URI = "dansRelationURI"
+  val RELATION_TEXT = "dansRelationText"
 }

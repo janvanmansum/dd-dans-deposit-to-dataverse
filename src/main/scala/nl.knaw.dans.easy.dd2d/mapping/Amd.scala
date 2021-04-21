@@ -15,10 +15,26 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-trait BlockCollection {
-  val COLLECTION = "dansCollection"
-  val COLLECTION_VOCABULARY = "dansCollectionVocabulary"
-  val COLLECTION_VOCABULARY_URI = "dansCollectionVocabularyURI"
-  val COLLECTION_TERM = "dansCollectionTerm"
-  val COLLECTION_TERM_URI = "dansCollectionTermURI"
+import scala.xml.Node
+
+object Amd {
+
+  def toDateOfDeposit(node: Node): Option[String] = {
+    getFirstChangeToState(node, "SUBMITTED")
+      .orElse {
+        getFirstChangeToState(node, "PUBLISHED")
+      }
+  }
+
+  private def getFirstChangeToState(amd: Node, state: String): Option[String] = {
+    (amd \ "stateChangeDates" \ "stateChangeDate")
+      .filter(sc => (sc \ "toState").text == state)
+      .toList
+      .map(_ \ "changeDate")
+      .map(_.head) // There can only be one changeDate per change
+      .map(DateTypeElement.toYearMonthDayFormat)
+      .map(_.get)
+      .sorted
+      .headOption
+  }
 }

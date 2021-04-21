@@ -20,11 +20,13 @@ import nl.knaw.dans.easy.dd2d.OutboxSubdir.{ FAILED, OutboxSubdir, PROCESSED, RE
 import nl.knaw.dans.easy.dd2d.dansbag.{ DansBagValidationResult, DansBagValidator }
 import nl.knaw.dans.easy.dd2d.mapping.JsonObject
 import nl.knaw.dans.lib.dataverse.DataverseInstance
+import nl.knaw.dans.lib.dataverse.model.{ DefaultRole, RoleAssignment }
 import nl.knaw.dans.lib.dataverse.model.dataset.{ PrimitiveSingleValueField, UpdateType, toFieldMap }
 import nl.knaw.dans.lib.error._
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.Task
 
+import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 import scala.util.{ Success, Try }
 import scala.xml.Elem
@@ -65,19 +67,21 @@ case class DepositIngestTask(deposit: Deposit,
     for {
       validationResult <- dansBagValidator.validateBag(bagDirPath)
       _ <- rejectIfInvalid(validationResult)
-
-      // TODO: base contact on owner of deposit
-      response <- instance.admin().getSingleUser("dataverseAdmin")
+      response <- instance.admin().getSingleUser(deposit.depositorUserId)
       user <- response.data
-      datasetContacts <- createDatasetContacts(user.displayName, user.email)
+      datasetContacts <- createDatasetContacts(user.displayName, user.email, user.affiliation)
       ddm <- deposit.tryDdm
       optAgreements <- deposit.tryOptAgreementsXml
-      dataverseDataset <- datasetMetadataMapper.toDataverseDataset(ddm, optAgreements, datasetContacts, deposit.vaultMetadata)
+      optAmd <- deposit.tryOptAmd
+      dataverseDataset <- datasetMetadataMapper.toDataverseDataset(ddm, optAgreements, optAmd, datasetContacts, deposit.vaultMetadata)
       isUpdate <- deposit.isUpdate
       _ = debug(s"isUpdate? = $isUpdate")
       editor = if (isUpdate) new DatasetUpdater(deposit, dataverseDataset.datasetVersion.metadataBlocks, instance)
                else new DatasetCreator(deposit, dataverseDataset, instance)
       persistentId <- editor.performEdit()
+      _ = debug(s"Assigning curator role to ${deposit.depositorUserId}")
+      _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${deposit.depositorUserId}", DefaultRole.curator.toString))
+      _ <- instance.dataset(persistentId).awaitUnlock()
       _ <- if (publish) publishDataset(persistentId)
            else keepOnDraft()
     } yield ()
@@ -105,11 +109,12 @@ case class DepositIngestTask(deposit: Deposit,
     case (nr, msg) => s" - [$nr] $msg"
   }
 
-  private def createDatasetContacts(name: String, email: String): Try[List[JsonObject]] = Try {
-    List(toFieldMap(
-      PrimitiveSingleValueField("datasetContactName", name),
-      PrimitiveSingleValueField("datasetContactEmail", email)
-    ))
+  private def createDatasetContacts(name: String, email: String, optAffiliation: Option[String] = None): Try[List[JsonObject]] = Try {
+    val subfields = ListBuffer[PrimitiveSingleValueField]()
+    subfields.append(PrimitiveSingleValueField("datasetContactName", name))
+    subfields.append(PrimitiveSingleValueField("datasetContactEmail", email))
+    optAffiliation.foreach(affiliation => subfields.append(PrimitiveSingleValueField("datasetContactAffiliation", affiliation)))
+    List(toFieldMap(subfields:_*))
   }
 
   private def publishDataset(persistentId: String): Try[Unit] = {

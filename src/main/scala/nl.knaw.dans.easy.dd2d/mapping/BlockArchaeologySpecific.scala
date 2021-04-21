@@ -18,6 +18,10 @@ package nl.knaw.dans.easy.dd2d.mapping
 trait BlockArchaeologySpecific {
   val ARCHIS_ZAAK_ID = "dansArchisZaakId"
 
+  val ARCHIS_NUMBER = "dansArchisNumber"
+  val ARCHIS_NUMBER_TYPE = "dansArchisNumberType"
+  val ARCHIS_NUMBER_ID = "dansArchisNumberId"
+
   val ABR_RAPPORT_TYPE = "dansAbrRapportType"
   val ABR_RAPPORT_TYPE_VOCABULARY = "dansAbrRapportTypeVocabulary"
   val ABR_RAPPORT_TYPE_VOCABULARY_URI = "dansAbrRapportTypeVocabularyURI"

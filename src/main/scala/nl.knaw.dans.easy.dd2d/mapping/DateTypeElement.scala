@@ -21,8 +21,6 @@ import org.joda.time.format.{ DateTimeFormat, DateTimeFormatter }
 import scala.xml.Node
 
 object DateTypeElement {
-  private val NAMESPACE_DCTERMS = "http://purl.org/dc/terms/"
-
   private val yyyymmddPattern: DateTimeFormatter = DateTimeFormat.forPattern("YYYY-MM-dd")
 
   private val labelToDateType = Map(

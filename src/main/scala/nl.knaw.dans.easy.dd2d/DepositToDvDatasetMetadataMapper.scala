@@ -40,27 +40,28 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
   with BlockArchaeologySpecific
   with BlockTemporalAndSpatial
   with BlockRights
-  with BlockCollection
+  with BlockRelation
   with BlockDataVaultMetadata {
   lazy val citationFields = new mutable.HashMap[String, AbstractFieldBuilder]()
   lazy val rightsFields = new mutable.HashMap[String, AbstractFieldBuilder]()
-  lazy val collectionFields = new mutable.HashMap[String, AbstractFieldBuilder]()
+  lazy val relationFields = new mutable.HashMap[String, AbstractFieldBuilder]()
   lazy val archaeologySpecificFields = new mutable.HashMap[String, AbstractFieldBuilder]()
   lazy val temporalSpatialFields = new mutable.HashMap[String, AbstractFieldBuilder]()
   lazy val dataVaultFields = new mutable.HashMap[String, AbstractFieldBuilder]()
 
-  def toDataverseDataset(ddm: Node, optAgreements: Option[Node], contactData: List[JsonObject], vaultMetadata: VaultMetadata): Try[Dataset] = Try {
+  def toDataverseDataset(ddm: Node, optAgreements: Option[Node], optAmd: Option[Node], contactData: List[JsonObject], vaultMetadata: VaultMetadata): Try[Dataset] = Try {
     // Please, keep ordered by order in Dataverse UI as much as possible (note, if display-on-create is not set for all fields, some may be hidden initally)
 
     if (activeMetadataBlocks.contains("citation")) {
       val titles = ddm \ "profile" \ "title"
-      if (titles.isEmpty) throw MissingRequiredFieldException("title")
+      checkRequiredField(TITLE, titles)
 
       val alternativeTitles = (ddm \ "dcmiMetadata" \ "title") ++ (ddm \ "dcmiMetadata" \ "alternative")
 
       addPrimitiveFieldSingleValue(citationFields, TITLE, titles.head)
       addPrimitiveFieldSingleValue(citationFields, ALTERNATIVE_TITLE, alternativeTitles)
-      addCompoundFieldMultipleValues(citationFields, OTHER_ID, ddm \ "dcmiMetadata" \ "isFormatOf", IsFormatOf toOtherIdValueObject)
+      addCompoundFieldMultipleValues(citationFields, OTHER_ID, DepositPropertiesVaultMetadata.toOtherIdValue(vaultMetadata.dataverseOtherId).toList)
+      addCompoundFieldMultipleValues(citationFields, OTHER_ID, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier canBeMappedToOtherId), Identifier toOtherIdValue)
       addCompoundFieldMultipleValues(citationFields, AUTHOR, ddm \ "profile" \ "creatorDetails" \ "author", DcxDaiAuthor toAuthorValueObject)
       addCompoundFieldMultipleValues(citationFields, AUTHOR, ddm \ "profile" \ "creatorDetails" \ "organization", DcxDaiOrganization toAuthorValueObject)
       addCompoundFieldMultipleValues(citationFields, AUTHOR, ddm \ "profile" \ "creator", Creator toAuthorValueObject)
@@ -80,12 +81,23 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
 
       checkRequiredField(SUBJECT, ddm \ "profile" \ "audience")
       addCvFieldMultipleValues(citationFields, SUBJECT, ddm \ "profile" \ "audience", Audience toCitationBlockSubject)
+      addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "subject").filter(Subject hasNoCvAttributes), Subject toKeyWordValue)
+      addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "language").filterNot(Language isIsoLanguage), Language toKeywordValue)
       addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(isoToDataverseLanguage))
       addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
-      addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, ddm \ "dcmiMetadata" \ "contributorDetails" \ "author", DcxDaiAuthor toContributorValueObject)
-      addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization", DcxDaiOrganization toContributorValueObject)
+      addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "author").filterNot(DcxDaiAuthor isRightsHolder), DcxDaiAuthor toContributorValueObject)
+      addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization").filterNot(DcxDaiOrganization isRightsHolder), DcxDaiOrganization toContributorValueObject)
       addPrimitiveFieldSingleValue(citationFields, DISTRIBUTION_DATE, ddm \ "profile" \ "available", DateTypeElement toYearMonthDayFormat)
+
+      optAmd.foreach { amd =>
+        addPrimitiveFieldSingleValue(citationFields, DATE_OF_DEPOSIT, amd, Amd toDateOfDeposit)
+      }
+      // TODO: what to set dateOfDeposit to for SWORD or multi-deposits? Take from deposit.properties?
+
       addPrimitiveFieldMultipleValues(citationFields, DATA_SOURCES, ddm \ "dcmiMetadata" \ "source")
+
+      addCompoundFieldMultipleValues(citationFields, PUBLICATION, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier isRelatedPublication), Identifier toRelatedPublicationValue)
+      addCompoundFieldMultipleValues(citationFields, GRANT_NUMBER, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier isNwoGrantNumber), Identifier toNwoGrantNumberValue)
     }
     else {
       throw new IllegalStateException("Metadatablock citation should always be active")
@@ -96,14 +108,19 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       optAgreements.foreach { agreements =>
         addCvFieldSingleValue(rightsFields, PERSONAL_DATA_PRESENT, agreements \ "personalDataStatement", PersonalStatement toHasPersonalDataValue)
       }
+      addPrimitiveFieldMultipleValues(rightsFields, RIGHTS_HOLDER, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "author").filter(DcxDaiAuthor isRightsHolder), DcxDaiAuthor toRightsHolder)
+      addPrimitiveFieldMultipleValues(rightsFields, RIGHTS_HOLDER, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization").filter(DcxDaiOrganization isRightsHolder), DcxDaiOrganization toRightsHolder)
+      addCvFieldMultipleValues(rightsFields, LANGUAGE_OF_METADATA, (ddm \ "profile" \ "_") ++ (ddm \ "dcmiMetadata" \ "_"), Language.langAttributeToMetadataLanguage(isoToDataverseLanguage))
     }
 
-    if (activeMetadataBlocks.contains("dansCollectionMetadata")) {
-      addCompoundFieldMultipleValues(collectionFields, COLLECTION, ddm \ "dcmiMetadata" \ "inCollection", Collection toCollection)
+    if (activeMetadataBlocks.contains("dansRelationMetadata")) {
+      addCompoundFieldMultipleValues(relationFields, COLLECTION, ddm \ "dcmiMetadata" \ "inCollection", InCollection toCollection)
+      addCompoundFieldMultipleValues(relationFields, RELATION, (ddm \ "dcmiMetadata" \ "_").filter(Relation isRelation), Relation toRelationValueObject)
     }
 
     if (activeMetadataBlocks.contains("dansArchaeologyMetadata")) {
-      addPrimitiveFieldMultipleValues(archaeologySpecificFields, ARCHIS_ZAAK_ID, ddm \ "dcmiMetadata" \ "identifier", IsFormatOf toArchisZaakId)
+      addPrimitiveFieldMultipleValues(archaeologySpecificFields, ARCHIS_ZAAK_ID, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier isArchisZaakId), Identifier toArchisZaakId)
+      addCompoundFieldMultipleValues(archaeologySpecificFields, ARCHIS_NUMBER, (ddm \ "dcmiMetadata" \ "identifier").filter(Identifier isArchisNumber), Identifier toArchisNumberValue)
       addCompoundFieldMultipleValues(archaeologySpecificFields, ABR_RAPPORT_TYPE, (ddm \ "dcmiMetadata" \ "reportNumber").filter(AbrReportType isAbrReportType), AbrReportType toAbrRapportType (reportIdToTerm))
       addPrimitiveFieldMultipleValues(archaeologySpecificFields, ABR_RAPPORT_NUMMER, ddm \ "dcmiMetadata" \ "reportNumber")
       addCompoundFieldMultipleValues(archaeologySpecificFields, ABR_VERWERVINGSWIJZE, (ddm \ "dcmiMetadata" \ "acquisitionMethod").filter(AbrAcquisitionMethod isAbrVerwervingswijze), AbrAcquisitionMethod toVerwervingswijze)
@@ -141,7 +158,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
     val versionMap = mutable.Map[String, MetadataBlock]()
     addMetadataBlock(versionMap, "citation", "Citation Metadata", citationFields)
     addMetadataBlock(versionMap, "dansRights", "Rights Metadata", rightsFields)
-    addMetadataBlock(versionMap, "dansCollection", "Collection Metadata", collectionFields)
+    addMetadataBlock(versionMap, "dansRelationMetadata", "Relation Metadata", relationFields)
     addMetadataBlock(versionMap, "dansArchaeologyMetadata", "Archaeology-Specific Metadata", archaeologySpecificFields)
     addMetadataBlock(versionMap, "dansTemporalSpatial", "Temporal and Spatial Coverage", temporalSpatialFields)
     addMetadataBlock(versionMap, "dansDataVaultMetadata", "Data Vault Metadata", dataVaultFields)
@@ -166,6 +183,15 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
   private def addPrimitiveFieldSingleValue(metadataBlockFields: mutable.HashMap[String, AbstractFieldBuilder], name: String, value: Option[String]): Unit = {
     value.foreach { v =>
       metadataBlockFields.getOrElseUpdate(name, new PrimitiveFieldBuilder(name, multipleValues = false)) match {
+        case b: PrimitiveFieldBuilder => b.addValue(v)
+        case _ => throw new IllegalArgumentException("Trying to add non-primitive value(s) to primitive field")
+      }
+    }
+  }
+
+  private def addPrimitiveFieldMultipleValues(metadataBlockFields: mutable.HashMap[String, AbstractFieldBuilder], name: String, values: List[String]): Unit = {
+    values.foreach { v =>
+      metadataBlockFields.getOrElseUpdate(name, new PrimitiveFieldBuilder(name, multipleValues = true)) match {
         case b: PrimitiveFieldBuilder => b.addValue(v)
         case _ => throw new IllegalArgumentException("Trying to add non-primitive value(s) to primitive field")
       }
