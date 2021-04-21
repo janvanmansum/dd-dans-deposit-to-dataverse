@@ -15,10 +15,15 @@
  */
 package nl.knaw.dans.easy.dd2d.mapping
 
-trait BlockCollection {
+trait BlockRelation {
   val COLLECTION = "dansCollection"
   val COLLECTION_VOCABULARY = "dansCollectionVocabulary"
   val COLLECTION_VOCABULARY_URI = "dansCollectionVocabularyURI"
   val COLLECTION_TERM = "dansCollectionTerm"
   val COLLECTION_TERM_URI = "dansCollectionTermURI"
+
+  val RELATION = "dansRelation"
+  val RELATION_TYPE = "dansRelationType"
+  val RELATION_URI = "dansRelationURI"
+  val RELATION_TEXT = "dansRelationText"
 }

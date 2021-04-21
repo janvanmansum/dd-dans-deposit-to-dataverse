@@ -40,7 +40,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
   with BlockArchaeologySpecific
   with BlockTemporalAndSpatial
   with BlockRights
-  with BlockCollection
+  with BlockRelation
   with BlockDataVaultMetadata {
   lazy val citationFields = new mutable.HashMap[String, AbstractFieldBuilder]()
   lazy val rightsFields = new mutable.HashMap[String, AbstractFieldBuilder]()
@@ -114,7 +114,8 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
     }
 
     if (activeMetadataBlocks.contains("dansRelationMetadata")) {
-      addCompoundFieldMultipleValues(relationFields, COLLECTION, ddm \ "dcmiMetadata" \ "inCollection", Collection toCollection)
+      addCompoundFieldMultipleValues(relationFields, COLLECTION, ddm \ "dcmiMetadata" \ "inCollection", InCollection toCollection)
+      addCompoundFieldMultipleValues(relationFields, RELATION, (ddm \ "dcmiMetadata" \ "_").filter(Relation isRelation), Relation toRelationValueObject)
     }
 
     if (activeMetadataBlocks.contains("dansArchaeologyMetadata")) {
