@@ -59,6 +59,7 @@ abstract class DatasetEditor(instance: DataverseInstance) extends DebugEnhancedL
   }
 
   protected def updateFileMetadata(databaseIdToFileInfo: Map[Int, FileMeta]): Try[Unit] = {
+    trace(databaseIdToFileInfo)
     databaseIdToFileInfo.map { case (id, fileMeta) => instance.file(id).updateMetadata(fileMeta) }.collectResults.map(_ => ())
   }
 }

@@ -87,6 +87,7 @@ case class DepositIngestTask(deposit: Deposit,
   }
 
   def getJsonLdPublicationdate(optAmd: Option[Node]): Try[Option[String]] = Try {
+    trace(optAmd)
     optAmd
       .flatMap(amd => Amd.getFirstChangeToState(amd, "PUBLISHED"))
       .map(d => s"""{"http://schema.org/datePublished": "$d"}""")
@@ -122,6 +123,7 @@ case class DepositIngestTask(deposit: Deposit,
   }
 
   private def publishDataset(persistentId: String, publicationDateOpt: Option[String]): Try[Unit] = {
+    trace(persistentId, publicationDateOpt)
     for {
       _ <- publicationDateOpt match {
         case Some(publicationDate) => instance.dataset(persistentId).releaseMigrated(publicationDate)
