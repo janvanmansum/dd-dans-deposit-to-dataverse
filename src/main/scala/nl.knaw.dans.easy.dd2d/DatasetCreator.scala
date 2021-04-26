@@ -15,12 +15,11 @@
  */
 package nl.knaw.dans.easy.dd2d
 
-import nl.knaw.dans.lib.dataverse.model.RoleAssignment
 import nl.knaw.dans.lib.dataverse.model.dataset.{ Dataset, DatasetCreationResult }
+import nl.knaw.dans.lib.dataverse.model.{ DefaultRole, RoleAssignment }
 import nl.knaw.dans.lib.dataverse.{ DataverseInstance, DataverseResponse }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
-import javax.management.relation.Role
 import scala.util.Try
 
 class DatasetCreator(deposit: Deposit, dataverseDataset: Dataset, instance: DataverseInstance) extends DatasetEditor(instance) with DebugEnhancedLogging {
@@ -38,6 +37,9 @@ class DatasetCreator(deposit: Deposit, dataverseDataset: Dataset, instance: Data
       fileInfos <- deposit.getPathToFileInfo
       databaseIdsToFileInfo <- addFiles(persistentId, fileInfos.values.toList)
       _ <- updateFileMetadata(databaseIdsToFileInfo.mapValues(_.metadata))
+      _ <- instance.dataset(persistentId).awaitUnlock()
+      _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.curator.toString))
+      _ <- instance.dataset(persistentId).awaitUnlock()
     } yield persistentId
   }
 

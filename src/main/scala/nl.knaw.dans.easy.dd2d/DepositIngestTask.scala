@@ -80,8 +80,6 @@ case class DepositIngestTask(deposit: Deposit,
                else new DatasetCreator(deposit, dataverseDataset, instance)
       persistentId <- editor.performEdit()
       _ = debug(s"Assigning curator role to ${deposit.depositorUserId}")
-      _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${deposit.depositorUserId}", DefaultRole.curator.toString))
-      _ <- instance.dataset(persistentId).awaitUnlock()
       _ <- if (publish) publishDataset(persistentId)
            else keepOnDraft()
     } yield ()
