@@ -79,7 +79,6 @@ case class DepositIngestTask(deposit: Deposit,
       editor = if (isUpdate) new DatasetUpdater(deposit, dataverseDataset.datasetVersion.metadataBlocks, instance)
                else new DatasetCreator(deposit, dataverseDataset, instance)
       persistentId <- editor.performEdit()
-      _ = debug(s"Assigning curator role to ${deposit.depositorUserId}")
       _ <- if (publish) publishDataset(persistentId)
            else keepOnDraft()
     } yield ()

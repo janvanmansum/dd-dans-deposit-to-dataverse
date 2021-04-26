@@ -38,6 +38,7 @@ class DatasetCreator(deposit: Deposit, dataverseDataset: Dataset, instance: Data
       databaseIdsToFileInfo <- addFiles(persistentId, fileInfos.values.toList)
       _ <- updateFileMetadata(databaseIdsToFileInfo.mapValues(_.metadata))
       _ <- instance.dataset(persistentId).awaitUnlock()
+      _ = debug(s"Assigning curator role to ${deposit.depositorUserId}")
       _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.curator.toString))
       _ <- instance.dataset(persistentId).awaitUnlock()
     } yield persistentId
