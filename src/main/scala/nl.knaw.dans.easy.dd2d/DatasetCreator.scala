@@ -25,7 +25,7 @@ import scala.util.Try
 class DatasetCreator(deposit: Deposit, dataverseDataset: Dataset, instance: DataverseInstance) extends DatasetEditor(instance) with DebugEnhancedLogging {
   trace(deposit)
 
-  override def performEdit(): Try[PersistendId] = {
+  override def performEdit(): Try[DatasetIdentifiers] = {
     for {
       // autoPublish is false, because it seems there is a bug with it in Dataverse (most of the time?)
       response <- if (deposit.doi.nonEmpty)
@@ -33,18 +33,21 @@ class DatasetCreator(deposit: Deposit, dataverseDataset: Dataset, instance: Data
                       .dataverse("root")
                       .importDataset(dataverseDataset, Some(s"doi:${ deposit.doi }"), autoPublish = false)
                   else instance.dataverse("root").createDataset(dataverseDataset)
-      persistentId <- getPersistentId(response)
+      datasetIdentifiers <- getDatasetIdentifiers(response)
       fileInfos <- deposit.getPathToFileInfo
-      databaseIdsToFileInfo <- addFiles(persistentId, fileInfos.values.toList)
+      databaseIdsToFileInfo <- addFiles(datasetIdentifiers.persistentId, fileInfos.values.toList)
       _ <- updateFileMetadata(databaseIdsToFileInfo.mapValues(_.metadata))
-      _ <- instance.dataset(persistentId).awaitUnlock()
+      _ <- instance.dataset(datasetIdentifiers.persistentId).awaitUnlock()
       _ = debug(s"Assigning curator role to ${deposit.depositorUserId}")
-      _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.curator.toString))
-      _ <- instance.dataset(persistentId).awaitUnlock()
-    } yield persistentId
+      _ <- instance.dataset(datasetIdentifiers.persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.curator.toString))
+      _ <- instance.dataset(datasetIdentifiers.persistentId).awaitUnlock()
+    } yield datasetIdentifiers
   }
 
-  private def getPersistentId(response: DataverseResponse[DatasetCreationResult]): Try[String] = {
-    response.data.map(_.persistentId)
+  private def getDatasetIdentifiers(response: DataverseResponse[DatasetCreationResult]): Try[DatasetIdentifiers] = {
+    for {
+      persistentId <- response.data.map(_.persistentId)
+      datasetId <- response.data.map(_.id)
+    } yield DatasetIdentifiers(datasetId, persistentId)
   }
 }
