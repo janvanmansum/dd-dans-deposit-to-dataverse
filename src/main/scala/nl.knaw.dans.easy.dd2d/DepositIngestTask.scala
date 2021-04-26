@@ -18,10 +18,11 @@ package nl.knaw.dans.easy.dd2d
 import better.files.File
 import nl.knaw.dans.easy.dd2d.OutboxSubdir.{ FAILED, OutboxSubdir, PROCESSED, REJECTED }
 import nl.knaw.dans.easy.dd2d.dansbag.{ DansBagValidationResult, DansBagValidator }
-import nl.knaw.dans.easy.dd2d.mapping.JsonObject
+import nl.knaw.dans.easy.dd2d.mapping.{ Amd, JsonObject }
 import nl.knaw.dans.lib.dataverse.DataverseInstance
+import nl.knaw.dans.lib.dataverse.model.dataset.UpdateType.major
+import nl.knaw.dans.lib.dataverse.model.dataset.{ PrimitiveSingleValueField, toFieldMap }
 import nl.knaw.dans.lib.dataverse.model.{ DefaultRole, RoleAssignment }
-import nl.knaw.dans.lib.dataverse.model.dataset.{ PrimitiveSingleValueField, UpdateType, toFieldMap }
 import nl.knaw.dans.lib.error._
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.Task
@@ -29,7 +30,7 @@ import nl.knaw.dans.lib.taskqueue.Task
 import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 import scala.util.{ Success, Try }
-import scala.xml.Elem
+import scala.xml.{ Elem, Node }
 
 /**
  * Checks one deposit and then ingests it into Dataverse.
@@ -63,7 +64,6 @@ case class DepositIngestTask(deposit: Deposit,
   private def doRun(): Try[Unit] = {
     trace(())
     logger.info(s"Ingesting $deposit into Dataverse")
-
     for {
       validationResult <- dansBagValidator.validateBag(bagDirPath)
       _ <- rejectIfInvalid(validationResult)
@@ -78,14 +78,21 @@ case class DepositIngestTask(deposit: Deposit,
       _ = debug(s"isUpdate? = $isUpdate")
       editor = if (isUpdate) new DatasetUpdater(deposit, dataverseDataset.datasetVersion.metadataBlocks, instance)
                else new DatasetCreator(deposit, dataverseDataset, instance)
-      persistentId <- editor.performEdit()
-      _ = debug(s"Assigning curator role to ${deposit.depositorUserId}")
-      _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${deposit.depositorUserId}", DefaultRole.curator.toString))
-      _ <- instance.dataset(persistentId).awaitUnlock()
-      _ <- if (publish) publishDataset(persistentId)
+      datasetIdentifiers <- editor.performEdit()
+      _ = debug(s"Assigning curator role to ${ deposit.depositorUserId }")
+      _ <- instance.dataset(datasetIdentifiers.persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.curator.toString))
+      _ <- instance.dataset(datasetIdentifiers.persistentId).awaitUnlock()
+      publicationDateOpt <- getJsonLdPublicationdate(optAmd)
+      _ <- if (publish) publishDataset(datasetIdentifiers, publicationDateOpt)
            else keepOnDraft()
     } yield ()
     // TODO: delete draft if something went wrong
+  }
+
+  def getJsonLdPublicationdate(optAmd: Option[Node]): Try[Option[String]] = Try {
+    optAmd
+      .flatMap(amd => Amd.getFirstChangeToState(amd, "PUBLISHED"))
+      .map(d => s"""{"http://schema.org/datePublished": "$d"}""")
   }
 
   def moveDepositToOutbox(subDir: OutboxSubdir): Unit = {
@@ -114,14 +121,16 @@ case class DepositIngestTask(deposit: Deposit,
     subfields.append(PrimitiveSingleValueField("datasetContactName", name))
     subfields.append(PrimitiveSingleValueField("datasetContactEmail", email))
     optAffiliation.foreach(affiliation => subfields.append(PrimitiveSingleValueField("datasetContactAffiliation", affiliation)))
-    List(toFieldMap(subfields:_*))
+    List(toFieldMap(subfields: _*))
   }
 
-  private def publishDataset(persistentId: String): Try[Unit] = {
-    debug("Publishing dataset")
+  private def publishDataset(datasetIdentifiers: DatasetIdentifiers, publicationDateOpt: Option[String]): Try[Unit] = {
     for {
-      _ <- instance.dataset(persistentId).publish(UpdateType.major).map(_ => ())
-      _ <- instance.dataset(persistentId).awaitUnlock(
+      _ <- publicationDateOpt match {
+        case Some(publicationDate) => instance.dataset(datasetIdentifiers.datasetId).releaseMigrated(publicationDate)
+        case None => instance.dataset(datasetIdentifiers.persistentId).publish(major)
+      }
+      _ <- instance.dataset(datasetIdentifiers.persistentId).awaitUnlock(
         maxNumberOfRetries = publishAwaitUnlockMaxNumberOfRetries,
         waitTimeInMilliseconds = publishAwaitUnlockMillisecondsBetweenRetries)
     } yield ()
