@@ -29,7 +29,7 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
   trace(deposit)
   private val dataset: DatasetApi = instance.dataset(deposit.dataversePid)
 
-  override def performEdit(): Try[DatasetIdentifiers] = {
+  override def performEdit(): Try[PersistendId] = {
     for {
       _ <- dataset.awaitUnlock()
       _ <- dataset.updateMetadata(metadataBlocks)
@@ -56,15 +56,7 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
       fileAdditions <- addFiles(deposit.dataversePid, pathsToAdd.map(pathToFileInfo).toList).map(_.mapValues(_.metadata))
 
       _ <- updateFileMetadata(fileReplacements ++ fileMovements ++ fileAdditions)
-      datasetVersion <- dataset.view().flatMap(_.data)
-      datasetIdentifiers <- getDatasetIdentifiers(datasetVersion)
-    } yield datasetIdentifiers
-  }
-
-  private def getDatasetIdentifiers(datasetVersion: DatasetVersion): Try[DatasetIdentifiers] = Try {
-    val datasetId = datasetVersion.datasetId.get
-    val persistentId = datasetVersion.datasetPersistentId.get
-    DatasetIdentifiers(datasetId, persistentId)
+    } yield deposit.dataversePid
   }
 
   private def getFilesInLatestVersion: Try[Map[Path, FileMeta]] = {

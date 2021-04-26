@@ -34,7 +34,7 @@ abstract class DatasetEditor(instance: DataverseInstance) extends DebugEnhancedL
    *
    * @return the persistentId of the dataset created or modified
    */
-  def performEdit(): Try[DatasetIdentifiers]
+  def performEdit(): Try[PersistendId]
 
   protected def addFiles(persistentId: String, files: List[FileInfo]): Try[Map[Int, FileInfo]] = {
     trace(persistentId, files)

@@ -121,13 +121,13 @@ case class DepositIngestTask(deposit: Deposit,
     List(toFieldMap(subfields: _*))
   }
 
-  private def publishDataset(datasetIdentifiers: DatasetIdentifiers, publicationDateOpt: Option[String]): Try[Unit] = {
+  private def publishDataset(persistentId: String, publicationDateOpt: Option[String]): Try[Unit] = {
     for {
       _ <- publicationDateOpt match {
-        case Some(publicationDate) => instance.dataset(datasetIdentifiers.datasetId).releaseMigrated(publicationDate)
-        case None => instance.dataset(datasetIdentifiers.persistentId).publish(major)
+        case Some(publicationDate) => instance.dataset(persistentId).releaseMigrated(publicationDate)
+        case None => instance.dataset(persistentId).publish(major)
       }
-      _ <- instance.dataset(datasetIdentifiers.persistentId).awaitUnlock(
+      _ <- instance.dataset(persistentId).awaitUnlock(
         maxNumberOfRetries = publishAwaitUnlockMaxNumberOfRetries,
         waitTimeInMilliseconds = publishAwaitUnlockMillisecondsBetweenRetries)
     } yield ()
