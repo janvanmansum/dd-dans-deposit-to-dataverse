@@ -32,6 +32,12 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
   override def performEdit(): Try[PersistendId] = {
     for {
       _ <- dataset.awaitUnlock()
+      /*
+       * Temporary fix. If we do not wait a couple of seconds here, the first version never gets properly published, and the second version
+       * just overwrites it, becoming V1.
+       */
+      - <- Try { Thread.sleep(3000) }
+      _ <- dataset.awaitUnlock()
       _ <- dataset.updateMetadata(metadataBlocks)
       _ <- dataset.awaitUnlock()
       bagPathToFileInfo <- deposit.getPathToFileInfo
