@@ -148,6 +148,7 @@ case class DepositIngestTask(deposit: Deposit,
       _ <- instance.dataset(persistentId).awaitUnlock()
       _ = debug(s"Dataset $persistentId is not locked")
       _ <- deposit.setDoi(persistentId)
+      // TODO: try several times if the vault metadata don't appear immediately
       r <- instance.dataset(persistentId).view()
       _ = if(logger.underlying.isDebugEnabled) debug(Serialization.writePretty(r.json))
       d <- r.data

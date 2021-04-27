@@ -56,7 +56,7 @@ object Command extends App with DebugEnhancedLogging {
         logger.info("Service stopped.")
       }
     })
-    app.start()
+    app.start().get // Make sure error is not ignored
     logger.info("Service started ...")
     Thread.currentThread.join()
     "Service terminated normally."
