@@ -42,7 +42,6 @@ case class DepositIngestTask(deposit: Deposit,
                              activeMetadataBlocks: List[String],
                              dansBagValidator: DansBagValidator,
                              instance: DataverseInstance,
-                             publish: Boolean = true,
                              publishAwaitUnlockMaxNumberOfRetries: Int,
                              publishAwaitUnlockMillisecondsBetweenRetries: Int,
                              narcisClassification: Elem,
@@ -80,10 +79,8 @@ case class DepositIngestTask(deposit: Deposit,
                else new DatasetCreator(deposit, dataverseDataset, instance)
       datasetIdentifiers <- editor.performEdit()
       publicationDateOpt <- getJsonLdPublicationdate(optAmd)
-      _ <- if (publish) publishDataset(datasetIdentifiers, publicationDateOpt)
-           else keepOnDraft()
+      _ <- publishDataset(datasetIdentifiers, publicationDateOpt)
     } yield ()
-    // TODO: delete draft if something went wrong
   }
 
   def getJsonLdPublicationdate(optAmd: Option[Node]): Try[Option[String]] = Try {
@@ -133,11 +130,6 @@ case class DepositIngestTask(deposit: Deposit,
         maxNumberOfRetries = publishAwaitUnlockMaxNumberOfRetries,
         waitTimeInMilliseconds = publishAwaitUnlockMillisecondsBetweenRetries)
     } yield ()
-  }
-
-  private def keepOnDraft(): Try[Unit] = {
-    debug("Keeping dataset on DRAFT")
-    Success(())
   }
 
   override def getTarget: Deposit = {

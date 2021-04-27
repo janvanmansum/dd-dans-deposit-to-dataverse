@@ -30,7 +30,6 @@ class IndexSpec extends TestSupportFixture {
     validatorConnectionTimeoutMs = 1000,
     validatorReadTimeoutMs= 1000,
     dataverse = null,
-    autoPublish = true,
     publishAwaitUnlockMaxNumberOfRetries = 3,
     publishAwaitUnlockMillisecondsBetweenRetries = 500,
     narcisClassification = null,

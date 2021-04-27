@@ -36,7 +36,7 @@ object Command extends App with DebugEnhancedLogging {
     _ <- app.checkPreconditions()
     msg <- commandLine.subcommand match {
       case Some(cmd @ commandLine.importCommand) => {
-        if (cmd.singleDeposit()) app.importSingleDeposit(cmd.depositsInboxOrSingleDeposit(), cmd.outdir(), !cmd.draft())
+        if (cmd.singleDeposit()) app.importSingleDeposit(cmd.depositsInboxOrSingleDeposit(), cmd.outdir())
         else app.importDeposits(cmd.depositsInboxOrSingleDeposit(), cmd.outdir(), !cmd.draft(), !cmd.continue())
       }.map(_ => "Done importing deposits")
       case Some(_ @ commandLine.runService) => runAsService()

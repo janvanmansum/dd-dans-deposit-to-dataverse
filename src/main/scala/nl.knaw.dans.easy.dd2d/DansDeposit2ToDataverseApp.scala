@@ -36,7 +36,6 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
       getActiveMetadataBlocks.get,
       dansBagValidator,
       dataverse,
-      configuration.autoPublish,
       configuration.publishAwaitUnlockMaxNumberOfRetries,
       configuration.publishAwaitUnlockMillisecondsBetweenRetries,
       configuration.narcisClassification,
@@ -52,8 +51,8 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     } yield ()
   }
 
-  def importSingleDeposit(deposit: File, outboxDir: File, autoPublish: Boolean): Try[Unit] = {
-    trace(deposit, outboxDir, autoPublish)
+  def importSingleDeposit(deposit: File, outboxDir: File): Try[Unit] = {
+    trace(deposit, outboxDir)
     for {
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults = false)
       - <- mustNotExist(OutboxSubdir.values.map(_.toString).map(subdir => outboxDir / subdir / deposit.name).toList)
@@ -61,7 +60,6 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
         getActiveMetadataBlocks.get,
         dansBagValidator,
         dataverse,
-        autoPublish,
         configuration.publishAwaitUnlockMaxNumberOfRetries,
         configuration.publishAwaitUnlockMillisecondsBetweenRetries,
         configuration.narcisClassification,
@@ -79,7 +77,6 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
         getActiveMetadataBlocks.get,
         dansBagValidator,
         dataverse,
-        autoPublish,
         configuration.publishAwaitUnlockMaxNumberOfRetries,
         configuration.publishAwaitUnlockMillisecondsBetweenRetries,
         configuration.narcisClassification,
