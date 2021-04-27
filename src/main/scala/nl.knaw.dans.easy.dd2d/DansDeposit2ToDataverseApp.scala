@@ -32,6 +32,7 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     connTimeoutMs = configuration.validatorConnectionTimeoutMs,
     readTimeoutMs = configuration.validatorReadTimeoutMs)
   private val inboxWatcher = {
+    initOutboxDirs(configuration.outboxDir, requireAbsenceOfResults = false).get
     new InboxWatcher(new Inbox(configuration.inboxDir,
       getActiveMetadataBlocks.get,
       dansBagValidator,
