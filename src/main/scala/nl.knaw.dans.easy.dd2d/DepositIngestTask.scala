@@ -22,14 +22,16 @@ import nl.knaw.dans.easy.dd2d.mapping.{ Amd, JsonObject }
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.dataverse.model.dataset.UpdateType.major
 import nl.knaw.dans.lib.dataverse.model.dataset.{ PrimitiveSingleValueField, toFieldMap }
-import nl.knaw.dans.lib.dataverse.model.{ DefaultRole, RoleAssignment }
 import nl.knaw.dans.lib.error._
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.Task
+import org.json4s.{ DefaultFormats, Formats }
+import org.json4s.native.Serialization
 
 import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
-import scala.util.{ Success, Try }
+import scala.util.Try
+import scala.util.control.NonFatal
 import scala.xml.{ Elem, Node }
 
 /**
@@ -54,10 +56,17 @@ case class DepositIngestTask(deposit: Deposit,
   private val bagDirPath = File(deposit.bagDir.path)
 
   override def run(): Try[Unit] = doRun()
-    .doIfSuccess(_ => moveDepositToOutbox(PROCESSED))
+    .doIfSuccess(_ => {
+      deposit.setState("ARCHIVED", "The deposit was successfully ingested in the Data Station and will be automatically archived")
+      moveDepositToOutbox(PROCESSED)
+    })
     .doIfFailure {
-      case _: RejectedDepositException => moveDepositToOutbox(REJECTED)
-      case _ => moveDepositToOutbox(FAILED)
+      case e: RejectedDepositException =>
+        deposit.setState("REJECTED", e.msg)
+        moveDepositToOutbox(REJECTED)
+      case e =>
+        deposit.setState("FAILED", e.getMessage)
+        moveDepositToOutbox(FAILED)
     }
 
   private def doRun(): Try[Unit] = {
@@ -77,24 +86,25 @@ case class DepositIngestTask(deposit: Deposit,
       _ = debug(s"isUpdate? = $isUpdate")
       editor = if (isUpdate) new DatasetUpdater(deposit, dataverseDataset.datasetVersion.metadataBlocks, instance)
                else new DatasetCreator(deposit, dataverseDataset, instance)
-      datasetIdentifiers <- editor.performEdit()
+      persistentId <- editor.performEdit()
       publicationDateOpt <- getJsonLdPublicationdate(optAmd)
-      _ <- publishDataset(datasetIdentifiers, publicationDateOpt)
+      _ <- publishDataset(persistentId, publicationDateOpt)
+      _ <- savePersistentIdentifiersInDepositProperties(persistentId)
     } yield ()
   }
 
-  def getJsonLdPublicationdate(optAmd: Option[Node]): Try[Option[String]] = Try {
+  private def getJsonLdPublicationdate(optAmd: Option[Node]): Try[Option[String]] = Try {
     trace(optAmd)
     optAmd
       .flatMap(amd => Amd.getFirstChangeToState(amd, "PUBLISHED"))
       .map(d => s"""{"http://schema.org/datePublished": "$d"}""")
   }
 
-  def moveDepositToOutbox(subDir: OutboxSubdir): Unit = {
+  private def moveDepositToOutbox(subDir: OutboxSubdir): Unit = {
     try {
       deposit.dir.moveToDirectory(outboxDir / subDir.toString)
     } catch {
-      case e: Exception => logger.info(s"Failed to move deposit: $deposit to ${ outboxDir / subDir.toString }", e)
+      case NonFatal(e) => logger.info(s"Failed to move deposit: $deposit to ${ outboxDir / subDir.toString }", e)
     }
   }
 
@@ -129,6 +139,24 @@ case class DepositIngestTask(deposit: Deposit,
       _ <- instance.dataset(persistentId).awaitUnlock(
         maxNumberOfRetries = publishAwaitUnlockMaxNumberOfRetries,
         waitTimeInMilliseconds = publishAwaitUnlockMillisecondsBetweenRetries)
+    } yield ()
+  }
+
+  private def savePersistentIdentifiersInDepositProperties(persistentId: String): Try[Unit] = {
+    implicit val jsonFormats: Formats = DefaultFormats
+    for {
+      _ <- instance.dataset(persistentId).awaitUnlock()
+      _ = debug(s"Dataset $persistentId is not locked")
+      _ <- deposit.setDoi(persistentId)
+      r <- instance.dataset(persistentId).view()
+      _ = if(logger.underlying.isDebugEnabled) debug(Serialization.writePretty(r.json))
+      d <- r.data
+      v = d.metadataBlocks("dansDataVaultMetadata")
+      optUrn = v.fields.find(_.typeName == "dansNbn")
+        .map(_.asInstanceOf[PrimitiveSingleValueField])
+        .map(_.value)
+      _ = if (optUrn.isEmpty) throw new IllegalStateException(s"Dataset $persistentId did not obtain a URN:NBN")
+      _ <- deposit.setUrn(optUrn.get)
     } yield ()
   }
 

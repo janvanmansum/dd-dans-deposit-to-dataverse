@@ -53,7 +53,8 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
   private val amdPath = bagDir / "metadata" / "amd.xml"
   private val depositProperties = new PropertiesConfiguration() {
     setDelimiterParsingDisabled(true)
-    load((dir / "deposit.properties").toJava)
+    setFile((dir / "deposit.properties").toJava)
+    load()
   }
 
   lazy val tryBag: Try[Bag] = Try { bagReader.read(bagDir.path) }
@@ -115,6 +116,24 @@ case class Deposit(dir: File) extends DebugEnhancedLogging {
 
   def depositorUserId: String = {
     depositProperties.getString("depositor.userId")
+  }
+
+  def setDoi(doi: String): Try[Unit] = Try {
+    depositProperties.addProperty("identifier.doi", doi)
+    depositProperties.save()
+  }
+
+  def setUrn(urn: String): Try[Unit] = Try {
+    depositProperties.addProperty("identifier.urn", urn)
+    depositProperties.save()
+  }
+
+  def setState(label: String, description: String): Try[Unit] = Try {
+    depositProperties.clearProperty("state.label")
+    depositProperties.clearProperty("state.description")
+    depositProperties.addProperty("state.label", label)
+    depositProperties.addProperty("state.description", description)
+    depositProperties.save()
   }
 
   def isUpdate: Try[Boolean] = {
