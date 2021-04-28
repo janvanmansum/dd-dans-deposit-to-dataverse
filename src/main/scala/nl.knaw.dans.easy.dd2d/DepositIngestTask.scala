@@ -25,13 +25,14 @@ import nl.knaw.dans.lib.dataverse.model.dataset.{ PrimitiveSingleValueField, toF
 import nl.knaw.dans.lib.error._
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.Task
-import org.json4s.{ DefaultFormats, Formats }
 import org.json4s.native.Serialization
+import org.json4s.{ DefaultFormats, Formats }
 
+import java.lang.Thread.sleep
 import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
-import scala.util.Try
 import scala.util.control.NonFatal
+import scala.util.{ Failure, Success, Try }
 import scala.xml.{ Elem, Node }
 
 /**
@@ -57,14 +58,17 @@ case class DepositIngestTask(deposit: Deposit,
 
   override def run(): Try[Unit] = doRun()
     .doIfSuccess(_ => {
+      logger.info(s"SUCCESS: $deposit")
       deposit.setState("ARCHIVED", "The deposit was successfully ingested in the Data Station and will be automatically archived")
       moveDepositToOutbox(PROCESSED)
     })
     .doIfFailure {
       case e: RejectedDepositException =>
+        logger.info(s"REJECTED: $deposit")
         deposit.setState("REJECTED", e.msg)
         moveDepositToOutbox(REJECTED)
       case e =>
+        logger.info(s"FAILED: $deposit")
         deposit.setState("FAILED", e.getMessage)
         moveDepositToOutbox(FAILED)
     }
@@ -73,6 +77,11 @@ case class DepositIngestTask(deposit: Deposit,
     trace(())
     logger.info(s"Ingesting $deposit into Dataverse")
     for {
+      isMigration <- Try { deposit.doi.nonEmpty }
+      _ <- if (isMigration) deposit.vaultMetadata.checkMinimumFieldsForImport() else Success(())
+      _ = debug(s"isMigration = $isMigration")
+      optAmd <- deposit.tryOptAmd
+      publicationDateOpt <- getJsonLdPublicationdate(optAmd)
       validationResult <- dansBagValidator.validateBag(bagDirPath)
       _ <- rejectIfInvalid(validationResult)
       response <- instance.admin().getSingleUser(deposit.depositorUserId)
@@ -80,15 +89,15 @@ case class DepositIngestTask(deposit: Deposit,
       datasetContacts <- createDatasetContacts(user.displayName, user.email, user.affiliation)
       ddm <- deposit.tryDdm
       optAgreements <- deposit.tryOptAgreementsXml
-      optAmd <- deposit.tryOptAmd
       dataverseDataset <- datasetMetadataMapper.toDataverseDataset(ddm, optAgreements, optAmd, datasetContacts, deposit.vaultMetadata)
       isUpdate <- deposit.isUpdate
       _ = debug(s"isUpdate? = $isUpdate")
       editor = if (isUpdate) new DatasetUpdater(deposit, dataverseDataset.datasetVersion.metadataBlocks, instance)
-               else new DatasetCreator(deposit, dataverseDataset, instance)
+               else new DatasetCreator(deposit, isMigration, dataverseDataset, instance)
       persistentId <- editor.performEdit()
-      publicationDateOpt <- getJsonLdPublicationdate(optAmd)
-      _ <- publishDataset(persistentId, publicationDateOpt)
+      _ <- if (isMigration) publishMigratedDataset(persistentId, publicationDateOpt.get)
+           else publishDataset(persistentId)
+      _ <- waitForReleasedState(persistentId)
       _ <- savePersistentIdentifiersInDepositProperties(persistentId)
     } yield ()
   }
@@ -129,17 +138,53 @@ case class DepositIngestTask(deposit: Deposit,
     List(toFieldMap(subfields: _*))
   }
 
-  private def publishDataset(persistentId: String, publicationDateOpt: Option[String]): Try[Unit] = {
-    trace(persistentId, publicationDateOpt)
+  private def publishDataset(persistentId: String): Try[Unit] = {
+    trace(persistentId)
     for {
-      _ <- publicationDateOpt match {
-        case Some(publicationDate) => instance.dataset(persistentId).releaseMigrated(publicationDate)
-        case None => instance.dataset(persistentId).publish(major)
-      }
+      _ <- instance.dataset(persistentId).publish(major)
       _ <- instance.dataset(persistentId).awaitUnlock(
         maxNumberOfRetries = publishAwaitUnlockMaxNumberOfRetries,
         waitTimeInMilliseconds = publishAwaitUnlockMillisecondsBetweenRetries)
     } yield ()
+  }
+
+  private def publishMigratedDataset(persistentId: String, publicationDate: String): Try[Unit] = {
+    trace(persistentId, publicationDate)
+    for {
+      _ <- instance.dataset(persistentId).releaseMigrated(publicationDate)
+      _ <- instance.dataset(persistentId).awaitUnlock(
+        maxNumberOfRetries = publishAwaitUnlockMaxNumberOfRetries,
+        waitTimeInMilliseconds = publishAwaitUnlockMillisecondsBetweenRetries)
+    } yield ()
+  }
+
+  private def waitForReleasedState(persistentId: String): Try[Unit] = {
+    trace(persistentId)
+    var numberOfTimesTried = 0
+
+    def getDatasetState: Try[String] = {
+      for {
+        response <- instance.dataset(persistentId).view()
+        dsv <- response.data
+        state = dsv.versionState
+      } yield state.get
+    }
+
+    def slept(): Boolean = {
+      debug(s"Sleeping $publishAwaitUnlockMillisecondsBetweenRetries ms before next try..") // TODO: replace with dedicated settings for waiting for pub.
+      sleep(publishAwaitUnlockMillisecondsBetweenRetries)
+      true
+    }
+
+    var maybeState = getDatasetState
+    do {
+      maybeState = getDatasetState
+      numberOfTimesTried += 1
+    } while (maybeState.isSuccess && maybeState.get != "RELEASED" && numberOfTimesTried != publishAwaitUnlockMaxNumberOfRetries && slept())
+
+    if (maybeState.isFailure) maybeState.map(_ => ())
+    else if (maybeState.get != "RELEASED") Failure(FailedDepositException(deposit, "Dataset did not become RELEASED within the wait period"))
+         else Success(())
   }
 
   private def savePersistentIdentifiersInDepositProperties(persistentId: String): Try[Unit] = {
@@ -148,9 +193,8 @@ case class DepositIngestTask(deposit: Deposit,
       _ <- instance.dataset(persistentId).awaitUnlock()
       _ = debug(s"Dataset $persistentId is not locked")
       _ <- deposit.setDoi(persistentId)
-      // TODO: try several times if the vault metadata don't appear immediately
       r <- instance.dataset(persistentId).view()
-      _ = if(logger.underlying.isDebugEnabled) debug(Serialization.writePretty(r.json))
+      _ = if (logger.underlying.isDebugEnabled) debug(Serialization.writePretty(r.json))
       d <- r.data
       v = d.metadataBlocks("dansDataVaultMetadata")
       optUrn = v.fields.find(_.typeName == "dansNbn")

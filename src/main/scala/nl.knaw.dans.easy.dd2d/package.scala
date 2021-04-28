@@ -31,12 +31,8 @@ package object dd2d {
 
     def checkMinimumFieldsForImport(): Try[Unit] = {
       val missing = new mutable.ListBuffer[String]()
-
       if (StringUtils.isBlank(dataversePid)) missing.append("dataversePid")
-      // TODO: has not yet been implemented in export
-      //      if (StringUtils.isBlank(dataverseBagId)) missing.append("dataverseBagId")
       if (StringUtils.isBlank(dataverseNbn)) missing.append("dataverseNbn")
-
       if (missing.nonEmpty) Failure(new RuntimeException(s"Not enough Data Vault Metadata for import deposit, missing: ${ missing.mkString(", ") }"))
       else Success(())
     }
