@@ -22,13 +22,13 @@ import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
 import scala.util.Try
 
-class DatasetCreator(deposit: Deposit, dataverseDataset: Dataset, instance: DataverseInstance) extends DatasetEditor(instance) with DebugEnhancedLogging {
+class DatasetCreator(deposit: Deposit, isMigration: Boolean = false, dataverseDataset: Dataset, instance: DataverseInstance) extends DatasetEditor(instance) with DebugEnhancedLogging {
   trace(deposit)
 
   override def performEdit(): Try[PersistendId] = {
     for {
       // autoPublish is false, because it seems there is a bug with it in Dataverse (most of the time?)
-      response <- if (deposit.doi.nonEmpty)
+      response <- if (isMigration)
                     instance
                       .dataverse("root")
                       .importDataset(dataverseDataset, Some(s"doi:${ deposit.doi }"), autoPublish = false)
