@@ -24,16 +24,16 @@ import scala.xml.Elem
 /**
  * Factory for creating ingest tasks.
  *
- * @param isMigrated is this a migrated dataset?
- * @param activeMetadataBlocks the metadata blocks enabled in the target dataverse
- * @param dansBagValidator interface to the easy-validate-dans-bag service
- * @param instance interface to the target Dataverse instance
- * @param publishAwaitUnlockMaxNumberOfRetries maximum number of times to poll for unlock after publish is called after ingest of the deposit
+ * @param isMigrated                                   is this a migrated dataset?
+ * @param activeMetadataBlocks                         the metadata blocks enabled in the target dataverse
+ * @param dansBagValidator                             interface to the easy-validate-dans-bag service
+ * @param instance                                     interface to the target Dataverse instance
+ * @param publishAwaitUnlockMaxNumberOfRetries         maximum number of times to poll for unlock after publish is called after ingest of the deposit
  * @param publishAwaitUnlockMillisecondsBetweenRetries number of milliseconds to wait between retries of unlock polling after publish
- * @param narcisClassification root element of the NARCIS SKOS file
- * @param isoToDataverseLanguage mapping of ISO639-2 to Dataverse language term
- * @param reportIdToTerm mapping of ABR report ID to term
- * @param outboxDir outbox
+ * @param narcisClassification                         root element of the NARCIS SKOS file
+ * @param isoToDataverseLanguage                       mapping of ISO639-2 to Dataverse language term
+ * @param reportIdToTerm                               mapping of ABR report ID to term
+ * @param outboxDir                                    outbox
  */
 class DepositIngestTaskFactory(isMigrated: Boolean = false,
                                activeMetadataBlocks: List[String],
@@ -47,16 +47,28 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
                                outboxDir: File) {
 
   def createDepositIngestTask(deposit: Deposit): DepositIngestTask = {
+    if (isMigrated)
+      new DepositMigrationTask(deposit,
+        activeMetadataBlocks,
+        dansBagValidator,
+        instance,
+        publishAwaitUnlockMaxNumberOfRetries,
+        publishAwaitUnlockMillisecondsBetweenRetries,
+        narcisClassification,
+        isoToDataverseLanguage,
+        reportIdToTerm,
+        outboxDir: File)
+    else
     DepositIngestTask(
-      deposit,
-      activeMetadataBlocks,
-      dansBagValidator,
-      instance,
-      publishAwaitUnlockMaxNumberOfRetries,
-      publishAwaitUnlockMillisecondsBetweenRetries,
-      narcisClassification,
-      isoToDataverseLanguage,
-      reportIdToTerm,
-      outboxDir: File)
+        deposit,
+        activeMetadataBlocks,
+        dansBagValidator,
+        instance,
+        publishAwaitUnlockMaxNumberOfRetries,
+        publishAwaitUnlockMillisecondsBetweenRetries,
+        narcisClassification,
+        isoToDataverseLanguage,
+        reportIdToTerm,
+        outboxDir: File)
   }
 }
