@@ -16,43 +16,20 @@
 package nl.knaw.dans.easy.dd2d
 
 import better.files.File
-import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
-import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.AbstractInbox
-
-import scala.xml.Elem
 
 /**
  * The inbox directory containing deposit directories. It can enqueue DepositIngestTasks in
  * on a TaskQueue in several ways.
  *
- * @param dir       the file system directory
- * @param dataverse the DataverseInstance to use for the DepositIngestTasks
+ * @param dir                      the file system directory
+ * @param depositIngestTaskFactory factory object that creates DepositIngestTask objects for deposits
  */
-class Inbox(dir: File,
-            activeMetadataBlocks: List[String],
-            dansBagValidator: DansBagValidator,
-            dataverse: DataverseInstance,
-            publishAwaitUnlockMaxNumberOfRetries: Int,
-            publishAwaitUnlockMillisecondsBetweenRetries: Int,
-            narcisClassification: Elem,
-            isoToDataverseLanage: Map[String, String],
-            reportIdToTerm: Map[String, String],
-            outboxDir: File) extends AbstractInbox[Deposit](dir) with DebugEnhancedLogging {
+class Inbox(dir: File, depositIngestTaskFactory: DepositIngestTaskFactory) extends AbstractInbox[Deposit](dir) with DebugEnhancedLogging {
   override def createTask(f: File): Option[DepositIngestTask] = {
     try {
-      Some(DepositIngestTask(
-        Deposit(f),
-        activeMetadataBlocks,
-        dansBagValidator,
-        dataverse,
-        publishAwaitUnlockMaxNumberOfRetries,
-        publishAwaitUnlockMillisecondsBetweenRetries,
-        narcisClassification,
-        isoToDataverseLanage,
-        reportIdToTerm,
-        outboxDir: File))
+      Some(depositIngestTaskFactory.createDepositIngestTask(Deposit(f)))
     }
     catch {
       case e: InvalidDepositException =>

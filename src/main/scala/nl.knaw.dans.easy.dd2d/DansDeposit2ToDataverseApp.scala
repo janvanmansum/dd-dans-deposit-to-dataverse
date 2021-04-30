@@ -34,15 +34,17 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
   private val inboxWatcher = {
     initOutboxDirs(configuration.outboxDir, requireAbsenceOfResults = false).get
     new InboxWatcher(new Inbox(configuration.inboxDir,
-      getActiveMetadataBlocks.get,
-      dansBagValidator,
-      dataverse,
-      configuration.publishAwaitUnlockMaxNumberOfRetries,
-      configuration.publishAwaitUnlockMillisecondsBetweenRetries,
-      configuration.narcisClassification,
-      configuration.isoToDataverseLanguage,
-      configuration.reportIdToTerm,
-      configuration.outboxDir))
+      new DepositIngestTaskFactory(
+        isMigrated = false,
+        getActiveMetadataBlocks.get,
+        dansBagValidator,
+        dataverse,
+        configuration.publishAwaitUnlockMaxNumberOfRetries,
+        configuration.publishAwaitUnlockMillisecondsBetweenRetries,
+        configuration.narcisClassification,
+        configuration.isoToDataverseLanguage,
+        configuration.reportIdToTerm,
+        configuration.outboxDir)))
   }
 
   def checkPreconditions(): Try[Unit] = {
@@ -58,15 +60,17 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults = false)
       - <- mustNotExist(OutboxSubdir.values.map(_.toString).map(subdir => outboxDir / subdir / deposit.name).toList)
       _ <- new SingleDepositProcessor(deposit,
-        getActiveMetadataBlocks.get,
-        dansBagValidator,
-        dataverse,
-        configuration.publishAwaitUnlockMaxNumberOfRetries,
-        configuration.publishAwaitUnlockMillisecondsBetweenRetries,
-        configuration.narcisClassification,
-        configuration.isoToDataverseLanguage,
-        configuration.reportIdToTerm,
-        outboxDir).process()
+        new DepositIngestTaskFactory(
+          isMigrated = true,
+          getActiveMetadataBlocks.get,
+          dansBagValidator,
+          dataverse,
+          configuration.publishAwaitUnlockMaxNumberOfRetries,
+          configuration.publishAwaitUnlockMillisecondsBetweenRetries,
+          configuration.narcisClassification,
+          configuration.isoToDataverseLanguage,
+          configuration.reportIdToTerm,
+          outboxDir)).process()
     } yield ()
   }
 
@@ -75,15 +79,17 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     for {
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults)
       _ <- new InboxProcessor(new Inbox(inbox,
-        getActiveMetadataBlocks.get,
-        dansBagValidator,
-        dataverse,
-        configuration.publishAwaitUnlockMaxNumberOfRetries,
-        configuration.publishAwaitUnlockMillisecondsBetweenRetries,
-        configuration.narcisClassification,
-        configuration.isoToDataverseLanguage,
-        configuration.reportIdToTerm,
-        outboxDir)).process()
+        new DepositIngestTaskFactory(
+          isMigrated = true,
+          getActiveMetadataBlocks.get,
+          dansBagValidator,
+          dataverse,
+          configuration.publishAwaitUnlockMaxNumberOfRetries,
+          configuration.publishAwaitUnlockMillisecondsBetweenRetries,
+          configuration.narcisClassification,
+          configuration.isoToDataverseLanguage,
+          configuration.reportIdToTerm,
+          outboxDir))).process()
     } yield ()
   }
 

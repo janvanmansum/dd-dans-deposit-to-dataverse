@@ -23,30 +23,10 @@ import nl.knaw.dans.lib.taskqueue.PassiveTaskQueue
 import scala.util.Try
 import scala.xml.Elem
 
-class SingleDepositProcessor(deposit: File,
-                             activeMetadataBlocks: List[String],
-                             dansBagValidator: DansBagValidator,
-                             dataverse: DataverseInstance,
-                             publishAwaitUnlockMaxNumberOfRetries: Int,
-                             publishAwaitUnlockMillisecondsBetweenRetries: Int,
-                             narcisClassification: Elem,
-                             isoToDataverseLanage: Map[String, String],
-                             reportIdToTerm: Map[String, String],
-                             outboxDir: File) {
+class SingleDepositProcessor(depositDir: File, depositIngestTaskFactory: DepositIngestTaskFactory) {
   def process(): Try[Unit] = Try {
     val ingestTasks = new PassiveTaskQueue[Deposit]()
-    ingestTasks.add(
-      DepositIngestTask(
-        Deposit(deposit),
-        activeMetadataBlocks,
-        dansBagValidator,
-        dataverse,
-        publishAwaitUnlockMaxNumberOfRetries,
-        publishAwaitUnlockMillisecondsBetweenRetries,
-        narcisClassification,
-        isoToDataverseLanage,
-        reportIdToTerm,
-        outboxDir))
+    ingestTasks.add(depositIngestTaskFactory.createDepositIngestTask(Deposit(depositDir)))
     ingestTasks.process()
   }
 }
