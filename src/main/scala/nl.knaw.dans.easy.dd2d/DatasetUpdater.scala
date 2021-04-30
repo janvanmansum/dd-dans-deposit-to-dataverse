@@ -61,6 +61,8 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
       pathsToAdd = pathToFileInfo.keySet diff pathToFileMetaInLatestVersion.keySet diff oldToNewPathMovedFiles.values.toSet
       fileAdditions <- addFiles(deposit.dataversePid, pathsToAdd.map(pathToFileInfo).toList).map(_.mapValues(_.metadata))
 
+      // TODO: what happens with file that only got a new description? Their MD will not be updated ??!!
+      // TODO: probably just change this to: update the file md of all the files that are in the new version. Will DV show "null-replacements" in the differences view??
       _ <- updateFileMetadata(fileReplacements ++ fileMovements ++ fileAdditions)
     } yield deposit.dataversePid
   }
