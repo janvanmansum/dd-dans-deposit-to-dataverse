@@ -159,7 +159,7 @@ case class DepositIngestTask(deposit: Deposit,
   }
 
   protected def newDatasetUpdater(dataverseDataset: Dataset): DatasetUpdater = {
-    new DatasetUpdater(deposit, dataverseDataset.datasetVersion.metadataBlocks, instance)
+    new DatasetUpdater(deposit, isMigration = false, dataverseDataset.datasetVersion.metadataBlocks, instance)
   }
 
   protected def newDatasetCreator(dataverseDataset: Dataset): DatasetCreator = {
