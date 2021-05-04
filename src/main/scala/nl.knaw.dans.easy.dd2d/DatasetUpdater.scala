@@ -29,11 +29,10 @@ import scala.util.{ Failure, Success, Try }
 class DatasetUpdater(deposit: Deposit, isMigration: Boolean = false, metadataBlocks: MetadataBlocks, instance: DataverseInstance) extends DatasetEditor(instance) with DebugEnhancedLogging {
   trace(deposit)
 
-
   override def performEdit(): Try[PersistendId] = {
     for {
       doi <- if (isMigration) Try { deposit.dataversePid }
-                 else getDoiBySwordToken
+             else getDoiBySwordToken
       dataset = instance.dataset(doi)
       _ <- dataset.awaitUnlock()
       /*
@@ -79,7 +78,7 @@ class DatasetUpdater(deposit: Deposit, isMigration: Boolean = false, metadataBlo
       r <- instance.search().find(s"""dansSwordToken:"$swordTokenUuid"""")
       searchResult <- r.data
       items = searchResult.items
-      _ = if (items.size != 1) throw FailedDepositException(deposit, s"Deposit is update of ${items.size} datasets; should always be 1!")
+      _ = if (items.size != 1) throw FailedDepositException(deposit, s"Deposit is update of ${ items.size } datasets; should always be 1!")
       doi = items.head.asInstanceOf[DatasetResultItem].globalId
       _ = debug(s"Deposit is update of dataset $doi")
     } yield doi
