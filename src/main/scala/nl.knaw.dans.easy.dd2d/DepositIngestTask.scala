@@ -18,10 +18,10 @@ package nl.knaw.dans.easy.dd2d
 import better.files.File
 import nl.knaw.dans.easy.dd2d.OutboxSubdir.{ FAILED, OutboxSubdir, PROCESSED, REJECTED }
 import nl.knaw.dans.easy.dd2d.dansbag.{ DansBagValidationResult, DansBagValidator }
-import nl.knaw.dans.easy.dd2d.mapping.{ Amd, JsonObject }
+import nl.knaw.dans.easy.dd2d.mapping.JsonObject
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.dataverse.model.dataset.UpdateType.major
-import nl.knaw.dans.lib.dataverse.model.dataset.{ PrimitiveSingleValueField, toFieldMap }
+import nl.knaw.dans.lib.dataverse.model.dataset.{ Dataset, PrimitiveSingleValueField, toFieldMap }
 import nl.knaw.dans.lib.error._
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.Task
@@ -33,7 +33,7 @@ import scala.collection.mutable.ListBuffer
 import scala.language.postfixOps
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
-import scala.xml.{ Elem, Node }
+import scala.xml.Elem
 
 /**
  * Checks one deposit and then ingests it into Dataverse.
@@ -56,57 +56,23 @@ case class DepositIngestTask(deposit: Deposit,
   private val datasetMetadataMapper = new DepositToDvDatasetMetadataMapper(activeMetadataBlocks, narcisClassification, isoToDataverseLanguage, repordIdToTerm)
   private val bagDirPath = File(deposit.bagDir.path)
 
-  override def run(): Try[Unit] = doRun()
-    .doIfSuccess(_ => {
-      logger.info(s"SUCCESS: $deposit")
-      deposit.setState("ARCHIVED", "The deposit was successfully ingested in the Data Station and will be automatically archived")
-      moveDepositToOutbox(PROCESSED)
-    })
-    .doIfFailure {
-      case e: RejectedDepositException =>
-        logger.info(s"REJECTED: $deposit")
-        deposit.setState("REJECTED", e.msg)
-        moveDepositToOutbox(REJECTED)
-      case e =>
-        logger.info(s"FAILED: $deposit")
-        deposit.setState("FAILED", e.getMessage)
-        moveDepositToOutbox(FAILED)
-    }
-
-  private def doRun(): Try[Unit] = {
-    trace(())
-    logger.info(s"Ingesting $deposit into Dataverse")
-    for {
-      isMigration <- Try { deposit.doi.nonEmpty }
-      _ <- if (isMigration) deposit.vaultMetadata.checkMinimumFieldsForImport() else Success(())
-      _ = debug(s"isMigration = $isMigration")
-      optAmd <- deposit.tryOptAmd
-      publicationDateOpt <- getJsonLdPublicationdate(optAmd)
-      validationResult <- dansBagValidator.validateBag(bagDirPath)
-      _ <- rejectIfInvalid(validationResult)
-      response <- instance.admin().getSingleUser(deposit.depositorUserId)
-      user <- response.data
-      datasetContacts <- createDatasetContacts(user.displayName, user.email, user.affiliation)
-      ddm <- deposit.tryDdm
-      optAgreements <- deposit.tryOptAgreementsXml
-      dataverseDataset <- datasetMetadataMapper.toDataverseDataset(ddm, optAgreements, optAmd, datasetContacts, deposit.vaultMetadata)
-      isUpdate <- deposit.isUpdate
-      _ = debug(s"isUpdate? = $isUpdate")
-      editor = if (isUpdate) new DatasetUpdater(deposit, dataverseDataset.datasetVersion.metadataBlocks, instance)
-               else new DatasetCreator(deposit, isMigration, dataverseDataset, instance)
-      persistentId <- editor.performEdit()
-      _ <- if (isMigration) publishMigratedDataset(persistentId, publicationDateOpt.get)
-           else publishDataset(persistentId)
-      _ <- waitForReleasedState(persistentId)
-      _ <- savePersistentIdentifiersInDepositProperties(persistentId)
-    } yield ()
-  }
-
-  private def getJsonLdPublicationdate(optAmd: Option[Node]): Try[Option[String]] = Try {
-    trace(optAmd)
-    optAmd
-      .flatMap(amd => Amd.getFirstChangeToState(amd, "PUBLISHED"))
-      .map(d => s"""{"http://schema.org/datePublished": "$d"}""")
+  override def run(): Try[Unit] = {
+    doRun()
+      .doIfSuccess(_ => {
+        logger.info(s"SUCCESS: $deposit")
+        deposit.setState("ARCHIVED", "The deposit was successfully ingested in the Data Station and will be automatically archived")
+        moveDepositToOutbox(PROCESSED)
+      })
+      .doIfFailure {
+        case e: RejectedDepositException =>
+          logger.info(s"REJECTED: $deposit")
+          deposit.setState("REJECTED", e.msg)
+          moveDepositToOutbox(REJECTED)
+        case e =>
+          logger.info(s"FAILED: $deposit")
+          deposit.setState("FAILED", e.getMessage)
+          moveDepositToOutbox(FAILED)
+      }
   }
 
   private def moveDepositToOutbox(subDir: OutboxSubdir): Unit = {
@@ -115,6 +81,37 @@ case class DepositIngestTask(deposit: Deposit,
     } catch {
       case NonFatal(e) => logger.info(s"Failed to move deposit: $deposit to ${ outboxDir / subDir.toString }", e)
     }
+  }
+
+  private def doRun(): Try[Unit] = {
+    trace(())
+    logger.info(s"Ingesting $deposit into Dataverse")
+    for {
+      _ <- checkDepositType()
+      _ <- validateDeposit()
+      dataverseDataset <- getMetadata
+      isUpdate <- deposit.isUpdate
+      _ = debug(s"isUpdate? = $isUpdate")
+      editor = if (isUpdate) newDatasetUpdater(dataverseDataset)
+               else newDatasetCreator(dataverseDataset)
+      persistentId <- editor.performEdit()
+      _ <- publishDataset(persistentId)
+      _ <- postPublication(persistentId)
+    } yield ()
+  }
+
+  protected def checkDepositType(): Try[Unit] = {
+    trace(())
+    if (deposit.doi.nonEmpty) Failure(new IllegalArgumentException("Deposits must not have an identifier.doi property unless they are migrated"))
+    else Success(())
+  }
+
+  private def validateDeposit(): Try[Unit] = {
+    trace(())
+    for {
+      validationResult <- dansBagValidator.validateBag(bagDirPath)
+      _ <- rejectIfInvalid(validationResult)
+    } yield ()
   }
 
   private def rejectIfInvalid(validationResult: DansBagValidationResult): Try[Unit] = Try {
@@ -130,6 +127,29 @@ case class DepositIngestTask(deposit: Deposit,
     case (nr, msg) => s" - [$nr] $msg"
   }
 
+  private def getMetadata: Try[Dataset] = {
+    trace(())
+    for {
+      optDateOfDeposit <- getDateOfDeposit
+      datasetContacts <- getDatasetContacts
+      ddm <- deposit.tryDdm
+      optAgreements <- deposit.tryOptAgreementsXml
+      dataverseDataset <- datasetMetadataMapper.toDataverseDataset(ddm, optAgreements, optDateOfDeposit, datasetContacts, deposit.vaultMetadata)
+    } yield dataverseDataset
+  }
+
+  protected def getDateOfDeposit: Try[Option[String]] = Try {
+    Option.empty
+  }
+
+  private def getDatasetContacts: Try[List[JsonObject]] = {
+    for {
+      response <- instance.admin().getSingleUser(deposit.depositorUserId)
+      user <- response.data
+      datasetContacts <- createDatasetContacts(user.displayName, user.email, user.affiliation)
+    } yield datasetContacts
+  }
+
   private def createDatasetContacts(name: String, email: String, optAffiliation: Option[String] = None): Try[List[JsonObject]] = Try {
     val subfields = ListBuffer[PrimitiveSingleValueField]()
     subfields.append(PrimitiveSingleValueField("datasetContactName", name))
@@ -138,7 +158,15 @@ case class DepositIngestTask(deposit: Deposit,
     List(toFieldMap(subfields: _*))
   }
 
-  private def publishDataset(persistentId: String): Try[Unit] = {
+  protected def newDatasetUpdater(dataverseDataset: Dataset): DatasetUpdater = {
+    new DatasetUpdater(deposit, isMigration = false, dataverseDataset.datasetVersion.metadataBlocks, instance)
+  }
+
+  protected def newDatasetCreator(dataverseDataset: Dataset): DatasetCreator = {
+    new DatasetCreator(deposit, isMigration = false, dataverseDataset, instance)
+  }
+
+  protected def publishDataset(persistentId: String): Try[Unit] = {
     trace(persistentId)
     for {
       _ <- instance.dataset(persistentId).publish(major)
@@ -148,13 +176,11 @@ case class DepositIngestTask(deposit: Deposit,
     } yield ()
   }
 
-  private def publishMigratedDataset(persistentId: String, publicationDate: String): Try[Unit] = {
-    trace(persistentId, publicationDate)
+  protected def postPublication(persistentId: String): Try[Unit] = {
+    trace(persistentId)
     for {
-      _ <- instance.dataset(persistentId).releaseMigrated(publicationDate)
-      _ <- instance.dataset(persistentId).awaitUnlock(
-        maxNumberOfRetries = publishAwaitUnlockMaxNumberOfRetries,
-        waitTimeInMilliseconds = publishAwaitUnlockMillisecondsBetweenRetries)
+      _ <- waitForReleasedState(persistentId)
+      _ <- savePersistentIdentifiersInDepositProperties(persistentId)
     } yield ()
   }
 

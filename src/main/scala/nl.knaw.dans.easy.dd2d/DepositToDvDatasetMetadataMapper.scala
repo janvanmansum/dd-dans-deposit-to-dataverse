@@ -49,8 +49,8 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
   lazy val temporalSpatialFields = new mutable.HashMap[String, AbstractFieldBuilder]()
   lazy val dataVaultFields = new mutable.HashMap[String, AbstractFieldBuilder]()
 
-  def toDataverseDataset(ddm: Node, optAgreements: Option[Node], optAmd: Option[Node], contactData: List[JsonObject], vaultMetadata: VaultMetadata): Try[Dataset] = Try {
-    // Please, keep ordered by order in Dataverse UI as much as possible (note, if display-on-create is not set for all fields, some may be hidden initally)
+  def toDataverseDataset(ddm: Node, optAgreements: Option[Node], optDateOfDeposit: Option[String], contactData: List[JsonObject], vaultMetadata: VaultMetadata): Try[Dataset] = Try {
+    // Please, keep ordered by order in Dataverse UI as much as possible!
 
     if (activeMetadataBlocks.contains("citation")) {
       val titles = ddm \ "profile" \ "title"
@@ -89,9 +89,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization").filterNot(DcxDaiOrganization isRightsHolder), DcxDaiOrganization toContributorValueObject)
       addPrimitiveFieldSingleValue(citationFields, DISTRIBUTION_DATE, ddm \ "profile" \ "available", DateTypeElement toYearMonthDayFormat)
 
-      optAmd.foreach { amd =>
-        addPrimitiveFieldSingleValue(citationFields, DATE_OF_DEPOSIT, amd, Amd toDateOfDeposit)
-      }
+      addPrimitiveFieldSingleValue(citationFields, DATE_OF_DEPOSIT, optDateOfDeposit)
       // TODO: what to set dateOfDeposit to for SWORD or multi-deposits? Take from deposit.properties?
 
       addPrimitiveFieldMultipleValues(citationFields, DATA_SOURCES, ddm \ "dcmiMetadata" \ "source")

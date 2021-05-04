@@ -16,8 +16,9 @@
 package nl.knaw.dans.easy.dd2d
 
 import better.files.File
-import nl.knaw.dans.lib.dataverse.model.dataset.{ DatasetVersion, MetadataBlocks }
+import nl.knaw.dans.lib.dataverse.model.dataset.MetadataBlocks
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
+import nl.knaw.dans.lib.dataverse.model.search.DatasetResultItem
 import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance }
 import nl.knaw.dans.lib.error.TraversableTryExtensions
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
@@ -25,12 +26,14 @@ import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import java.nio.file.{ Path, Paths }
 import scala.util.{ Failure, Success, Try }
 
-class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance: DataverseInstance) extends DatasetEditor(instance) with DebugEnhancedLogging {
+class DatasetUpdater(deposit: Deposit, isMigration: Boolean = false, metadataBlocks: MetadataBlocks, instance: DataverseInstance) extends DatasetEditor(instance) with DebugEnhancedLogging {
   trace(deposit)
-  private val dataset: DatasetApi = instance.dataset(deposit.dataversePid)
 
   override def performEdit(): Try[PersistendId] = {
     for {
+      doi <- if (isMigration) Try { deposit.dataversePid }
+             else getDoiBySwordToken
+      dataset = instance.dataset(doi)
       _ <- dataset.awaitUnlock()
       /*
        * Temporary fix. If we do not wait a couple of seconds here, the first version never gets properly published, and the second version
@@ -43,12 +46,12 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
       bagPathToFileInfo <- deposit.getPathToFileInfo
       pathToFileInfo = bagPathToFileInfo.map { case (bagPath, fileInfo) => (Paths.get("data").relativize(bagPath) -> fileInfo) }
       _ = debug(s"pathToFileInfo = $pathToFileInfo")
-      pathToFileMetaInLatestVersion <- getFilesInLatestVersion
+      pathToFileMetaInLatestVersion <- getFilesInLatestVersion(dataset)
       _ = debug(s"pathToFileMetaInLatestVersion = $pathToFileMetaInLatestVersion")
       _ <- validateFileMetas(pathToFileMetaInLatestVersion.values.toList)
 
       filesToReplace <- getFilesToReplace(pathToFileInfo, pathToFileMetaInLatestVersion)
-      fileReplacements <- replaceFiles(filesToReplace.mapValues(fileInfo => fileInfo.file))
+      fileReplacements <- replaceFiles(dataset, filesToReplace.mapValues(fileInfo => fileInfo.file))
 
       oldToNewPathMovedFiles <- getOldToNewPathOfFilesToMove(pathToFileMetaInLatestVersion, pathToFileInfo)
       fileMovements = oldToNewPathMovedFiles.map { case (old, newPath) => (pathToFileMetaInLatestVersion(old).dataFile.get.id, pathToFileInfo(newPath).metadata) }
@@ -56,16 +59,32 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
 
       pathsToDelete = pathToFileMetaInLatestVersion.keySet diff pathToFileInfo.keySet diff oldToNewPathMovedFiles.keySet
       fileDeletions <- getFileDeletions(pathsToDelete, pathToFileMetaInLatestVersion)
-      _ <- deleteFiles(fileDeletions.toList)
+      _ <- deleteFiles(dataset, fileDeletions.toList)
 
       pathsToAdd = pathToFileInfo.keySet diff pathToFileMetaInLatestVersion.keySet diff oldToNewPathMovedFiles.values.toSet
-      fileAdditions <- addFiles(deposit.dataversePid, pathsToAdd.map(pathToFileInfo).toList).map(_.mapValues(_.metadata))
+      fileAdditions <- addFiles(doi, pathsToAdd.map(pathToFileInfo).toList).map(_.mapValues(_.metadata))
 
+      // TODO: what happens with file that only got a new description? Their MD will not be updated ??!!
+      // TODO: probably just change this to: update the file md of all the files that are in the new version. Will DV show "null-replacements" in the differences view??
       _ <- updateFileMetadata(fileReplacements ++ fileMovements ++ fileAdditions)
-    } yield deposit.dataversePid
+    } yield doi
   }
 
-  private def getFilesInLatestVersion: Try[Map[Path, FileMeta]] = {
+  private def getDoiBySwordToken: Try[String] = {
+    trace(())
+    debug(s"dansSwordToken = ${ deposit.vaultMetadata.dataverseSwordToken }")
+    val Array(_, swordTokenUuid) = deposit.vaultMetadata.dataverseSwordToken.split(":")
+    for {
+      r <- instance.search().find(s"""dansSwordToken:"$swordTokenUuid"""")
+      searchResult <- r.data
+      items = searchResult.items
+      _ = if (items.size != 1) throw FailedDepositException(deposit, s"Deposit is update of ${ items.size } datasets; should always be 1!")
+      doi = items.head.asInstanceOf[DatasetResultItem].globalId
+      _ = debug(s"Deposit is update of dataset $doi")
+    } yield doi
+  }
+
+  private def getFilesInLatestVersion(dataset: DatasetApi): Try[Map[Path, FileMeta]] = {
     for {
       response <- dataset.listFiles()
       files <- response.data
@@ -97,7 +116,7 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
    * Dataverse does not record that the file was effectively moved.
    *
    * @param pathToFileMetaInLatestVersion map from path to file metadata in the old version
-   * @param pathToFileInfo map from path to file info in the new version (i.e. the deposit).
+   * @param pathToFileInfo                map from path to file info in the new version (i.e. the deposit).
    * @return
    */
   private def getOldToNewPathOfFilesToMove(pathToFileMetaInLatestVersion: Map[Path, FileMeta], pathToFileInfo: Map[Path, FileInfo]): Try[Map[Path, Path]] = {
@@ -122,7 +141,7 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
     paths.map(path => pathToFileMeta(path).dataFile.get.id)
   }
 
-  protected def deleteFiles(databaseIds: List[DatabaseId]): Try[Unit] = {
+  protected def deleteFiles(dataset: DatasetApi, databaseIds: List[DatabaseId]): Try[Unit] = {
     databaseIds.map(id => {
       debug(s"Deleting file, databaseId = $id")
       instance.sword().deleteFile(id)
@@ -130,7 +149,7 @@ class DatasetUpdater(deposit: Deposit, metadataBlocks: MetadataBlocks, instance:
     }).collectResults.map(_ => ())
   }
 
-  protected def replaceFiles(databaseIdToNewFile: Map[Int, File]): Try[Map[Int, FileMeta]] = {
+  protected def replaceFiles(dataset: DatasetApi, databaseIdToNewFile: Map[Int, File]): Try[Map[Int, FileMeta]] = {
     trace(databaseIdToNewFile)
     databaseIdToNewFile.map {
       case (id, file) =>
