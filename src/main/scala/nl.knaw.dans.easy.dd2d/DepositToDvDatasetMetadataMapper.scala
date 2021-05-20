@@ -102,6 +102,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
     }
 
     if (activeMetadataBlocks.contains("dansRights")) {
+      checkRequiredField(RIGHTS_HOLDER, ddm \ "dcmiMetadata" \ "rightsHolder")
       addPrimitiveFieldMultipleValues(rightsFields, RIGHTS_HOLDER, ddm \ "dcmiMetadata" \ "rightsHolder", AnyElement toText)
       optAgreements.foreach { agreements =>
         addCvFieldSingleValue(rightsFields, PERSONAL_DATA_PRESENT, agreements \ "personalDataStatement", PersonalStatement toHasPersonalDataValue)
