@@ -6,8 +6,8 @@ SYNOPSIS
 --------
 
     dd-dans-deposit-to-dataverse run-service
-    dd-dans-deposit-to-dataverse import [-d,--draft] [-c,--continue] <inbox> <outbox>
-    dd-dans-deposit-to-dataverse import [-d,--draft] -s <single-deposit> <outbox>
+    dd-dans-deposit-to-dataverse import [-c,--continue] <inbox> <outbox>
+    dd-dans-deposit-to-dataverse import -s <single-deposit> <outbox>
 
 DESCRIPTION
 -----------
@@ -42,39 +42,26 @@ The processing of a deposit consists of the following steps:
 3. Map the dataset level metadata to the metadata fields expected in the target Dataverse.
 4. If:
     * deposit represents first version of a dataset: create a new dataset draft.
-    * deposit represents an update to an existing dataset: [draft a new version](#update-deposit)  
-5. Publish the new dataset-version if auto-publish is on.
-
-!!! note "Contact info"
-
-    In the current version of the tool the contact information is always that of the dataverseAdmin account.
-    This is a temporary solution and will change once the relevant requirements have been analysed.
+    * deposit represents an update to an existing dataset: [draft a new version](#update-deposit)
+5. Publish the new dataset-version.
 
 #### Update deposit
-When receiving a deposit that specifies a new version for an exsiting dataset (an update-deposit) the assumption
+When receiving a deposit that specifies a new version for an existing dataset (an update-deposit) the assumption
 is that the bag contains the metadata and file data that must be in the new version. This means:
 
-* The metadata specified completely overwrites the metadata in the latest version. So, if the client needs to
+* The metadata specified completely overwrites the metadata in the latest version. So, even if the client needs to
   change only one word, it must send all the existing metadata with only that particular word changed. Any 
   metadata left out will be deleted.
 * The files will replace the files in the latest version. So the files that are in the deposit are the ones
   that will be in the new version. If a file is to be deleted from the new version, it should simply be left
-  out in the deposit.
+  out in the deposit. If a file is to remain unchanged in the new version, an exact copy of the current file must be sent.
   
-  More exactly. Let:
-  
-  * R<sub>old</sub> = checksums of files to be replaced
-  * R<sub>new</sub> = checksums of replacements for R<sub>old</sub>
-  * D = checksums of files to be deleted
-  * A = checksums of files to be added
-  * L = checksums of files in latest version
-  * I = checksums of files in deposit
-    
-  Then:
+!!! note "File path is key"
 
-  * R = the files with the same (directoryLabel, label) in deposit and latest version but different checksums
-  * D = (L - R<sub>old</sub>) - I 
-  * A = (I - R<sub>new</sub>) - L 
+    The local file path (that is, directoryLabel + name) is used as the key to determine what file in the
+    latest published version, if any, is targetting. For example, to replace a published file, the path
+    of the replacement must match the path of the published file. (The path in the deposit is the path
+    relative to the bag's `data/` folder.)
     
 ### Mapping to Dataverse dataset
 

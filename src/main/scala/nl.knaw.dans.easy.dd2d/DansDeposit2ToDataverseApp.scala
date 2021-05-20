@@ -74,8 +74,8 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     } yield ()
   }
 
-  def importDeposits(inbox: File, outboxDir: File, autoPublish: Boolean, requireAbsenceOfResults: Boolean = true): Try[Unit] = {
-    trace(inbox, outboxDir, autoPublish, requireAbsenceOfResults)
+  def importDeposits(inbox: File, outboxDir: File, requireAbsenceOfResults: Boolean = true): Try[Unit] = {
+    trace(inbox, outboxDir, requireAbsenceOfResults)
     for {
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults)
       _ <- new InboxProcessor(new Inbox(inbox,
