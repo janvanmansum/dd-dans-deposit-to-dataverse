@@ -43,7 +43,7 @@ import scala.xml.Elem
  */
 case class DepositIngestTask(deposit: Deposit,
                              activeMetadataBlocks: List[String],
-                             dansBagValidator: DansBagValidator,
+                             optDansBagValidator: Option[DansBagValidator],
                              instance: DataverseInstance,
                              publishAwaitUnlockMaxNumberOfRetries: Int,
                              publishAwaitUnlockMillisecondsBetweenRetries: Int,
@@ -108,10 +108,16 @@ case class DepositIngestTask(deposit: Deposit,
 
   private def validateDeposit(): Try[Unit] = {
     trace(())
-    for {
-      validationResult <- dansBagValidator.validateBag(bagDirPath)
-      _ <- rejectIfInvalid(validationResult)
-    } yield ()
+    optDansBagValidator.map {
+      dansBagValidator =>
+        for {
+          validationResult <- dansBagValidator.validateBag(bagDirPath)
+          _ <- rejectIfInvalid(validationResult)
+        } yield ()
+    }.getOrElse( {
+      debug("Skipping validation")
+      Success(())
+    })
   }
 
   private def rejectIfInvalid(validationResult: DansBagValidationResult): Try[Unit] = Try {

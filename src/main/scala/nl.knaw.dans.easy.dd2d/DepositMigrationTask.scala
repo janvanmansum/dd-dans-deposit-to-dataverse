@@ -27,7 +27,7 @@ import scala.xml.{ Elem, Node }
 
 class DepositMigrationTask(deposit: Deposit,
                            activeMetadataBlocks: List[String],
-                           dansBagValidator: DansBagValidator,
+                           optDansBagValidator: Option[DansBagValidator],
                            instance: DataverseInstance,
                            publishAwaitUnlockMaxNumberOfRetries: Int,
                            publishAwaitUnlockMillisecondsBetweenRetries: Int,
@@ -35,16 +35,16 @@ class DepositMigrationTask(deposit: Deposit,
                            isoToDataverseLanguage: Map[String, String],
                            repordIdToTerm: Map[String, String],
                            outboxDir: File)
-  extends DepositIngestTask(deposit: Deposit,
-    activeMetadataBlocks: List[String],
-    dansBagValidator: DansBagValidator,
-    instance: DataverseInstance,
-    publishAwaitUnlockMaxNumberOfRetries: Int,
-    publishAwaitUnlockMillisecondsBetweenRetries: Int,
-    narcisClassification: Elem,
-    isoToDataverseLanguage: Map[String, String],
-    repordIdToTerm: Map[String, String],
-    outboxDir: File) {
+  extends DepositIngestTask(deposit,
+    activeMetadataBlocks,
+    optDansBagValidator,
+    instance,
+    publishAwaitUnlockMaxNumberOfRetries,
+    publishAwaitUnlockMillisecondsBetweenRetries,
+    narcisClassification,
+    isoToDataverseLanguage,
+    repordIdToTerm,
+    outboxDir) {
 
   override protected def checkDepositType(): Try[Unit] = {
     for {

@@ -31,13 +31,13 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     serviceUri = configuration.validatorServiceUrl,
     connTimeoutMs = configuration.validatorConnectionTimeoutMs,
     readTimeoutMs = configuration.validatorReadTimeoutMs)
-  private val inboxWatcher = {
+  private lazy val inboxWatcher = {
     initOutboxDirs(configuration.outboxDir, requireAbsenceOfResults = false).get
     new InboxWatcher(new Inbox(configuration.inboxDir,
       new DepositIngestTaskFactory(
         isMigrated = false,
         getActiveMetadataBlocks.get,
-        dansBagValidator,
+        Option(dansBagValidator),
         dataverse,
         configuration.publishAwaitUnlockMaxNumberOfRetries,
         configuration.publishAwaitUnlockMillisecondsBetweenRetries,
@@ -54,7 +54,7 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     } yield ()
   }
 
-  def importSingleDeposit(deposit: File, outboxDir: File): Try[Unit] = {
+  def importSingleDeposit(deposit: File, outboxDir: File, skipValidation: Boolean): Try[Unit] = {
     trace(deposit, outboxDir)
     for {
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults = false)
@@ -63,7 +63,7 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
         new DepositIngestTaskFactory(
           isMigrated = true,
           getActiveMetadataBlocks.get,
-          dansBagValidator,
+          if (skipValidation) Option.empty else Option(dansBagValidator),
           dataverse,
           configuration.publishAwaitUnlockMaxNumberOfRetries,
           configuration.publishAwaitUnlockMillisecondsBetweenRetries,
@@ -74,15 +74,15 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     } yield ()
   }
 
-  def importDeposits(inbox: File, outboxDir: File, autoPublish: Boolean, requireAbsenceOfResults: Boolean = true): Try[Unit] = {
-    trace(inbox, outboxDir, autoPublish, requireAbsenceOfResults)
+  def importDeposits(inbox: File, outboxDir: File, requireAbsenceOfResults: Boolean = true, skipValidation: Boolean = false): Try[Unit] = {
+    trace(inbox, outboxDir, requireAbsenceOfResults)
     for {
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults)
       _ <- new InboxProcessor(new Inbox(inbox,
         new DepositIngestTaskFactory(
           isMigrated = true,
           getActiveMetadataBlocks.get,
-          dansBagValidator,
+          if (skipValidation) Option.empty else Option(dansBagValidator),
           dataverse,
           configuration.publishAwaitUnlockMaxNumberOfRetries,
           configuration.publishAwaitUnlockMillisecondsBetweenRetries,
