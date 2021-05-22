@@ -31,13 +31,13 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     serviceUri = configuration.validatorServiceUrl,
     connTimeoutMs = configuration.validatorConnectionTimeoutMs,
     readTimeoutMs = configuration.validatorReadTimeoutMs)
-  private val inboxWatcher = {
+  private lazy val inboxWatcher = {
     initOutboxDirs(configuration.outboxDir, requireAbsenceOfResults = false).get
     new InboxWatcher(new Inbox(configuration.inboxDir,
       new DepositIngestTaskFactory(
         isMigrated = false,
         getActiveMetadataBlocks.get,
-        dansBagValidator,
+        Option(dansBagValidator),
         dataverse,
         configuration.publishAwaitUnlockMaxNumberOfRetries,
         configuration.publishAwaitUnlockMillisecondsBetweenRetries,
@@ -47,23 +47,24 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
         configuration.outboxDir)))
   }
 
-  def checkPreconditions(): Try[Unit] = {
+  private def checkPreconditions(skipValidation: Boolean = false): Try[Unit] = {
     for {
-      _ <- dansBagValidator.checkConnection()
+      _ <- if (skipValidation) Success(()) else dansBagValidator.checkConnection()
       _ <- dataverse.checkConnection()
     } yield ()
   }
 
-  def importSingleDeposit(deposit: File, outboxDir: File): Try[Unit] = {
+  def importSingleDeposit(deposit: File, outboxDir: File, skipValidation: Boolean): Try[Unit] = {
     trace(deposit, outboxDir)
     for {
+      - <- checkPreconditions(skipValidation)
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults = false)
       - <- mustNotExist(OutboxSubdir.values.map(_.toString).map(subdir => outboxDir / subdir / deposit.name).toList)
       _ <- new SingleDepositProcessor(deposit,
         new DepositIngestTaskFactory(
           isMigrated = true,
           getActiveMetadataBlocks.get,
-          dansBagValidator,
+          if (skipValidation) Option.empty else Option(dansBagValidator),
           dataverse,
           configuration.publishAwaitUnlockMaxNumberOfRetries,
           configuration.publishAwaitUnlockMillisecondsBetweenRetries,
@@ -74,15 +75,16 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
     } yield ()
   }
 
-  def importDeposits(inbox: File, outboxDir: File, autoPublish: Boolean, requireAbsenceOfResults: Boolean = true): Try[Unit] = {
-    trace(inbox, outboxDir, autoPublish, requireAbsenceOfResults)
+  def importDeposits(inbox: File, outboxDir: File, requireAbsenceOfResults: Boolean = true, skipValidation: Boolean = false): Try[Unit] = {
+    trace(inbox, outboxDir, requireAbsenceOfResults)
     for {
+      _ <- checkPreconditions(skipValidation)
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults)
       _ <- new InboxProcessor(new Inbox(inbox,
         new DepositIngestTaskFactory(
           isMigrated = true,
           getActiveMetadataBlocks.get,
-          dansBagValidator,
+          if (skipValidation) Option.empty else Option(dansBagValidator),
           dataverse,
           configuration.publishAwaitUnlockMaxNumberOfRetries,
           configuration.publishAwaitUnlockMillisecondsBetweenRetries,
@@ -95,7 +97,10 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
 
   def start(): Try[Unit] = {
     trace(())
-    inboxWatcher.start(Some(new DepositSorter()))
+    for {
+      _ <- checkPreconditions()
+      _ <- inboxWatcher.start(Some( new DepositSorter()))
+    } yield ()
   }
 
   def stop(): Try[Unit] = {

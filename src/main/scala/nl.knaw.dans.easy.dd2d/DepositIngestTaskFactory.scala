@@ -26,7 +26,7 @@ import scala.xml.Elem
  *
  * @param isMigrated                                   is this a migrated dataset?
  * @param activeMetadataBlocks                         the metadata blocks enabled in the target dataverse
- * @param dansBagValidator                             interface to the easy-validate-dans-bag service
+ * @param optDansBagValidator                             interface to the easy-validate-dans-bag service
  * @param instance                                     interface to the target Dataverse instance
  * @param publishAwaitUnlockMaxNumberOfRetries         maximum number of times to poll for unlock after publish is called after ingest of the deposit
  * @param publishAwaitUnlockMillisecondsBetweenRetries number of milliseconds to wait between retries of unlock polling after publish
@@ -37,7 +37,7 @@ import scala.xml.Elem
  */
 class DepositIngestTaskFactory(isMigrated: Boolean = false,
                                activeMetadataBlocks: List[String],
-                               dansBagValidator: DansBagValidator,
+                               optDansBagValidator: Option[DansBagValidator],
                                instance: DataverseInstance,
                                publishAwaitUnlockMaxNumberOfRetries: Int,
                                publishAwaitUnlockMillisecondsBetweenRetries: Int,
@@ -50,7 +50,7 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
     if (isMigrated)
       new DepositMigrationTask(deposit,
         activeMetadataBlocks,
-        dansBagValidator,
+        optDansBagValidator,
         instance,
         publishAwaitUnlockMaxNumberOfRetries,
         publishAwaitUnlockMillisecondsBetweenRetries,
@@ -62,7 +62,7 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
     DepositIngestTask(
         deposit,
         activeMetadataBlocks,
-        dansBagValidator,
+        optDansBagValidator,
         instance,
         publishAwaitUnlockMaxNumberOfRetries,
         publishAwaitUnlockMillisecondsBetweenRetries,
