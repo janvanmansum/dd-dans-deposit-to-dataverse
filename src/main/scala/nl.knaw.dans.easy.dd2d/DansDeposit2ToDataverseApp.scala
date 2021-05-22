@@ -47,9 +47,9 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
         configuration.outboxDir)))
   }
 
-  def checkPreconditions(): Try[Unit] = {
+  private def checkPreconditions(skipValidation: Boolean = false): Try[Unit] = {
     for {
-      _ <- dansBagValidator.checkConnection()
+      _ <- if (skipValidation) Success(()) else dansBagValidator.checkConnection()
       _ <- dataverse.checkConnection()
     } yield ()
   }
@@ -57,6 +57,7 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
   def importSingleDeposit(deposit: File, outboxDir: File, skipValidation: Boolean): Try[Unit] = {
     trace(deposit, outboxDir)
     for {
+      - <- checkPreconditions(skipValidation)
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults = false)
       - <- mustNotExist(OutboxSubdir.values.map(_.toString).map(subdir => outboxDir / subdir / deposit.name).toList)
       _ <- new SingleDepositProcessor(deposit,
@@ -77,6 +78,7 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
   def importDeposits(inbox: File, outboxDir: File, requireAbsenceOfResults: Boolean = true, skipValidation: Boolean = false): Try[Unit] = {
     trace(inbox, outboxDir, requireAbsenceOfResults)
     for {
+      _ <- checkPreconditions(skipValidation)
       _ <- initOutboxDirs(outboxDir, requireAbsenceOfResults)
       _ <- new InboxProcessor(new Inbox(inbox,
         new DepositIngestTaskFactory(
@@ -95,7 +97,10 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
 
   def start(): Try[Unit] = {
     trace(())
-    inboxWatcher.start(Some(new DepositSorter()))
+    for {
+      _ <- checkPreconditions()
+      _ <- inboxWatcher.start(Some( new DepositSorter()))
+    } yield ()
   }
 
   def stop(): Try[Unit] = {

@@ -32,9 +32,8 @@ object Command extends App with DebugEnhancedLogging {
   }
 
   val app = new DansDeposit2ToDataverseApp(configuration)
-  val result = for {
-    _ <- app.checkPreconditions()
-    msg <- commandLine.subcommand match {
+  val result =
+    commandLine.subcommand match {
       case Some(cmd @ commandLine.importCommand) => {
         if (cmd.singleDeposit()) app.importSingleDeposit(cmd.depositsInboxOrSingleDeposit(), cmd.outdir(), cmd.skipValidation())
         else app.importDeposits(cmd.depositsInboxOrSingleDeposit(), cmd.outdir(), !cmd.continue(), cmd.skipValidation())
@@ -42,8 +41,6 @@ object Command extends App with DebugEnhancedLogging {
       case Some(_ @ commandLine.runService) => runAsService()
       case _ => Try { s"Unknown command: ${ commandLine.subcommand }" }
     }
-  } yield msg
-
   result.doIfSuccess(msg => Console.err.println(s"OK: $msg"))
     .doIfFailure { case e => logger.error(e.getMessage, e) }
     .doIfFailure { case NonFatal(e) => Console.err.println(s"FAILED: ${ e.getMessage }") }
