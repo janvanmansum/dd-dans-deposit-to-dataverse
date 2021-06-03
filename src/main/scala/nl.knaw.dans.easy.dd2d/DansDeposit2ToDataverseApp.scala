@@ -97,10 +97,7 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
 
   def start(): Try[Unit] = {
     trace(())
-    for {
-      _ <- checkPreconditions()
-      _ <- inboxWatcher.start(Some( new DepositSorter()))
-    } yield ()
+    inboxWatcher.start(Some( new DepositSorter()))
   }
 
   def stop(): Try[Unit] = {
