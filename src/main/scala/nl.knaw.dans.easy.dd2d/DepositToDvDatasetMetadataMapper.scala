@@ -31,12 +31,13 @@ import scala.xml.{ Elem, Node, NodeSeq }
  *
  * @param activeMetadataBlocks   the metadata blocks that are active in the target dataverse
  * @param narcisClassification   NARCIS classification SKOS, currently not used
- * @param isoToDataverseLanguage map from ISO639-2 to the Dataverse language terms
+ * @param iso2ToDataverseLanguage map from ISO639-2 to the Dataverse language terms
  * @param reportIdToTerm         map from Cultureel Erfgoed Report Type ID to the human readable term
  */
 class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
                                        narcisClassification: Elem,
-                                       isoToDataverseLanguage: Map[String, String],
+                                       iso1ToDataverseLanguage: Map[String, String],
+                                       iso2ToDataverseLanguage: Map[String, String],
                                        reportIdToTerm: Map[String, String]) extends BlockCitation
   with BlockArchaeologySpecific
   with BlockTemporalAndSpatial
@@ -84,7 +85,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       addCvFieldMultipleValues(citationFields, SUBJECT, ddm \ "profile" \ "audience", Audience toCitationBlockSubject)
       addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "subject").filter(Subject hasNoCvAttributes), Subject toKeyWordValue)
       addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "language").filterNot(Language isIsoLanguage), Language toKeywordValue)
-      addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(isoToDataverseLanguage))
+      addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(iso1ToDataverseLanguage, iso2ToDataverseLanguage))
       addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
       addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "author").filterNot(DcxDaiAuthor isRightsHolder), DcxDaiAuthor toContributorValueObject)
       addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization").filterNot(DcxDaiOrganization isRightsHolder), DcxDaiOrganization toContributorValueObject)
@@ -110,7 +111,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       }
       addPrimitiveFieldMultipleValues(rightsFields, RIGHTS_HOLDER, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "author").filter(DcxDaiAuthor isRightsHolder), DcxDaiAuthor toRightsHolder)
       addPrimitiveFieldMultipleValues(rightsFields, RIGHTS_HOLDER, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization").filter(DcxDaiOrganization isRightsHolder), DcxDaiOrganization toRightsHolder)
-      addCvFieldMultipleValues(rightsFields, LANGUAGE_OF_METADATA, (ddm \ "profile" \ "_") ++ (ddm \ "dcmiMetadata" \ "_"), Language.langAttributeToMetadataLanguage(isoToDataverseLanguage))
+      addCvFieldMultipleValues(rightsFields, LANGUAGE_OF_METADATA, (ddm \ "profile" \ "_") ++ (ddm \ "dcmiMetadata" \ "_"), Language.langAttributeToMetadataLanguage(iso1ToDataverseLanguage, iso2ToDataverseLanguage))
     }
 
     if (activeMetadataBlocks.contains("dansRelationMetadata")) {

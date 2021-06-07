@@ -31,7 +31,7 @@ import scala.xml.Elem
  * @param publishAwaitUnlockMaxNumberOfRetries         maximum number of times to poll for unlock after publish is called after ingest of the deposit
  * @param publishAwaitUnlockMillisecondsBetweenRetries number of milliseconds to wait between retries of unlock polling after publish
  * @param narcisClassification                         root element of the NARCIS SKOS file
- * @param isoToDataverseLanguage                       mapping of ISO639-2 to Dataverse language term
+ * @param iso2ToDataverseLanguage                       mapping of ISO639-2 to Dataverse language term
  * @param reportIdToTerm                               mapping of ABR report ID to term
  * @param outboxDir                                    outbox
  */
@@ -42,7 +42,8 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
                                publishAwaitUnlockMaxNumberOfRetries: Int,
                                publishAwaitUnlockMillisecondsBetweenRetries: Int,
                                narcisClassification: Elem,
-                               isoToDataverseLanguage: Map[String, String],
+                               iso1ToDataverseLanguage: Map[String, String],
+                               iso2ToDataverseLanguage: Map[String, String],
                                reportIdToTerm: Map[String, String],
                                outboxDir: File) {
 
@@ -55,7 +56,8 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
         publishAwaitUnlockMaxNumberOfRetries,
         publishAwaitUnlockMillisecondsBetweenRetries,
         narcisClassification,
-        isoToDataverseLanguage,
+        iso1ToDataverseLanguage,
+        iso2ToDataverseLanguage,
         reportIdToTerm,
         outboxDir: File)
     else
@@ -67,7 +69,8 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
         publishAwaitUnlockMaxNumberOfRetries,
         publishAwaitUnlockMillisecondsBetweenRetries,
         narcisClassification,
-        isoToDataverseLanguage,
+        iso1ToDataverseLanguage,
+        iso2ToDataverseLanguage,
         reportIdToTerm,
         outboxDir: File)
   }
