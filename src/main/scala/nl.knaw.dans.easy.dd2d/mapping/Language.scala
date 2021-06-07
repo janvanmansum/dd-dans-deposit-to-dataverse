@@ -29,8 +29,12 @@ object Language extends BlockCitation with DebugEnhancedLogging {
     else Option.empty[String]
   }
 
-  def langAttributeToMetadataLanguage(isoToDataverse: Map[String, String])(node: Node): Option[String] = {
-    node.attribute(XML_NAMESPACE_URI, "lang").flatMap(_.headOption.flatMap(a => isoToDataverse.get(a.text)))
+  def langAttributeToMetadataLanguage(iso1ToDataverse: Map[String, String], iso2ToDataverse: Map[String, String])(node: Node): Option[String] = {
+    node.attribute(XML_NAMESPACE_URI, "lang").flatMap(_.headOption.flatMap(a => {
+      val value = a.text
+      if (value.length == 2) iso1ToDataverse.get(value)
+      else iso2ToDataverse.get(value)
+    }))
   }
 
   def toKeywordValue(node: Node): JsonObject = {

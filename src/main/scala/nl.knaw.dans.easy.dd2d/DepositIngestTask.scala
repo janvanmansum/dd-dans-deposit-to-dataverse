@@ -48,12 +48,13 @@ case class DepositIngestTask(deposit: Deposit,
                              publishAwaitUnlockMaxNumberOfRetries: Int,
                              publishAwaitUnlockMillisecondsBetweenRetries: Int,
                              narcisClassification: Elem,
-                             isoToDataverseLanguage: Map[String, String],
+                             iso1ToDataverseLanguage: Map[String, String],
+                             iso2ToDataverseLanguage: Map[String, String],
                              repordIdToTerm: Map[String, String],
                              outboxDir: File) extends Task[Deposit] with DebugEnhancedLogging {
   trace(deposit)
 
-  private val datasetMetadataMapper = new DepositToDvDatasetMetadataMapper(activeMetadataBlocks, narcisClassification, isoToDataverseLanguage, repordIdToTerm)
+  private val datasetMetadataMapper = new DepositToDvDatasetMetadataMapper(activeMetadataBlocks, narcisClassification, iso1ToDataverseLanguage, iso2ToDataverseLanguage, repordIdToTerm)
   private val bagDirPath = File(deposit.bagDir.path)
 
   override def run(): Try[Unit] = {
