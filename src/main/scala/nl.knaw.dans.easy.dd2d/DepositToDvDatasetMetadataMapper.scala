@@ -85,7 +85,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       addCvFieldMultipleValues(citationFields, SUBJECT, ddm \ "profile" \ "audience", Audience toCitationBlockSubject)
       addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "subject").filter(Subject hasNoCvAttributes), Subject toKeyWordValue)
       addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "language").filterNot(Language isIsoLanguage), Language toKeywordValue)
-      addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(iso2ToDataverseLanguage))
+      addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(iso1ToDataverseLanguage, iso2ToDataverseLanguage))
       addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
       addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "author").filterNot(DcxDaiAuthor isRightsHolder), DcxDaiAuthor toContributorValueObject)
       addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization").filterNot(DcxDaiOrganization isRightsHolder), DcxDaiOrganization toContributorValueObject)

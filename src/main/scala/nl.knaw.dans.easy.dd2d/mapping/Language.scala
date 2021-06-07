@@ -21,20 +21,24 @@ import scala.xml.Node
 
 object Language extends BlockCitation with DebugEnhancedLogging {
   def isIsoLanguage(node: Node): Boolean = {
-    hasXsiType(node, "ISO639-2") || node.attribute("encodingScheme").flatMap(_.headOption.map(_.text == "ISO639-2")).getOrElse(false)
+    hasXsiType(node, "ISO639-1") ||
+      hasXsiType(node, "ISO639-2") ||
+      node.attribute("encodingScheme").flatMap(_.headOption.map(_.text == "ISO639-1")).getOrElse(false) ||
+      node.attribute("encodingScheme").flatMap(_.headOption.map(_.text == "ISO639-2")).getOrElse(false)
   }
 
-  def toCitationBlockLanguage(isoToDataverse: Map[String, String])(node: Node): Option[String] = {
-    if (isIsoLanguage(node)) node.attribute("code").flatMap(_.headOption.flatMap(a => isoToDataverse.get(a.text)))
+  def toCitationBlockLanguage(iso1ToDataverse: Map[String, String], iso2ToDataverse: Map[String, String])(node: Node): Option[String] = {
+    if (isIsoLanguage(node)) node.attribute("code").flatMap(_.headOption.flatMap(a => isoToDataverse(iso1ToDataverse, iso2ToDataverse)(a.text)))
     else Option.empty[String]
   }
 
   def langAttributeToMetadataLanguage(iso1ToDataverse: Map[String, String], iso2ToDataverse: Map[String, String])(node: Node): Option[String] = {
-    node.attribute(XML_NAMESPACE_URI, "lang").flatMap(_.headOption.flatMap(a => {
-      val value = a.text
-      if (value.length == 2) iso1ToDataverse.get(value)
-      else iso2ToDataverse.get(value)
-    }))
+    node.attribute(XML_NAMESPACE_URI, "lang").flatMap(_.headOption.flatMap(a => isoToDataverse(iso1ToDataverse, iso2ToDataverse)(a.text)))
+  }
+
+  private def isoToDataverse(iso1ToDataverse: Map[String, String], iso2ToDataverse: Map[String, String])(code: String): Option[String] = {
+    if (code.length == 2) iso1ToDataverse.get(code)
+    else iso2ToDataverse.get(code)
   }
 
   def toKeywordValue(node: Node): JsonObject = {
