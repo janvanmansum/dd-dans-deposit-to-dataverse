@@ -18,6 +18,7 @@ package nl.knaw.dans.easy.dd2d
 import nl.knaw.dans.easy.dd2d.fieldbuilders.{ AbstractFieldBuilder, CompoundFieldBuilder, CvFieldBuilder, PrimitiveFieldBuilder }
 import nl.knaw.dans.easy.dd2d.mapping._
 import nl.knaw.dans.lib.dataverse.model.dataset.{ Dataset, DatasetVersion, MetadataBlock }
+import org.apache.commons.lang.StringUtils
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -150,7 +151,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
   }
 
   private def checkRequiredField(fieldName: String, nodes: NodeSeq): Unit = {
-    if (nodes.isEmpty) throw MissingRequiredFieldException(fieldName)
+    if (nodes.isEmpty || nodes.map(_.text).forall(StringUtils.isBlank)) throw MissingRequiredFieldException(fieldName)
   }
 
   private def assembleDataverseDataset(): Dataset = {
@@ -170,6 +171,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       .map(nodeTransformer)
       .filter(_.isDefined)
       .map(_.get)
+      .filterNot(StringUtils.isBlank)
       .take(1)
       .foreach(v => {
         metadataBlockFields.getOrElseUpdate(name, new PrimitiveFieldBuilder(name, multipleValues = false)) match {
@@ -180,17 +182,8 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
   }
 
   private def addPrimitiveFieldSingleValue(metadataBlockFields: mutable.HashMap[String, AbstractFieldBuilder], name: String, value: Option[String]): Unit = {
-    value.foreach { v =>
+    value.filterNot(StringUtils.isBlank).foreach { v =>
       metadataBlockFields.getOrElseUpdate(name, new PrimitiveFieldBuilder(name, multipleValues = false)) match {
-        case b: PrimitiveFieldBuilder => b.addValue(v)
-        case _ => throw new IllegalArgumentException("Trying to add non-primitive value(s) to primitive field")
-      }
-    }
-  }
-
-  private def addPrimitiveFieldMultipleValues(metadataBlockFields: mutable.HashMap[String, AbstractFieldBuilder], name: String, values: List[String]): Unit = {
-    values.foreach { v =>
-      metadataBlockFields.getOrElseUpdate(name, new PrimitiveFieldBuilder(name, multipleValues = true)) match {
         case b: PrimitiveFieldBuilder => b.addValue(v)
         case _ => throw new IllegalArgumentException("Trying to add non-primitive value(s) to primitive field")
       }
@@ -199,7 +192,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
 
   private def addPrimitiveFieldMultipleValues(metadataBlockFields: mutable.HashMap[String, AbstractFieldBuilder], name: String, sourceNodes: NodeSeq, nodeTransformer: Node => Option[String] = AnyElement toText): Unit = {
     val values = sourceNodes.map(nodeTransformer).filter(_.isDefined).map(_.get).toList
-    values.foreach { v =>
+    values.filterNot(StringUtils.isBlank).foreach { v =>
       metadataBlockFields.getOrElseUpdate(name, new PrimitiveFieldBuilder(name, multipleValues = true)) match {
         case b: PrimitiveFieldBuilder => b.addValue(v)
         case _ => throw new IllegalArgumentException("Trying to add non-primitive value(s) to primitive field")
@@ -210,7 +203,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
   private def addCvFieldSingleValue(metadataBlockFields: mutable.HashMap[String, AbstractFieldBuilder], name: String, sourceNodes: NodeSeq, nodeTransformer: Node => Option[String]): Unit = {
     val values = sourceNodes.map(nodeTransformer).filter(_.isDefined).map(_.get).toList
     metadataBlockFields.getOrElseUpdate(name, new CvFieldBuilder(name, multipleValues = false)) match {
-      case cfb: CvFieldBuilder => values.foreach(cfb.addValue)
+      case cfb: CvFieldBuilder => values.filterNot(StringUtils.isBlank).foreach(cfb.addValue)
       case _ => throw new IllegalArgumentException("Trying to add non-controlled-vocabulary value(s) to controlled vocabulary field")
     }
   }
@@ -218,7 +211,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
   private def addCvFieldMultipleValues(metadataBlockFields: mutable.HashMap[String, AbstractFieldBuilder], name: String, sourceNodes: NodeSeq, nodeTransformer: Node => Option[String]): Unit = {
     val values = sourceNodes.map(nodeTransformer).filter(_.isDefined).map(_.get).toList
     metadataBlockFields.getOrElseUpdate(name, new CvFieldBuilder(name)) match {
-      case cfb: CvFieldBuilder => values.foreach(cfb.addValue)
+      case cfb: CvFieldBuilder => values.filterNot(StringUtils.isBlank).foreach(cfb.addValue)
       case _ => throw new IllegalArgumentException("Trying to add non-controlled-vocabulary value(s) to controlled vocabulary field")
     }
   }
