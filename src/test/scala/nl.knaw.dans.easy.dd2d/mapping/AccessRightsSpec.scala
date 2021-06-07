@@ -44,5 +44,4 @@ class AccessRightsSpec extends TestSupportFixture {
     val accessRights = <ddm:accessRights>SOMETHING</ddm:accessRights>
     toDefaultRestrict(accessRights) shouldBe true
   }
-
 }

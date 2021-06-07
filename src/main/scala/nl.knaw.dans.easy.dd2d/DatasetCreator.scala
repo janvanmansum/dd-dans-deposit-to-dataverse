@@ -15,6 +15,7 @@
  */
 package nl.knaw.dans.easy.dd2d
 
+import nl.knaw.dans.easy.dd2d.mapping.AccessRights
 import nl.knaw.dans.lib.dataverse.model.dataset.{ Dataset, DatasetCreationResult }
 import nl.knaw.dans.lib.dataverse.model.{ DefaultRole, RoleAssignment }
 import nl.knaw.dans.lib.dataverse.{ DataverseInstance, DataverseResponse }
@@ -38,6 +39,8 @@ class DatasetCreator(deposit: Deposit, isMigration: Boolean = false, dataverseDa
       databaseIdsToFileInfo <- addFiles(persistentId, fileInfos.values.toList)
       _ <- updateFileMetadata(databaseIdsToFileInfo.mapValues(_.metadata))
       _ <- instance.dataset(persistentId).awaitUnlock()
+      _ <- configureEnableAccessRequests(persistentId)
+      _ <- instance.dataset(persistentId).awaitUnlock()
       _ = debug(s"Assigning curator role to ${deposit.depositorUserId}")
       _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.curator.toString))
       _ <- instance.dataset(persistentId).awaitUnlock()
@@ -46,5 +49,14 @@ class DatasetCreator(deposit: Deposit, isMigration: Boolean = false, dataverseDa
 
   private def getPersistentId(response: DataverseResponse[DatasetCreationResult]): Try[String] = {
     response.data.map(_.persistentId)
+  }
+
+  private def configureEnableAccessRequests(persistendId: PersistendId): Try[Unit] = {
+    for {
+      ddm <- deposit.tryDdm
+      files <- deposit.tryFilesXml
+      enable = AccessRights.isEnableRequests((ddm \ "profile" \ "accessRights").head, files)
+      _ <- if(enable) instance.accessRequests(persistendId).enable() else instance.accessRequests(persistendId).disable()
+    } yield ()
   }
 }

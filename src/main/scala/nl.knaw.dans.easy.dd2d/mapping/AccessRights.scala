@@ -27,4 +27,24 @@ object AccessRights {
   def toDefaultRestrict(node: Node): Boolean = {
     accessRightsToDefaultRestrict.getOrElse(node.text, true)
   }
+
+  def isEnableRequests(accessRightsNode: Node, filesNode: Node): Boolean = {
+    val explicitAccessibleToValues = filesNode \ "file" \ "accessibleTo"
+    val numberOfFiles = (filesNode \ "file").size
+
+    def isExplicitlyDefinedNoAccessFilePresent = {
+      explicitAccessibleToValues.map(_.text).contains("NO_ACCESS")
+    }
+
+    def isImplicitlyDefinedNoAccessFilePresent = {
+      numberOfFiles > explicitAccessibleToValues.size && accessRightsNode.text == "NONE"
+    }
+
+    /*
+     * If one or more files are explicitly fully closed, the complete dataset must be not allow permission requests.
+     * If there are implicitly defined accessibleTo values the access category must not be NONE, because that means
+     * the implicit accessibleTo is NO_ACCESS. See: https://dans-knaw.github.io/dans-bagit-profile/versions/0.0.0/#4-bag-sequence-requirements
+     */
+    !isExplicitlyDefinedNoAccessFilePresent && !isImplicitlyDefinedNoAccessFilePresent
+  }
 }
