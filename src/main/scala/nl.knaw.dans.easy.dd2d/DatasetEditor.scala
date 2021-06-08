@@ -15,12 +15,13 @@
  */
 package nl.knaw.dans.easy.dd2d
 
+import nl.knaw.dans.easy.dd2d.mapping.AccessRights
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
 import nl.knaw.dans.lib.error.TraversableTryExtensions
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
-import scala.util.Try
+import scala.util.{ Success, Try }
 
 /**
  * Object that edits a dataset, a new draft.
@@ -61,5 +62,17 @@ abstract class DatasetEditor(instance: DataverseInstance) extends DebugEnhancedL
   protected def updateFileMetadata(databaseIdToFileInfo: Map[Int, FileMeta]): Try[Unit] = {
     trace(databaseIdToFileInfo)
     databaseIdToFileInfo.map { case (id, fileMeta) => instance.file(id).updateMetadata(fileMeta) }.collectResults.map(_ => ())
+  }
+
+  protected def configureEnableAccessRequests(deposit: Deposit, persistendId: PersistendId, canEnable: Boolean): Try[Unit] = {
+    for {
+      ddm <- deposit.tryDdm
+      files <- deposit.tryFilesXml
+      enable = AccessRights.isEnableRequests((ddm \ "profile" \ "accessRights").head, files)
+      _ <- if (enable && canEnable) instance.accessRequests(persistendId).enable()
+           else Success(())
+      _ <- if (!enable) instance.accessRequests(persistendId).disable()
+           else Success(())
+    } yield ()
   }
 }

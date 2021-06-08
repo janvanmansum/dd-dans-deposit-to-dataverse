@@ -16,7 +16,7 @@
 package nl.knaw.dans.easy.dd2d.mapping
 
 import nl.knaw.dans.easy.dd2d.TestSupportFixture
-import nl.knaw.dans.easy.dd2d.mapping.AccessRights.toDefaultRestrict
+import nl.knaw.dans.easy.dd2d.mapping.AccessRights.{ isEnableRequests, toDefaultRestrict }
 
 class AccessRightsSpec extends TestSupportFixture {
 
@@ -43,6 +43,80 @@ class AccessRightsSpec extends TestSupportFixture {
   it should "return true when access rights is something else" in {
     val accessRights = <ddm:accessRights>SOMETHING</ddm:accessRights>
     toDefaultRestrict(accessRights) shouldBe true
+  }
+
+  "isEnableRequests" should "be false if one file has explicitly accessibleTo == NONE" in {
+    val accessRights = <ddm:accessRights>OPEN_ACCESS</ddm:accessRights>
+    val files = <files>
+      <file filepath="path/to/file1">
+        <!-- No explicit accessibleTo -->
+      </file>
+      <file filepath="path/to/file2">
+        <ddm:accessibleToRights>ANONYMOUS</ddm:accessibleToRights>
+      </file>
+      <file filepath="path/to/file2">
+        <ddm:accessibleToRights>NONE</ddm:accessibleToRights>
+      </file>
+      <file filepath="path/to/file3">
+        <ddm:accessibleToRights>NONE</ddm:accessibleToRights>
+      </file>
+    </files>
+
+    isEnableRequests(accessRights, files) shouldBe false
+  }
+
+  it should "be false if one file has implicitly accessibleTo == NONE" in {
+    val accessRights = <ddm:accessRights>NO_ACCESS</ddm:accessRights>
+    val files = <files>
+      <file filepath="path/to/file1">
+        <!-- No explicit accessibleTo but default for access category is NONE -->
+      </file>
+      <file filepath="path/to/file2">
+        <ddm:accessibleToRights>ANONYMOUS</ddm:accessibleToRights>
+      </file>
+    </files>
+
+    isEnableRequests(accessRights, files) shouldBe false
+  }
+
+  it should "be true if all files explicitly permission request" in {
+    val accessRights = <ddm:accessRights>NO_ACCESS</ddm:accessRights>
+    val files = <files>
+      <file filepath="path/to/file1">
+        <ddm:accessibleToRights>RESTRICTED_REQUEST</ddm:accessibleToRights>
+      </file>
+      <file filepath="path/to/file2">
+        <ddm:accessibleToRights>RESTRICTED_REQUEST</ddm:accessibleToRights>
+      </file>
+      <file filepath="path/to/file2">
+        <ddm:accessibleToRights>RESTRICTED_REQUEST</ddm:accessibleToRights>
+      </file>
+      <file filepath="path/to/file3">
+        <ddm:accessibleToRights>RESTRICTED_REQUEST</ddm:accessibleToRights>
+      </file>
+    </files>
+
+    isEnableRequests(accessRights, files) shouldBe true
+  }
+
+  it should "be true if all implicitly and explicitly defined accessibleTo is RESTRICTED_REQUEST or more open" in {
+    val accessRights = <ddm:accessRights>REQUEST_PERMISSION</ddm:accessRights>
+    val files = <files>
+      <file filepath="path/to/file1">
+        <ddm:accessibleToRights>RESTRICTED_REQUEST</ddm:accessibleToRights>
+      </file>
+      <file filepath="path/to/file2">
+        <ddm:accessibleToRights>RESTRICTED_REQUEST</ddm:accessibleToRights>
+      </file>
+      <file filepath="path/to/file2">
+        <ddm:accessibleToRights>RESTRICTED_REQUEST</ddm:accessibleToRights>
+      </file>
+      <file filepath="path/to/file3">
+        <!-- Implicitly also -RESTRICTED_REQUEST -->
+      </file>
+    </files>
+
+    isEnableRequests(accessRights, files) shouldBe true
   }
 
 }

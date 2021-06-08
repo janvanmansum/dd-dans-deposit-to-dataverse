@@ -102,6 +102,16 @@ From `<bag>/metadata/files.xml` the corresponding `<file>` element is looked up:
     `REQUEST_PERMISSION`     |  Yes
     `OPEN_ACCESS`            |  No
 
+##### Permission requests
+In Dataverse permission requests can be enabled only at the dataset level. It is not possible to allow permission requests for
+one file and disallow them for another file in the same dataset (even if the two files are in different versions). The following
+rule will be applied to enabled or disable permission requests:
+
+*If one or more files in the dataset (in any of its version) have an (effective) accessibility of `NONE`, permission requests will
+be disabled; otherwise they will be enabled.* 
+
+Note that it is therefore possible for an update deposit to disable permission requests on a dataset, but not to enable them.
+
 ARGUMENTS
 ---------
 
