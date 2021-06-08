@@ -52,13 +52,13 @@ class AccessRightsSpec extends TestSupportFixture {
         <!-- No explicit accessibleTo -->
       </file>
       <file filepath="path/to/file2">
-        <ddm:accessibleTo>ANONYMOUS</ddm:accessibleTo>
+        <ddm:accessibleToRights>ANONYMOUS</ddm:accessibleToRights>
       </file>
       <file filepath="path/to/file2">
-        <ddm:accessibleTo>NONE</ddm:accessibleTo>
+        <ddm:accessibleToRights>NONE</ddm:accessibleToRights>
       </file>
       <file filepath="path/to/file3">
-        <ddm:accessibleTo>NONE</ddm:accessibleTo>
+        <ddm:accessibleToRights>NONE</ddm:accessibleToRights>
       </file>
     </files>
 
@@ -72,7 +72,7 @@ class AccessRightsSpec extends TestSupportFixture {
         <!-- No explicit accessibleTo but default for access category is NONE -->
       </file>
       <file filepath="path/to/file2">
-        <ddm:accessibleTo>ANONYMOUS</ddm:accessibleTo>
+        <ddm:accessibleToRights>ANONYMOUS</ddm:accessibleToRights>
       </file>
     </files>
 
@@ -83,16 +83,16 @@ class AccessRightsSpec extends TestSupportFixture {
     val accessRights = <ddm:accessRights>NO_ACCESS</ddm:accessRights>
     val files = <files>
       <file filepath="path/to/file1">
-        <ddm:accessibleTo>RESTRICTED_REQUEST</ddm:accessibleTo>
+        <ddm:accessibleToRights>RESTRICTED_REQUEST</ddm:accessibleToRights>
       </file>
       <file filepath="path/to/file2">
-        <ddm:accessibleTo>RESTRICTED_REQUEST</ddm:accessibleTo>
+        <ddm:accessibleToRights>RESTRICTED_REQUEST</ddm:accessibleToRights>
       </file>
       <file filepath="path/to/file2">
-        <ddm:accessibleTo>RESTRICTED_REQUEST</ddm:accessibleTo>
+        <ddm:accessibleToRights>RESTRICTED_REQUEST</ddm:accessibleToRights>
       </file>
       <file filepath="path/to/file3">
-        <ddm:accessibleTo>RESTRICTED_REQUEST</ddm:accessibleTo>
+        <ddm:accessibleToRights>RESTRICTED_REQUEST</ddm:accessibleToRights>
       </file>
     </files>
 
@@ -103,13 +103,13 @@ class AccessRightsSpec extends TestSupportFixture {
     val accessRights = <ddm:accessRights>REQUEST_PERMISSION</ddm:accessRights>
     val files = <files>
       <file filepath="path/to/file1">
-        <ddm:accessibleTo>RESTRICTED_REQUEST</ddm:accessibleTo>
+        <ddm:accessibleToRights>RESTRICTED_REQUEST</ddm:accessibleToRights>
       </file>
       <file filepath="path/to/file2">
-        <ddm:accessibleTo>RESTRICTED_REQUEST</ddm:accessibleTo>
+        <ddm:accessibleToRights>RESTRICTED_REQUEST</ddm:accessibleToRights>
       </file>
       <file filepath="path/to/file2">
-        <ddm:accessibleTo>RESTRICTED_REQUEST</ddm:accessibleTo>
+        <ddm:accessibleToRights>RESTRICTED_REQUEST</ddm:accessibleToRights>
       </file>
       <file filepath="path/to/file3">
         <!-- Implicitly also -RESTRICTED_REQUEST -->

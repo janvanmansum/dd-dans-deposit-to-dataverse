@@ -29,7 +29,7 @@ object AccessRights {
   }
 
   def isEnableRequests(accessRightsNode: Node, filesNode: Node): Boolean = {
-    val explicitAccessibleToValues = filesNode \ "file" \ "accessibleTo"
+    val explicitAccessibleToValues = filesNode \ "file" \ "accessibleToRights"
     val numberOfFiles = (filesNode \ "file").size
 
     def isExplicitlyDefinedNoAccessFilePresent = {
