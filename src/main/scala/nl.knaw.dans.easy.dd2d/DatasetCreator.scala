@@ -39,7 +39,7 @@ class DatasetCreator(deposit: Deposit, isMigration: Boolean = false, dataverseDa
       databaseIdsToFileInfo <- addFiles(persistentId, fileInfos.values.toList)
       _ <- updateFileMetadata(databaseIdsToFileInfo.mapValues(_.metadata))
       _ <- instance.dataset(persistentId).awaitUnlock()
-      _ <- configureEnableAccessRequests(persistentId)
+      _ <- configureEnableAccessRequests(deposit, persistentId, canEnable = true)
       _ <- instance.dataset(persistentId).awaitUnlock()
       _ = debug(s"Assigning curator role to ${deposit.depositorUserId}")
       _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.curator.toString))
@@ -49,14 +49,5 @@ class DatasetCreator(deposit: Deposit, isMigration: Boolean = false, dataverseDa
 
   private def getPersistentId(response: DataverseResponse[DatasetCreationResult]): Try[String] = {
     response.data.map(_.persistentId)
-  }
-
-  private def configureEnableAccessRequests(persistendId: PersistendId): Try[Unit] = {
-    for {
-      ddm <- deposit.tryDdm
-      files <- deposit.tryFilesXml
-      enable = AccessRights.isEnableRequests((ddm \ "profile" \ "accessRights").head, files)
-      _ <- if(enable) instance.accessRequests(persistendId).enable() else instance.accessRequests(persistendId).disable()
-    } yield ()
   }
 }

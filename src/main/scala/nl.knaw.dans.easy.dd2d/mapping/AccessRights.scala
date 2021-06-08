@@ -33,11 +33,11 @@ object AccessRights {
     val numberOfFiles = (filesNode \ "file").size
 
     def isExplicitlyDefinedNoAccessFilePresent = {
-      explicitAccessibleToValues.map(_.text).contains("NO_ACCESS")
+      explicitAccessibleToValues.map(_.text).contains("NONE")
     }
 
     def isImplicitlyDefinedNoAccessFilePresent = {
-      numberOfFiles > explicitAccessibleToValues.size && accessRightsNode.text == "NONE"
+      numberOfFiles > explicitAccessibleToValues.size && accessRightsNode.text == "NO_ACCESS"
     }
 
     /*

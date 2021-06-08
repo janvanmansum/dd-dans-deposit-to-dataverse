@@ -67,6 +67,11 @@ class DatasetUpdater(deposit: Deposit, isMigration: Boolean = false, metadataBlo
       // TODO: what happens with file that only got a new description? Their MD will not be updated ??!!
       // TODO: probably just change this to: update the file md of all the files that are in the new version. Will DV show "null-replacements" in the differences view??
       _ <- updateFileMetadata(fileReplacements ++ fileMovements ++ fileAdditions)
+      _ <- instance.dataset(doi).awaitUnlock()
+      /*
+       * Cannot enable requests if they were disallowed because of closed files in a previous version. However disabling is possible because a the update may add a closed file.
+       */
+      _ <- configureEnableAccessRequests(deposit, doi, canEnable = false)
     } yield doi
   }
 
