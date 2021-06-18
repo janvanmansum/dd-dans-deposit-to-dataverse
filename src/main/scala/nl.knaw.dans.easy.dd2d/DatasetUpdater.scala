@@ -78,9 +78,8 @@ class DatasetUpdater(deposit: Deposit, isMigration: Boolean = false, metadataBlo
   private def getDoiBySwordToken: Try[String] = {
     trace(())
     debug(s"dansSwordToken = ${ deposit.vaultMetadata.dataverseSwordToken }")
-    val Array(_, swordTokenUuid) = deposit.vaultMetadata.dataverseSwordToken.split(":")
     for {
-      r <- instance.search().find(s"""dansSwordToken:"$swordTokenUuid"""")
+      r <- instance.search().find(s"""dansSwordToken:"${deposit.vaultMetadata.dataverseSwordToken}"""")
       searchResult <- r.data
       items = searchResult.items
       _ = if (items.size != 1) throw FailedDepositException(deposit, s"Deposit is update of ${ items.size } datasets; should always be 1!")
