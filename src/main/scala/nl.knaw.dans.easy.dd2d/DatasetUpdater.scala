@@ -160,7 +160,13 @@ class DatasetUpdater(deposit: Deposit, isMigration: Boolean = false, metadataBlo
         val fileApi = instance.file(id)
 
         for {
-          r <- fileApi.replace(Option(file))
+          /*
+           * Note, forceReplace = true is used, so that the action does not fail if the replacement has a different MIME-type than
+           * the replaced file. The only way to pass forceReplace is through the FileMeta. This means we are deleting any existing
+           * metadata with the below call. This is not a problem, because the metadata will be made up-to-date at the end of the
+           * update process.
+           */
+          r <- fileApi.replace(Option(file), Option(FileMeta(forceReplace = true)))
           d <- r.data
           _ <- dataset.awaitUnlock()
         } yield (d.files.head.dataFile.get.id, d.files.head)
