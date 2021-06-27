@@ -187,13 +187,23 @@ be disabled; otherwise they will be enabled.*
 Note that it is therefore possible for an update deposit to disable permission requests on a dataset, but not to enable them.
 
 ### Importing pre-staged files
-Pre-staged files are files that are uploaded to the final location in storage prior to running the `import` command. 
-The `import` can import datasets with pre-staged files using information from [dd-migration-info](https://dans-knaw.github.io/dd-migration-info/).
 
+#### Overview
+Pre-staged files are files that are uploaded to the final location in storage prior to running the `import` command. For this
+to work the location must conform to the storage scheme that Dataverse uses. Unfortunately this scheme does not seem to be documented.
 
+For the migration from EASY the following procedure is envisioned:
 
+1. Import a batch of deposits the regular way, so without prestaging files.
+2. Test metadata mapping + fix problems in software.
+3. Remove Dataverse, including database, but excluding files in file storage (object store or disk). 
+4. Reinstall Dataverse and other components.
+5. Import batch again, but now with pre-staged files.
 
-
+#### Mechanics
+To be able to import pre-staged files `dd-dans-deposit-to-dataverse` needs some metadata about those files. This metadata
+can be loaded into a database by [`dd-migration-info`](https://dans-knaw.github.io/dd-migration-info/){:target=_blank} after step 2 and then 
+accessed in step 5 by `dd-dans-deposit-to-dataverse`. 
 
 ARGUMENTS
 ---------
