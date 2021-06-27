@@ -15,15 +15,19 @@
  */
 package nl.knaw.dans.easy.dd2d
 
-import nl.knaw.dans.easy.dd2d.mapping.AccessRights
+import nl.knaw.dans.easy.dd2d.migrationinfo.{ BasicFileMeta, MigrationInfo }
 import nl.knaw.dans.lib.dataverse.model.dataset.{ Dataset, DatasetCreationResult }
 import nl.knaw.dans.lib.dataverse.model.{ DefaultRole, RoleAssignment }
 import nl.knaw.dans.lib.dataverse.{ DataverseInstance, DataverseResponse }
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
-import scala.util.Try
+import scala.util.{ Success, Try }
 
-class DatasetCreator(deposit: Deposit, isMigration: Boolean = false, dataverseDataset: Dataset, instance: DataverseInstance) extends DatasetEditor(instance) with DebugEnhancedLogging {
+class DatasetCreator(deposit: Deposit,
+                     isMigration: Boolean = false,
+                     dataverseDataset: Dataset,
+                     instance: DataverseInstance,
+                     optMigrationInfoService: Option[MigrationInfo]) extends DatasetEditor(instance) with DebugEnhancedLogging {
   trace(deposit)
 
   override def performEdit(): Try[PersistendId] = {
@@ -36,12 +40,14 @@ class DatasetCreator(deposit: Deposit, isMigration: Boolean = false, dataverseDa
                   else instance.dataverse("root").createDataset(dataverseDataset)
       persistentId <- getPersistentId(response)
       fileInfos <- deposit.getPathToFileInfo
-      databaseIdsToFileInfo <- addFiles(persistentId, fileInfos.values.toList)
+      basicFileMetas <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(deposit.doi, 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
+      databaseIdsToFileInfo <- addFiles2(persistentId, fileInfos.values.toList, basicFileMetas)
+      //      databaseIdsToFileInfo <- addFiles(persistentId, fileInfos.values.toList)
       _ <- updateFileMetadata(databaseIdsToFileInfo.mapValues(_.metadata))
       _ <- instance.dataset(persistentId).awaitUnlock()
       _ <- configureEnableAccessRequests(deposit, persistentId, canEnable = true)
       _ <- instance.dataset(persistentId).awaitUnlock()
-      _ = debug(s"Assigning curator role to ${deposit.depositorUserId}")
+      _ = debug(s"Assigning curator role to ${ deposit.depositorUserId }")
       _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.curator.toString))
       _ <- instance.dataset(persistentId).awaitUnlock()
     } yield persistentId

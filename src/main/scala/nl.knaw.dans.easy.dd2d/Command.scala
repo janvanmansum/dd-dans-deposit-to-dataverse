@@ -31,7 +31,7 @@ object Command extends App with DebugEnhancedLogging {
     verify()
   }
 
-  val app = new DansDeposit2ToDataverseApp(configuration)
+  val app = new DansDepositToDataverseApp(configuration)
   val result =
     commandLine.subcommand match {
       case Some(cmd @ commandLine.importCommand) => {
