@@ -55,5 +55,4 @@ class SpatialPointSpec extends TestSupportFixture with BlockTemporalAndSpatial {
       case Failure(e: NumberFormatException) => e.getMessage should include("52.08113,")
     }
   }
-
 }

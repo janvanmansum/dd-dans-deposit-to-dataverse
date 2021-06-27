@@ -23,7 +23,7 @@ object Relation extends BlockRelation {
     "conformsTo" -> "conforms to",
     "hasFormat" -> "has format",
     "hasPart" -> "has part",
-    "references"-> "references",
+    "references" -> "references",
     "replaces" -> "replaces",
     "requires" -> "requires",
     "hasVersion" -> "has version",
@@ -45,5 +45,4 @@ object Relation extends BlockRelation {
   def isRelation(node: Node): Boolean = {
     labelToType.keySet contains node.label
   }
-
 }

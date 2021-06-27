@@ -33,5 +33,6 @@ trait CustomMatchers {
       )
     }
   }
+
   def containTrimmed(content: String) = new ContentMatcher(content)
 }

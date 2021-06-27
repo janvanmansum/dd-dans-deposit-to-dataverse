@@ -23,13 +23,13 @@ class IdentifierSpec extends TestSupportFixture with BlockCitation {
   private implicit val jsonFormats: Formats = DefaultFormats
 
   "toOtherIdValue" should "create OtherId Json object without agency for identifier without type attribute" in {
-    val result = Serialization.writePretty(Identifier toOtherIdValue(<identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">123</identifier>))
+    val result = Serialization.writePretty(Identifier toOtherIdValue (<identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">123</identifier>))
     getPathAsString(result, "$.otherIdAgency.value") shouldBe ""
     getPathAsString(result, "$.otherIdValue.value") shouldBe "123"
   }
 
   it should "create OtherId Json object DANS-KNAW for identifier with EASY2 type attribute" in {
-    val result = Serialization.writePretty(Identifier toOtherIdValue(<identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="id-type:EASY2">easy-dataset:1234</identifier>))
+    val result = Serialization.writePretty(Identifier toOtherIdValue (<identifier xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="id-type:EASY2">easy-dataset:1234</identifier>))
     getPathAsString(result, "$.otherIdAgency.value") shouldBe "DANS-KNAW"
     getPathAsString(result, "$.otherIdValue.value") shouldBe "easy-dataset:1234"
   }
@@ -87,5 +87,4 @@ class IdentifierSpec extends TestSupportFixture with BlockCitation {
     getPathAsString(result, "$.grantNumberAgency.value") shouldBe "NWO"
     getPathAsString(result, "$.grantNumberValue.value") shouldBe "12345"
   }
-
 }

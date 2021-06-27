@@ -53,7 +53,8 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
 
   private def checkPreconditions(skipValidation: Boolean = false): Try[Unit] = {
     for {
-      _ <- if (skipValidation) Success(()) else dansBagValidator.checkConnection()
+      _ <- if (skipValidation) Success(())
+           else dansBagValidator.checkConnection()
       _ <- dataverse.checkConnection()
     } yield ()
   }
@@ -68,7 +69,8 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
         new DepositIngestTaskFactory(
           isMigrated = true,
           getActiveMetadataBlocks.get,
-          if (skipValidation) Option.empty else Option(dansBagValidator),
+          if (skipValidation) Option.empty
+          else Option(dansBagValidator),
           dataverse,
           Option(migrationInfo),
           configuration.publishAwaitUnlockMaxNumberOfRetries,
@@ -90,7 +92,8 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
         new DepositIngestTaskFactory(
           isMigrated = true,
           getActiveMetadataBlocks.get,
-          if (skipValidation) Option.empty else Option(dansBagValidator),
+          if (skipValidation) Option.empty
+          else Option(dansBagValidator),
           dataverse,
           Option(migrationInfo),
           configuration.publishAwaitUnlockMaxNumberOfRetries,
@@ -105,7 +108,7 @@ class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhan
 
   def start(): Try[Unit] = {
     trace(())
-    inboxWatcher.start(Some( new DepositSorter()))
+    inboxWatcher.start(Some(new DepositSorter()))
   }
 
   def stop(): Try[Unit] = {

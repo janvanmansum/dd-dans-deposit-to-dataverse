@@ -49,5 +49,4 @@ class AbrReportTypeSpec extends TestSupportFixture with BlockArchaeologySpecific
 
     abrRapporttypeField(ABR_RAPPORT_TYPE_TERM).asInstanceOf[PrimitiveSingleValueField].value shouldBe "A new term not in the static list"
   }
-
 }

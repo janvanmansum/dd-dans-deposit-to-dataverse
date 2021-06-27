@@ -18,8 +18,8 @@ package nl.knaw.dans.easy.dd2d.fieldbuilders
 import nl.knaw.dans.easy.dd2d.JsonPathSupportFixture
 import nl.knaw.dans.easy.dd2d.mapping.FieldMap
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
-import org.json4s.{ DefaultFormats, Extraction, Formats, JBool, JString }
 import org.json4s.native.Serialization
+import org.json4s.{ DefaultFormats, Formats }
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -69,7 +69,7 @@ class CompoundFieldBuilderSpec extends AnyFlatSpec with Matchers with JsonPathSu
     val value2 = FieldMap()
     value2.addPrimitiveField("subfield", "value 2")
     c.addValue(value1.toJsonObject)
-    an [IllegalArgumentException] should be thrownBy {
+    an[IllegalArgumentException] should be thrownBy {
       c.addValue(value2.toJsonObject)
     }
   }
@@ -131,7 +131,6 @@ class CompoundFieldBuilderSpec extends AnyFlatSpec with Matchers with JsonPathSu
     getPathAsString(json, "$.value[0].subfieldB.typeName") shouldBe "subfieldB"
     getPathAsBoolean(json, "$.value[0].subfieldB.multiple") shouldBe false
     getPathAsString(json, "$.value[0].subfieldB.value") shouldBe "value 1 B"
-
 
     getPathAsString(json, "$.value[1].subfieldA.typeClass") shouldBe "primitive"
     getPathAsString(json, "$.value[1].subfieldA.typeName") shouldBe "subfieldA"

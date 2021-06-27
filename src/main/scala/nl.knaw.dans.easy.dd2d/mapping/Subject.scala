@@ -30,6 +30,4 @@ object Subject extends BlockCitation {
     m.addPrimitiveField(KEYWORD_VOCABULARY_URI, "")
     m.toJsonObject
   }
-
-
 }

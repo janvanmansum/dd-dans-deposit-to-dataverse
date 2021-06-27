@@ -101,6 +101,7 @@ object Configuration {
       reportIdToTerm = loadCsvToMap(rapportIdToTermMappingFile, keyColumn = "URI-suffix", valueColumn = "Term").get
     )
   }
+
   private def appendSlash(url: String): String = {
     if (url.endsWith("/")) url
     else url + "/"

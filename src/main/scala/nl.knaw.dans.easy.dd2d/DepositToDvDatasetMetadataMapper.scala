@@ -29,10 +29,10 @@ import scala.xml.{ Elem, Node, NodeSeq }
 /**
  * Creates dataset level metadata for Dataverse from information in the deposit.
  *
- * @param activeMetadataBlocks   the metadata blocks that are active in the target dataverse
- * @param narcisClassification   NARCIS classification SKOS, currently not used
+ * @param activeMetadataBlocks    the metadata blocks that are active in the target dataverse
+ * @param narcisClassification    NARCIS classification SKOS, currently not used
  * @param iso2ToDataverseLanguage map from ISO639-2 to the Dataverse language terms
- * @param reportIdToTerm         map from Cultureel Erfgoed Report Type ID to the human readable term
+ * @param reportIdToTerm          map from Cultureel Erfgoed Report Type ID to the human readable term
  */
 class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
                                        narcisClassification: Elem,
