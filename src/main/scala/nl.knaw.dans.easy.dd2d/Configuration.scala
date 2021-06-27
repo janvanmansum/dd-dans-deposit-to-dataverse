@@ -38,7 +38,8 @@ case class Configuration(version: String,
                          publishAwaitUnlockMaxNumberOfRetries: Int,
                          publishAwaitUnlockMillisecondsBetweenRetries: Int,
                          narcisClassification: Elem,
-                         isoToDataverseLanguage: Map[String, String],
+                         iso1ToDataverseLanguage: Map[String, String],
+                         iso2ToDataverseLanguage: Map[String, String],
                          reportIdToTerm: Map[String, String]
                         )
 
@@ -65,7 +66,8 @@ object Configuration {
 
     val narcisClassificationFile = findFileInInstall("narcis_classification.xml")
     val narcisClassification = XML.loadFile(narcisClassificationFile.toJava)
-    val isoToDataverseLanguageMappingFile = findFileInInstall("iso639-2-to-dv.csv")
+    val iso1ToDataverseLanguageMappingFile = findFileInInstall("iso639-1-to-dv.csv")
+    val iso2ToDataverseLanguageMappingFile = findFileInInstall("iso639-2-to-dv.csv")
     val rapportIdToTermMappingFile = findFileInInstall("ABR-reports.csv")
 
     new Configuration(
@@ -88,7 +90,8 @@ object Configuration {
       publishAwaitUnlockMaxNumberOfRetries = properties.getInt("dataverse.publish.await-unlock-max-retries"),
       publishAwaitUnlockMillisecondsBetweenRetries = properties.getInt("dataverse.publish.await-unlock-wait-time-ms"),
       narcisClassification,
-      isoToDataverseLanguage = loadCsvToMap(isoToDataverseLanguageMappingFile, keyColumn = "ISO639-2", valueColumn = "Dataverse-language").get,
+      iso1ToDataverseLanguage = loadCsvToMap(iso1ToDataverseLanguageMappingFile, keyColumn = "ISO639-1", valueColumn = "Dataverse-language").get,
+      iso2ToDataverseLanguage = loadCsvToMap(iso2ToDataverseLanguageMappingFile, keyColumn = "ISO639-2", valueColumn = "Dataverse-language").get,
       reportIdToTerm = loadCsvToMap(rapportIdToTermMappingFile, keyColumn = "URI-suffix", valueColumn = "Term").get
     )
   }

@@ -18,6 +18,7 @@ package nl.knaw.dans.easy.dd2d
 import nl.knaw.dans.easy.dd2d.fieldbuilders.{ AbstractFieldBuilder, CompoundFieldBuilder, CvFieldBuilder, PrimitiveFieldBuilder }
 import nl.knaw.dans.easy.dd2d.mapping._
 import nl.knaw.dans.lib.dataverse.model.dataset.{ Dataset, DatasetVersion, MetadataBlock }
+import org.apache.commons.lang.StringUtils
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -30,12 +31,13 @@ import scala.xml.{ Elem, Node, NodeSeq }
  *
  * @param activeMetadataBlocks   the metadata blocks that are active in the target dataverse
  * @param narcisClassification   NARCIS classification SKOS, currently not used
- * @param isoToDataverseLanguage map from ISO639-2 to the Dataverse language terms
+ * @param iso2ToDataverseLanguage map from ISO639-2 to the Dataverse language terms
  * @param reportIdToTerm         map from Cultureel Erfgoed Report Type ID to the human readable term
  */
 class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
                                        narcisClassification: Elem,
-                                       isoToDataverseLanguage: Map[String, String],
+                                       iso1ToDataverseLanguage: Map[String, String],
+                                       iso2ToDataverseLanguage: Map[String, String],
                                        reportIdToTerm: Map[String, String]) extends BlockCitation
   with BlockArchaeologySpecific
   with BlockTemporalAndSpatial
@@ -83,7 +85,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       addCvFieldMultipleValues(citationFields, SUBJECT, ddm \ "profile" \ "audience", Audience toCitationBlockSubject)
       addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "subject").filter(Subject hasNoCvAttributes), Subject toKeyWordValue)
       addCompoundFieldMultipleValues(citationFields, KEYWORD, (ddm \ "dcmiMetadata" \ "language").filterNot(Language isIsoLanguage), Language toKeywordValue)
-      addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(isoToDataverseLanguage))
+      addCvFieldMultipleValues(citationFields, LANGUAGE, ddm \ "dcmiMetadata" \ "language", Language.toCitationBlockLanguage(iso1ToDataverseLanguage, iso2ToDataverseLanguage))
       addPrimitiveFieldSingleValue(citationFields, PRODUCTION_DATE, ddm \ "profile" \ "created", DateTypeElement toYearMonthDayFormat)
       addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "author").filterNot(DcxDaiAuthor isRightsHolder), DcxDaiAuthor toContributorValueObject)
       addCompoundFieldMultipleValues(citationFields, CONTRIBUTOR, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization").filterNot(DcxDaiOrganization isRightsHolder), DcxDaiOrganization toContributorValueObject)
@@ -109,7 +111,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       }
       addPrimitiveFieldMultipleValues(rightsFields, RIGHTS_HOLDER, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "author").filter(DcxDaiAuthor isRightsHolder), DcxDaiAuthor toRightsHolder)
       addPrimitiveFieldMultipleValues(rightsFields, RIGHTS_HOLDER, (ddm \ "dcmiMetadata" \ "contributorDetails" \ "organization").filter(DcxDaiOrganization isRightsHolder), DcxDaiOrganization toRightsHolder)
-      addCvFieldMultipleValues(rightsFields, LANGUAGE_OF_METADATA, (ddm \ "profile" \ "_") ++ (ddm \ "dcmiMetadata" \ "_"), Language.langAttributeToMetadataLanguage(isoToDataverseLanguage))
+      addCvFieldMultipleValues(rightsFields, LANGUAGE_OF_METADATA, (ddm \ "profile" \ "_") ++ (ddm \ "dcmiMetadata" \ "_"), Language.langAttributeToMetadataLanguage(iso1ToDataverseLanguage, iso2ToDataverseLanguage))
     }
 
     if (activeMetadataBlocks.contains("dansRelationMetadata")) {
@@ -150,7 +152,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
   }
 
   private def checkRequiredField(fieldName: String, nodes: NodeSeq): Unit = {
-    if (nodes.isEmpty) throw MissingRequiredFieldException(fieldName)
+    if (nodes.isEmpty || nodes.map(_.text).forall(StringUtils.isBlank)) throw MissingRequiredFieldException(fieldName)
   }
 
   private def assembleDataverseDataset(): Dataset = {
@@ -170,6 +172,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
       .map(nodeTransformer)
       .filter(_.isDefined)
       .map(_.get)
+      .filterNot(StringUtils.isBlank)
       .take(1)
       .foreach(v => {
         metadataBlockFields.getOrElseUpdate(name, new PrimitiveFieldBuilder(name, multipleValues = false)) match {
@@ -180,17 +183,8 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
   }
 
   private def addPrimitiveFieldSingleValue(metadataBlockFields: mutable.HashMap[String, AbstractFieldBuilder], name: String, value: Option[String]): Unit = {
-    value.foreach { v =>
+    value.filterNot(StringUtils.isBlank).foreach { v =>
       metadataBlockFields.getOrElseUpdate(name, new PrimitiveFieldBuilder(name, multipleValues = false)) match {
-        case b: PrimitiveFieldBuilder => b.addValue(v)
-        case _ => throw new IllegalArgumentException("Trying to add non-primitive value(s) to primitive field")
-      }
-    }
-  }
-
-  private def addPrimitiveFieldMultipleValues(metadataBlockFields: mutable.HashMap[String, AbstractFieldBuilder], name: String, values: List[String]): Unit = {
-    values.foreach { v =>
-      metadataBlockFields.getOrElseUpdate(name, new PrimitiveFieldBuilder(name, multipleValues = true)) match {
         case b: PrimitiveFieldBuilder => b.addValue(v)
         case _ => throw new IllegalArgumentException("Trying to add non-primitive value(s) to primitive field")
       }
@@ -199,7 +193,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
 
   private def addPrimitiveFieldMultipleValues(metadataBlockFields: mutable.HashMap[String, AbstractFieldBuilder], name: String, sourceNodes: NodeSeq, nodeTransformer: Node => Option[String] = AnyElement toText): Unit = {
     val values = sourceNodes.map(nodeTransformer).filter(_.isDefined).map(_.get).toList
-    values.foreach { v =>
+    values.filterNot(StringUtils.isBlank).foreach { v =>
       metadataBlockFields.getOrElseUpdate(name, new PrimitiveFieldBuilder(name, multipleValues = true)) match {
         case b: PrimitiveFieldBuilder => b.addValue(v)
         case _ => throw new IllegalArgumentException("Trying to add non-primitive value(s) to primitive field")
@@ -210,7 +204,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
   private def addCvFieldSingleValue(metadataBlockFields: mutable.HashMap[String, AbstractFieldBuilder], name: String, sourceNodes: NodeSeq, nodeTransformer: Node => Option[String]): Unit = {
     val values = sourceNodes.map(nodeTransformer).filter(_.isDefined).map(_.get).toList
     metadataBlockFields.getOrElseUpdate(name, new CvFieldBuilder(name, multipleValues = false)) match {
-      case cfb: CvFieldBuilder => values.foreach(cfb.addValue)
+      case cfb: CvFieldBuilder => values.filterNot(StringUtils.isBlank).foreach(cfb.addValue)
       case _ => throw new IllegalArgumentException("Trying to add non-controlled-vocabulary value(s) to controlled vocabulary field")
     }
   }
@@ -218,7 +212,7 @@ class DepositToDvDatasetMetadataMapper(activeMetadataBlocks: List[String],
   private def addCvFieldMultipleValues(metadataBlockFields: mutable.HashMap[String, AbstractFieldBuilder], name: String, sourceNodes: NodeSeq, nodeTransformer: Node => Option[String]): Unit = {
     val values = sourceNodes.map(nodeTransformer).filter(_.isDefined).map(_.get).toList
     metadataBlockFields.getOrElseUpdate(name, new CvFieldBuilder(name)) match {
-      case cfb: CvFieldBuilder => values.foreach(cfb.addValue)
+      case cfb: CvFieldBuilder => values.filterNot(StringUtils.isBlank).foreach(cfb.addValue)
       case _ => throw new IllegalArgumentException("Trying to add non-controlled-vocabulary value(s) to controlled vocabulary field")
     }
   }

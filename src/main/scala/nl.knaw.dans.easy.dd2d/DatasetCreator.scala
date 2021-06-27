@@ -15,6 +15,7 @@
  */
 package nl.knaw.dans.easy.dd2d
 
+import nl.knaw.dans.easy.dd2d.mapping.AccessRights
 import nl.knaw.dans.lib.dataverse.model.dataset.{ Dataset, DatasetCreationResult }
 import nl.knaw.dans.lib.dataverse.model.{ DefaultRole, RoleAssignment }
 import nl.knaw.dans.lib.dataverse.{ DataverseInstance, DataverseResponse }
@@ -37,6 +38,8 @@ class DatasetCreator(deposit: Deposit, isMigration: Boolean = false, dataverseDa
       fileInfos <- deposit.getPathToFileInfo
       databaseIdsToFileInfo <- addFiles(persistentId, fileInfos.values.toList)
       _ <- updateFileMetadata(databaseIdsToFileInfo.mapValues(_.metadata))
+      _ <- instance.dataset(persistentId).awaitUnlock()
+      _ <- configureEnableAccessRequests(deposit, persistentId, canEnable = true)
       _ <- instance.dataset(persistentId).awaitUnlock()
       _ = debug(s"Assigning curator role to ${deposit.depositorUserId}")
       _ <- instance.dataset(persistentId).assignRole(RoleAssignment(s"@${ deposit.depositorUserId }", DefaultRole.curator.toString))

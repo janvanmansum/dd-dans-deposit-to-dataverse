@@ -18,7 +18,7 @@ package nl.knaw.dans.easy.dd2d
 import better.files.File
 import nl.knaw.dans.easy.dd2d.OutboxSubdir.{ FAILED, OutboxSubdir, PROCESSED, REJECTED }
 import nl.knaw.dans.easy.dd2d.dansbag.{ DansBagValidationResult, DansBagValidator }
-import nl.knaw.dans.easy.dd2d.mapping.JsonObject
+import nl.knaw.dans.easy.dd2d.mapping.{ AccessRights, JsonObject }
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.dataverse.model.dataset.UpdateType.major
 import nl.knaw.dans.lib.dataverse.model.dataset.{ Dataset, PrimitiveSingleValueField, toFieldMap }
@@ -48,12 +48,13 @@ case class DepositIngestTask(deposit: Deposit,
                              publishAwaitUnlockMaxNumberOfRetries: Int,
                              publishAwaitUnlockMillisecondsBetweenRetries: Int,
                              narcisClassification: Elem,
-                             isoToDataverseLanguage: Map[String, String],
+                             iso1ToDataverseLanguage: Map[String, String],
+                             iso2ToDataverseLanguage: Map[String, String],
                              repordIdToTerm: Map[String, String],
                              outboxDir: File) extends Task[Deposit] with DebugEnhancedLogging {
   trace(deposit)
 
-  private val datasetMetadataMapper = new DepositToDvDatasetMetadataMapper(activeMetadataBlocks, narcisClassification, isoToDataverseLanguage, repordIdToTerm)
+  private val datasetMetadataMapper = new DepositToDvDatasetMetadataMapper(activeMetadataBlocks, narcisClassification, iso1ToDataverseLanguage, iso2ToDataverseLanguage, repordIdToTerm)
   private val bagDirPath = File(deposit.bagDir.path)
 
   override def run(): Try[Unit] = {

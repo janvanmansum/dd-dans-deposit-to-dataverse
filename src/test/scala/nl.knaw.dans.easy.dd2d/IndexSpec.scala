@@ -33,7 +33,8 @@ class IndexSpec extends TestSupportFixture {
     publishAwaitUnlockMaxNumberOfRetries = 3,
     publishAwaitUnlockMillisecondsBetweenRetries = 500,
     narcisClassification = null,
-    isoToDataverseLanguage = null,
+    iso1ToDataverseLanguage = null,
+    iso2ToDataverseLanguage = null,
     reportIdToTerm = null,
   )
   private val clo = new CommandLineOptions(Array[String](), configuration) {

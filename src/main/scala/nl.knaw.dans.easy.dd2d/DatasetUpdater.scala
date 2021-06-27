@@ -67,15 +67,19 @@ class DatasetUpdater(deposit: Deposit, isMigration: Boolean = false, metadataBlo
       // TODO: what happens with file that only got a new description? Their MD will not be updated ??!!
       // TODO: probably just change this to: update the file md of all the files that are in the new version. Will DV show "null-replacements" in the differences view??
       _ <- updateFileMetadata(fileReplacements ++ fileMovements ++ fileAdditions)
+      _ <- instance.dataset(doi).awaitUnlock()
+      /*
+       * Cannot enable requests if they were disallowed because of closed files in a previous version. However disabling is possible because a the update may add a closed file.
+       */
+      _ <- configureEnableAccessRequests(deposit, doi, canEnable = false)
     } yield doi
   }
 
   private def getDoiBySwordToken: Try[String] = {
     trace(())
     debug(s"dansSwordToken = ${ deposit.vaultMetadata.dataverseSwordToken }")
-    val Array(_, swordTokenUuid) = deposit.vaultMetadata.dataverseSwordToken.split(":")
     for {
-      r <- instance.search().find(s"""dansSwordToken:"$swordTokenUuid"""")
+      r <- instance.search().find(s"""dansSwordToken:"${deposit.vaultMetadata.dataverseSwordToken}"""")
       searchResult <- r.data
       items = searchResult.items
       _ = if (items.size != 1) throw FailedDepositException(deposit, s"Deposit is update of ${ items.size } datasets; should always be 1!")
