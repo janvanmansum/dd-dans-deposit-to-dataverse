@@ -42,7 +42,7 @@ class MigrationInfo(config: MigrationInfoConfig) extends DebugEnhancedLogging {
 
   def getPrestagedDataFilesFor(doi: String, seqNr: Int): Try[Set[BasicFileMeta]] = {
     trace(doi)
-    val url = (new URI(config.baseUrl + "/") resolve s"datasets/:persistentId/seq/$seqNr/datafiles").toASCIIString
+    val url = (new URI(config.baseUrl + "/") resolve s"datasets/:persistentId/seq/$seqNr/basic-file-metas").toASCIIString
     debug(s"Retrieving pre-staged files for $doi from $url")
     Try {
       Http(url)
