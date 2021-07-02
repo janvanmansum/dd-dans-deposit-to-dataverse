@@ -40,7 +40,7 @@ class DatasetCreator(deposit: Deposit,
                   else instance.dataverse("root").createDataset(dataverseDataset)
       persistentId <- getPersistentId(response)
       fileInfos <- deposit.getPathToFileInfo
-      prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(deposit.doi, 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
+      prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(s"doi:${ deposit.doi }", 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
       databaseIdsToFileInfo <- addFiles(persistentId, fileInfos.values.toList, prestagedFiles)
       _ <- updateFileMetadata(databaseIdsToFileInfo.mapValues(_.metadata))
       _ <- instance.dataset(persistentId).awaitUnlock()

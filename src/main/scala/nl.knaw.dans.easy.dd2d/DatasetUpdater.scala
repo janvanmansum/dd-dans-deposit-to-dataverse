@@ -55,6 +55,7 @@ class DatasetUpdater(deposit: Deposit,
       _ <- validateFileMetas(pathToFileMetaInLatestVersion.values.toList)
 
       numPub <- getNumberOfPublishedVersions(dataset)
+      _ = debug(s"Number of published versions so far: $numPub")
       prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(doi, numPub + 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
       filesToReplace <- getFilesToReplace(pathToFileInfo, pathToFileMetaInLatestVersion)
       fileReplacements <- replaceFiles(dataset, filesToReplace, prestagedFiles)
@@ -116,7 +117,7 @@ class DatasetUpdater(deposit: Deposit,
     for {
       r <- datasetApi.viewAllVersions()
       vs <- r.data
-    } yield vs.size
+    } yield vs.count(v => v.versionState.isDefined && v.versionState.get == "RELEASED")
   }
 
   private def getFilesToReplace(pathToFileInfo: Map[Path, FileInfo], pathToFileMetaInLatestVersion: Map[Path, FileMeta]): Try[Map[Int, FileInfo]] = Try {
