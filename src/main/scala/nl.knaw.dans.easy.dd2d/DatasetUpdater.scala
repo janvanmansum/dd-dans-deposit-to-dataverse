@@ -19,7 +19,7 @@ import nl.knaw.dans.easy.dd2d.migrationinfo.{ BasicFileMeta, MigrationInfo }
 import nl.knaw.dans.lib.dataverse.model.dataset.MetadataBlocks
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
 import nl.knaw.dans.lib.dataverse.model.search.DatasetResultItem
-import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance, FileApi }
+import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance, FileApi, Version }
 import nl.knaw.dans.lib.error.TraversableTryExtensions
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
@@ -97,7 +97,7 @@ class DatasetUpdater(deposit: Deposit,
 
   private def getFilesInLatestVersion(dataset: DatasetApi): Try[Map[Path, FileMeta]] = {
     for {
-      response <- dataset.listFiles()
+      response <- dataset.listFiles(Version.LATEST_PUBLISHED) // N.B. If LATEST_PUBLISHED is not specified, it almost works, but the directoryLabel is not picked up somehow.
       files <- response.data
       pathToFileMeta = files.map(f => (getPathFromFileMeta(f), f)).toMap
     } yield pathToFileMeta
@@ -123,7 +123,9 @@ class DatasetUpdater(deposit: Deposit,
   private def getFilesToReplace(pathToFileInfo: Map[Path, FileInfo], pathToFileMetaInLatestVersion: Map[Path, FileMeta]): Try[Map[Int, FileInfo]] = Try {
     trace(())
     val intersection = pathToFileInfo.keySet intersect pathToFileMetaInLatestVersion.keySet
+    debug(s"The following files are in both deposit and latest published version: ${intersection.mkString(", ")}")
     val checksumsDiffer = intersection.filter(p => pathToFileInfo(p).checksum != pathToFileMetaInLatestVersion(p).dataFile.get.checksum.value) // TODO: validate filemetas first
+    debug(s"The following files are in both deposit and latest published version AND have a different checksum: ${checksumsDiffer.mkString(", ")}")
     checksumsDiffer.map(p => (pathToFileMetaInLatestVersion(p).dataFile.get.id, pathToFileInfo(p))).toMap
   }
 
