@@ -17,6 +17,7 @@ package nl.knaw.dans.easy.dd2d
 
 import better.files.File
 import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
+import nl.knaw.dans.easy.dd2d.migrationinfo.MigrationInfo
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 
 import scala.xml.Elem
@@ -26,12 +27,13 @@ import scala.xml.Elem
  *
  * @param isMigrated                                   is this a migrated dataset?
  * @param activeMetadataBlocks                         the metadata blocks enabled in the target dataverse
- * @param optDansBagValidator                             interface to the easy-validate-dans-bag service
+ * @param optDansBagValidator                          interface to the easy-validate-dans-bag service
  * @param instance                                     interface to the target Dataverse instance
+ * @param migrationInfo                                optional interface to a migration info service
  * @param publishAwaitUnlockMaxNumberOfRetries         maximum number of times to poll for unlock after publish is called after ingest of the deposit
  * @param publishAwaitUnlockMillisecondsBetweenRetries number of milliseconds to wait between retries of unlock polling after publish
  * @param narcisClassification                         root element of the NARCIS SKOS file
- * @param iso2ToDataverseLanguage                       mapping of ISO639-2 to Dataverse language term
+ * @param iso2ToDataverseLanguage                      mapping of ISO639-2 to Dataverse language term
  * @param reportIdToTerm                               mapping of ABR report ID to term
  * @param outboxDir                                    outbox
  */
@@ -39,6 +41,7 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
                                activeMetadataBlocks: List[String],
                                optDansBagValidator: Option[DansBagValidator],
                                instance: DataverseInstance,
+                               migrationInfo: Option[MigrationInfo],
                                publishAwaitUnlockMaxNumberOfRetries: Int,
                                publishAwaitUnlockMillisecondsBetweenRetries: Int,
                                narcisClassification: Elem,
@@ -53,6 +56,7 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
         activeMetadataBlocks,
         optDansBagValidator,
         instance,
+        migrationInfo,
         publishAwaitUnlockMaxNumberOfRetries,
         publishAwaitUnlockMillisecondsBetweenRetries,
         narcisClassification,
@@ -61,11 +65,12 @@ class DepositIngestTaskFactory(isMigrated: Boolean = false,
         reportIdToTerm,
         outboxDir: File)
     else
-    DepositIngestTask(
+      DepositIngestTask(
         deposit,
         activeMetadataBlocks,
         optDansBagValidator,
         instance,
+        Option.empty,
         publishAwaitUnlockMaxNumberOfRetries,
         publishAwaitUnlockMillisecondsBetweenRetries,
         narcisClassification,

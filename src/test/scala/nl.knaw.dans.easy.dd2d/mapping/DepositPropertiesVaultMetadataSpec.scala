@@ -16,8 +16,8 @@
 package nl.knaw.dans.easy.dd2d.mapping
 
 import nl.knaw.dans.easy.dd2d.TestSupportFixture
-import org.json4s.{ DefaultFormats, Formats }
 import org.json4s.native.Serialization
+import org.json4s.{ DefaultFormats, Formats }
 
 class DepositPropertiesVaultMetadataSpec extends TestSupportFixture with BlockCitation {
   private implicit val jsonFormats: Formats = DefaultFormats

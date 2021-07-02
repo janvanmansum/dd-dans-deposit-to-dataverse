@@ -17,6 +17,7 @@ package nl.knaw.dans.easy.dd2d
 
 import better.files.File
 import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
+import nl.knaw.dans.easy.dd2d.migrationinfo.MigrationInfo
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.InboxWatcher
@@ -24,9 +25,10 @@ import nl.knaw.dans.lib.taskqueue.InboxWatcher
 import java.io.PrintStream
 import scala.util.{ Success, Try }
 
-class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnhancedLogging {
+class DansDepositToDataverseApp(configuration: Configuration) extends DebugEnhancedLogging {
   private implicit val resultOutput: PrintStream = Console.out
   private val dataverse = new DataverseInstance(configuration.dataverse)
+  private val migrationInfo = new MigrationInfo(configuration.migrationInfo)
   private val dansBagValidator = new DansBagValidator(
     serviceUri = configuration.validatorServiceUrl,
     connTimeoutMs = configuration.validatorConnectionTimeoutMs,
@@ -39,6 +41,7 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
         getActiveMetadataBlocks.get,
         Option(dansBagValidator),
         dataverse,
+        Option.empty,
         configuration.publishAwaitUnlockMaxNumberOfRetries,
         configuration.publishAwaitUnlockMillisecondsBetweenRetries,
         configuration.narcisClassification,
@@ -50,7 +53,8 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
 
   private def checkPreconditions(skipValidation: Boolean = false): Try[Unit] = {
     for {
-      _ <- if (skipValidation) Success(()) else dansBagValidator.checkConnection()
+      _ <- if (skipValidation) Success(())
+           else dansBagValidator.checkConnection()
       _ <- dataverse.checkConnection()
     } yield ()
   }
@@ -65,8 +69,10 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
         new DepositIngestTaskFactory(
           isMigrated = true,
           getActiveMetadataBlocks.get,
-          if (skipValidation) Option.empty else Option(dansBagValidator),
+          if (skipValidation) Option.empty
+          else Option(dansBagValidator),
           dataverse,
+          Option(migrationInfo),
           configuration.publishAwaitUnlockMaxNumberOfRetries,
           configuration.publishAwaitUnlockMillisecondsBetweenRetries,
           configuration.narcisClassification,
@@ -86,8 +92,10 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
         new DepositIngestTaskFactory(
           isMigrated = true,
           getActiveMetadataBlocks.get,
-          if (skipValidation) Option.empty else Option(dansBagValidator),
+          if (skipValidation) Option.empty
+          else Option(dansBagValidator),
           dataverse,
+          Option(migrationInfo),
           configuration.publishAwaitUnlockMaxNumberOfRetries,
           configuration.publishAwaitUnlockMillisecondsBetweenRetries,
           configuration.narcisClassification,
@@ -100,7 +108,7 @@ class DansDeposit2ToDataverseApp(configuration: Configuration) extends DebugEnha
 
   def start(): Try[Unit] = {
     trace(())
-    inboxWatcher.start(Some( new DepositSorter()))
+    inboxWatcher.start(Some(new DepositSorter()))
   }
 
   def stop(): Try[Unit] = {

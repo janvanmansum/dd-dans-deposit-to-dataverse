@@ -17,10 +17,7 @@ package nl.knaw.dans.easy.dd2d.mapping
 
 import nl.knaw.dans.easy.dd2d.TestSupportFixture
 import nl.knaw.dans.easy.dd2d.mapping.Audience.toCitationBlockSubject
-import nl.knaw.dans.lib.dataverse.model.dataset.PrimitiveSingleValueField
 import org.scalatest.prop.TableDrivenPropertyChecks
-
-import scala.xml.XML
 
 class AudienceSpec extends TestSupportFixture with TableDrivenPropertyChecks {
 

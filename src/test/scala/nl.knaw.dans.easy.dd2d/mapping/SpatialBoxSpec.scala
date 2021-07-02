@@ -64,5 +64,4 @@ class SpatialBoxSpec extends TestSupportFixture with BlockTemporalAndSpatial {
       case Failure(e: NumberFormatException) => e.getMessage should include("469470,")
     }
   }
-
 }

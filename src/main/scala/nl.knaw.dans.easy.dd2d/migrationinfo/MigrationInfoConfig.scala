@@ -13,21 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package nl.knaw.dans.easy.dd2d.mapping
+package nl.knaw.dans.easy.dd2d.migrationinfo
 
-import scala.xml.Node
+import java.net.URI
 
-object Subject extends BlockCitation {
-
-  def hasNoCvAttributes(node: Node): Boolean = {
-    node.attribute("subjectScheme").isEmpty && node.attribute("schemeURI").isEmpty
-  }
-
-  def toKeyWordValue(node: Node): JsonObject = {
-    val m = FieldMap()
-    m.addPrimitiveField(KEYWORD_VALUE, node.text)
-    m.addPrimitiveField(KEYWORD_VOCABULARY, "")
-    m.addPrimitiveField(KEYWORD_VOCABULARY_URI, "")
-    m.toJsonObject
-  }
-}
+case class MigrationInfoConfig(baseUrl: URI,
+                               connectionTimeout: Int,
+                               readTimeout: Int)

@@ -15,18 +15,22 @@
  */
 package nl.knaw.dans.easy.dd2d
 
-import better.files.File
+import nl.knaw.dans.easy.dd2d.migrationinfo.{ BasicFileMeta, MigrationInfo }
 import nl.knaw.dans.lib.dataverse.model.dataset.MetadataBlocks
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
 import nl.knaw.dans.lib.dataverse.model.search.DatasetResultItem
-import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance }
+import nl.knaw.dans.lib.dataverse.{ DatasetApi, DataverseInstance, FileApi, Version }
 import nl.knaw.dans.lib.error.TraversableTryExtensions
 import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 
 import java.nio.file.{ Path, Paths }
 import scala.util.{ Failure, Success, Try }
 
-class DatasetUpdater(deposit: Deposit, isMigration: Boolean = false, metadataBlocks: MetadataBlocks, instance: DataverseInstance) extends DatasetEditor(instance) with DebugEnhancedLogging {
+class DatasetUpdater(deposit: Deposit,
+                     isMigration: Boolean = false,
+                     metadataBlocks: MetadataBlocks,
+                     instance: DataverseInstance,
+                     optMigrationInfoService: Option[MigrationInfo]) extends DatasetEditor(instance) with DebugEnhancedLogging {
   trace(deposit)
 
   override def performEdit(): Try[PersistendId] = {
@@ -50,8 +54,11 @@ class DatasetUpdater(deposit: Deposit, isMigration: Boolean = false, metadataBlo
       _ = debug(s"pathToFileMetaInLatestVersion = $pathToFileMetaInLatestVersion")
       _ <- validateFileMetas(pathToFileMetaInLatestVersion.values.toList)
 
+      numPub <- getNumberOfPublishedVersions(dataset)
+      _ = debug(s"Number of published versions so far: $numPub")
+      prestagedFiles <- optMigrationInfoService.map(_.getPrestagedDataFilesFor(doi, numPub + 1)).getOrElse(Success(Set.empty[BasicFileMeta]))
       filesToReplace <- getFilesToReplace(pathToFileInfo, pathToFileMetaInLatestVersion)
-      fileReplacements <- replaceFiles(dataset, filesToReplace.mapValues(fileInfo => fileInfo.file))
+      fileReplacements <- replaceFiles(dataset, filesToReplace, prestagedFiles)
 
       oldToNewPathMovedFiles <- getOldToNewPathOfFilesToMove(pathToFileMetaInLatestVersion, pathToFileInfo)
       fileMovements = oldToNewPathMovedFiles.map { case (old, newPath) => (pathToFileMetaInLatestVersion(old).dataFile.get.id, pathToFileInfo(newPath).metadata) }
@@ -62,7 +69,7 @@ class DatasetUpdater(deposit: Deposit, isMigration: Boolean = false, metadataBlo
       _ <- deleteFiles(dataset, fileDeletions.toList)
 
       pathsToAdd = pathToFileInfo.keySet diff pathToFileMetaInLatestVersion.keySet diff oldToNewPathMovedFiles.values.toSet
-      fileAdditions <- addFiles(doi, pathsToAdd.map(pathToFileInfo).toList).map(_.mapValues(_.metadata))
+      fileAdditions <- addFiles(doi, pathsToAdd.map(pathToFileInfo).toList, prestagedFiles).map(_.mapValues(_.metadata))
 
       // TODO: what happens with file that only got a new description? Their MD will not be updated ??!!
       // TODO: probably just change this to: update the file md of all the files that are in the new version. Will DV show "null-replacements" in the differences view??
@@ -79,7 +86,7 @@ class DatasetUpdater(deposit: Deposit, isMigration: Boolean = false, metadataBlo
     trace(())
     debug(s"dansSwordToken = ${ deposit.vaultMetadata.dataverseSwordToken }")
     for {
-      r <- instance.search().find(s"""dansSwordToken:"${deposit.vaultMetadata.dataverseSwordToken}"""")
+      r <- instance.search().find(s"""dansSwordToken:"${ deposit.vaultMetadata.dataverseSwordToken }"""")
       searchResult <- r.data
       items = searchResult.items
       _ = if (items.size != 1) throw FailedDepositException(deposit, s"Deposit is update of ${ items.size } datasets; should always be 1!")
@@ -90,7 +97,7 @@ class DatasetUpdater(deposit: Deposit, isMigration: Boolean = false, metadataBlo
 
   private def getFilesInLatestVersion(dataset: DatasetApi): Try[Map[Path, FileMeta]] = {
     for {
-      response <- dataset.listFiles()
+      response <- dataset.listFiles(Version.LATEST_PUBLISHED) // N.B. If LATEST_PUBLISHED is not specified, it almost works, but the directoryLabel is not picked up somehow.
       files <- response.data
       pathToFileMeta = files.map(f => (getPathFromFileMeta(f), f)).toMap
     } yield pathToFileMeta
@@ -106,10 +113,19 @@ class DatasetUpdater(deposit: Deposit, isMigration: Boolean = false, metadataBlo
          else Success(())
   }
 
+  private def getNumberOfPublishedVersions(datasetApi: DatasetApi): Try[Int] = {
+    for {
+      r <- datasetApi.viewAllVersions()
+      vs <- r.data
+    } yield vs.count(v => v.versionState.isDefined && v.versionState.get == "RELEASED")
+  }
+
   private def getFilesToReplace(pathToFileInfo: Map[Path, FileInfo], pathToFileMetaInLatestVersion: Map[Path, FileMeta]): Try[Map[Int, FileInfo]] = Try {
     trace(())
     val intersection = pathToFileInfo.keySet intersect pathToFileMetaInLatestVersion.keySet
+    debug(s"The following files are in both deposit and latest published version: ${intersection.mkString(", ")}")
     val checksumsDiffer = intersection.filter(p => pathToFileInfo(p).checksum != pathToFileMetaInLatestVersion(p).dataFile.get.checksum.value) // TODO: validate filemetas first
+    debug(s"The following files are in both deposit and latest published version AND have a different checksum: ${checksumsDiffer.mkString(", ")}")
     checksumsDiffer.map(p => (pathToFileMetaInLatestVersion(p).dataFile.get.id, pathToFileInfo(p))).toMap
   }
 
@@ -145,7 +161,7 @@ class DatasetUpdater(deposit: Deposit, isMigration: Boolean = false, metadataBlo
     paths.map(path => pathToFileMeta(path).dataFile.get.id)
   }
 
-  protected def deleteFiles(dataset: DatasetApi, databaseIds: List[DatabaseId]): Try[Unit] = {
+  private def deleteFiles(dataset: DatasetApi, databaseIds: List[DatabaseId]): Try[Unit] = {
     databaseIds.map(id => {
       debug(s"Deleting file, databaseId = $id")
       instance.sword().deleteFile(id)
@@ -153,23 +169,37 @@ class DatasetUpdater(deposit: Deposit, isMigration: Boolean = false, metadataBlo
     }).collectResults.map(_ => ())
   }
 
-  protected def replaceFiles(dataset: DatasetApi, databaseIdToNewFile: Map[Int, File]): Try[Map[Int, FileMeta]] = {
-    trace(databaseIdToNewFile)
+  private def replaceFiles(dataset: DatasetApi, databaseIdToNewFile: Map[Int, FileInfo], prestagedFiles: Set[BasicFileMeta] = Set.empty): Try[Map[Int, FileMeta]] = {
+    trace(databaseIdToNewFile, prestagedFiles)
     databaseIdToNewFile.map {
-      case (id, file) =>
+      case (id, fileInfo) =>
         val fileApi = instance.file(id)
 
         for {
-          /*
-           * Note, forceReplace = true is used, so that the action does not fail if the replacement has a different MIME-type than
-           * the replaced file. The only way to pass forceReplace is through the FileMeta. This means we are deleting any existing
-           * metadata with the below call. This is not a problem, because the metadata will be made up-to-date at the end of the
-           * update process.
-           */
-          r <- fileApi.replace(Option(file), Option(FileMeta(forceReplace = true)))
-          d <- r.data
+          (replacementId, replacementMeta) <- replaceFile(fileApi, fileInfo, prestagedFiles)
           _ <- dataset.awaitUnlock()
-        } yield (d.files.head.dataFile.get.id, d.files.head)
-    }.collectResults.map(_.toMap)
+        } yield (replacementId, replacementMeta)
+    }.toList.collectResults.map(_.toMap)
+  }
+
+  private def replaceFile(fileApi: FileApi, fileInfo: FileInfo, prestagedFiles: Set[BasicFileMeta]): Try[(Int, FileMeta)] = {
+    /*
+     * Note, forceReplace = true is used, so that the action does not fail if the replacement has a different MIME-type than
+     * the replaced file. The only way to pass forceReplace is through the FileMeta. This means we are deleting any existing
+     * metadata with the below call. This is not a problem, because the metadata will be made up-to-date at the end of the
+     * update process.
+     */
+    for {
+      r <- getPrestagedFileFor(fileInfo, prestagedFiles).map { prestagedFile =>
+        debug(s"Replacing with prestaged file: $fileInfo")
+        fileApi.replaceWithPrestagedFile(prestagedFile.copy(forceReplace = true))
+      }.getOrElse {
+        debug(s"Uploading replacement file: $fileInfo")
+        fileApi.replace(Option(fileInfo.file), Option(FileMeta(forceReplace = true)))
+      }
+      fileList <- r.data
+      id = fileList.files.head.dataFile.map(_.id).getOrElse(throw new IllegalStateException("Could not get ID of replacement file after replace action"))
+      meta = fileList.files.head
+    } yield (id, meta)
   }
 }

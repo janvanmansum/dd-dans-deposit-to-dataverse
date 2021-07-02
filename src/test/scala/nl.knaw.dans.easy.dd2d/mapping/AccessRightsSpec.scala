@@ -118,5 +118,4 @@ class AccessRightsSpec extends TestSupportFixture {
 
     isEnableRequests(accessRights, files) shouldBe true
   }
-
 }

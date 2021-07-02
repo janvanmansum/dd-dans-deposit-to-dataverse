@@ -50,7 +50,4 @@ class PersonalStatementSpec extends TestSupportFixture {
 
     PersonalStatement.toHasPersonalDataValue(statement) shouldBe None
   }
-
-
-
 }

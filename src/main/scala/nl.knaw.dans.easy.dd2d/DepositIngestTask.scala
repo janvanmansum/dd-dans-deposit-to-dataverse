@@ -18,7 +18,8 @@ package nl.knaw.dans.easy.dd2d
 import better.files.File
 import nl.knaw.dans.easy.dd2d.OutboxSubdir.{ FAILED, OutboxSubdir, PROCESSED, REJECTED }
 import nl.knaw.dans.easy.dd2d.dansbag.{ DansBagValidationResult, DansBagValidator }
-import nl.knaw.dans.easy.dd2d.mapping.{ AccessRights, JsonObject }
+import nl.knaw.dans.easy.dd2d.mapping.JsonObject
+import nl.knaw.dans.easy.dd2d.migrationinfo.MigrationInfo
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.dataverse.model.dataset.UpdateType.major
 import nl.knaw.dans.lib.dataverse.model.dataset.{ Dataset, PrimitiveSingleValueField, toFieldMap }
@@ -45,6 +46,7 @@ case class DepositIngestTask(deposit: Deposit,
                              activeMetadataBlocks: List[String],
                              optDansBagValidator: Option[DansBagValidator],
                              instance: DataverseInstance,
+                             migrationInfo: Option[MigrationInfo],
                              publishAwaitUnlockMaxNumberOfRetries: Int,
                              publishAwaitUnlockMillisecondsBetweenRetries: Int,
                              narcisClassification: Elem,
@@ -115,7 +117,7 @@ case class DepositIngestTask(deposit: Deposit,
           validationResult <- dansBagValidator.validateBag(bagDirPath)
           _ <- rejectIfInvalid(validationResult)
         } yield ()
-    }.getOrElse( {
+    }.getOrElse({
       debug("Skipping validation")
       Success(())
     })
@@ -166,11 +168,11 @@ case class DepositIngestTask(deposit: Deposit,
   }
 
   protected def newDatasetUpdater(dataverseDataset: Dataset): DatasetUpdater = {
-    new DatasetUpdater(deposit, isMigration = false, dataverseDataset.datasetVersion.metadataBlocks, instance)
+    new DatasetUpdater(deposit, isMigration = false, dataverseDataset.datasetVersion.metadataBlocks, instance, Option.empty)
   }
 
   protected def newDatasetCreator(dataverseDataset: Dataset): DatasetCreator = {
-    new DatasetCreator(deposit, isMigration = false, dataverseDataset, instance)
+    new DatasetCreator(deposit, isMigration = false, dataverseDataset, instance, Option.empty)
   }
 
   protected def publishDataset(persistentId: String): Try[Unit] = {

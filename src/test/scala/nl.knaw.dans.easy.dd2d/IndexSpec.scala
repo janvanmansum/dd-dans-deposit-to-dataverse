@@ -15,9 +15,9 @@
  */
 package nl.knaw.dans.easy.dd2d
 
-import java.io.ByteArrayOutputStream
-
 import better.files.File
+
+import java.io.ByteArrayOutputStream
 
 class IndexSpec extends TestSupportFixture {
   private val indexFile = File("docs/index.md")
@@ -28,8 +28,9 @@ class IndexSpec extends TestSupportFixture {
     outboxDir = null,
     validatorServiceUrl = null,
     validatorConnectionTimeoutMs = 1000,
-    validatorReadTimeoutMs= 1000,
+    validatorReadTimeoutMs = 1000,
     dataverse = null,
+    migrationInfo = null,
     publishAwaitUnlockMaxNumberOfRetries = 3,
     publishAwaitUnlockMillisecondsBetweenRetries = 500,
     narcisClassification = null,

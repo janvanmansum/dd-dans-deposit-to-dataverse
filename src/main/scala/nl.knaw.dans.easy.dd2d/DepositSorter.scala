@@ -19,10 +19,8 @@ import nl.knaw.dans.lib.logging.DebugEnhancedLogging
 import nl.knaw.dans.lib.taskqueue.{ Task, TaskSorter }
 import org.apache.commons.configuration.PropertiesConfiguration
 
-import java.io.FileInputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Properties
 
 class DepositSorter extends TaskSorter[Deposit] with DebugEnhancedLogging {
 

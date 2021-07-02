@@ -15,10 +15,9 @@
  */
 package nl.knaw.dans.easy.dd2d
 
-import java.nio.file.Paths
-
-import better.files.File
 import nl.knaw.dans.lib.dataverse.model.file.FileMeta
+
+import java.nio.file.Paths
 
 class DepositSpec extends TestSupportFixture {
 
@@ -62,5 +61,4 @@ class DepositSpec extends TestSupportFixture {
       )
     )
   }
-
 }

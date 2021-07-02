@@ -18,6 +18,7 @@ package nl.knaw.dans.easy.dd2d
 import better.files.File
 import nl.knaw.dans.easy.dd2d.dansbag.DansBagValidator
 import nl.knaw.dans.easy.dd2d.mapping.Amd
+import nl.knaw.dans.easy.dd2d.migrationinfo.MigrationInfo
 import nl.knaw.dans.lib.dataverse.DataverseInstance
 import nl.knaw.dans.lib.dataverse.model.dataset.Dataset
 
@@ -29,6 +30,7 @@ class DepositMigrationTask(deposit: Deposit,
                            activeMetadataBlocks: List[String],
                            optDansBagValidator: Option[DansBagValidator],
                            instance: DataverseInstance,
+                           migrationInfo: Option[MigrationInfo],
                            publishAwaitUnlockMaxNumberOfRetries: Int,
                            publishAwaitUnlockMillisecondsBetweenRetries: Int,
                            narcisClassification: Elem,
@@ -40,6 +42,7 @@ class DepositMigrationTask(deposit: Deposit,
     activeMetadataBlocks,
     optDansBagValidator,
     instance,
+    migrationInfo: Option[MigrationInfo],
     publishAwaitUnlockMaxNumberOfRetries,
     publishAwaitUnlockMillisecondsBetweenRetries,
     narcisClassification,
@@ -57,11 +60,11 @@ class DepositMigrationTask(deposit: Deposit,
   }
 
   override def newDatasetUpdater(dataverseDataset: Dataset): DatasetUpdater = {
-    new DatasetUpdater(deposit, isMigration = true, dataverseDataset.datasetVersion.metadataBlocks, instance)
+    new DatasetUpdater(deposit, isMigration = true, dataverseDataset.datasetVersion.metadataBlocks, instance, migrationInfo)
   }
 
   override def newDatasetCreator(dataverseDataset: Dataset): DatasetCreator = {
-    new DatasetCreator(deposit, isMigration = true, dataverseDataset, instance)
+    new DatasetCreator(deposit, isMigration = true, dataverseDataset, instance, migrationInfo)
   }
 
   override protected def getDateOfDeposit: Try[Option[String]] = {

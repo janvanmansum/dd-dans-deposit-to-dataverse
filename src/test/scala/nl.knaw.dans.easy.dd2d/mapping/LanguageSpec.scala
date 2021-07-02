@@ -79,5 +79,4 @@ class LanguageSpec extends TestSupportFixture {
     val language = <dc:language xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ISO639-1" code="bg">Not used</dc:language>
     toCitationBlockLanguage(iso1ToDataverseLanguage, iso2ToDataverseLanguage)(language) shouldBe Some("Bulgarian")
   }
-
 }
