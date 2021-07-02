@@ -168,11 +168,11 @@ case class DepositIngestTask(deposit: Deposit,
   }
 
   protected def newDatasetUpdater(dataverseDataset: Dataset): DatasetUpdater = {
-    new DatasetUpdater(deposit, isMigration = false, dataverseDataset.datasetVersion.metadataBlocks, instance)
+    new DatasetUpdater(deposit, isMigration = false, dataverseDataset.datasetVersion.metadataBlocks, instance, Option.empty)
   }
 
   protected def newDatasetCreator(dataverseDataset: Dataset): DatasetCreator = {
-    new DatasetCreator(deposit, isMigration = false, dataverseDataset, instance, migrationInfo)
+    new DatasetCreator(deposit, isMigration = false, dataverseDataset, instance, Option.empty)
   }
 
   protected def publishDataset(persistentId: String): Try[Unit] = {

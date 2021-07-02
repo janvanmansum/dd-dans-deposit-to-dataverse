@@ -60,7 +60,7 @@ class DepositMigrationTask(deposit: Deposit,
   }
 
   override def newDatasetUpdater(dataverseDataset: Dataset): DatasetUpdater = {
-    new DatasetUpdater(deposit, isMigration = true, dataverseDataset.datasetVersion.metadataBlocks, instance)
+    new DatasetUpdater(deposit, isMigration = true, dataverseDataset.datasetVersion.metadataBlocks, instance, migrationInfo)
   }
 
   override def newDatasetCreator(dataverseDataset: Dataset): DatasetCreator = {

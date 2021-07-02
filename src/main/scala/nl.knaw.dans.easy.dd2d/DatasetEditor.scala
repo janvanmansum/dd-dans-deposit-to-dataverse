@@ -39,41 +39,19 @@ abstract class DatasetEditor(instance: DataverseInstance) extends DebugEnhancedL
    */
   def performEdit(): Try[PersistendId]
 
-  protected def addFiles(persistentId: String, files: List[FileInfo]): Try[Map[Int, FileInfo]] = {
+  protected def addFiles(persistentId: String, files: List[FileInfo], prestagedFiles: Set[BasicFileMeta] = Set.empty): Try[Map[Int, FileInfo]] = {
     trace(persistentId, files)
     files
       .map(f => {
         debug(s"Adding file, directoryLabel = ${ f.metadata.directoryLabel }, label = ${ f.metadata.label }")
         for {
-          id <- addFile(persistentId, f)
+          id <- addFile(persistentId, f, prestagedFiles)
           _ <- instance.dataset(persistentId).awaitUnlock()
         } yield (id -> f)
       }).collectResults.map(_.toMap)
   }
 
-  private def addFile(doi: String, fileInfo: FileInfo): Try[Int] = {
-    val result = for {
-      r <- instance.dataset(doi).addFile(Option(fileInfo.file))
-      files <- r.data
-      id = files.files.headOption.flatMap(_.dataFile.map(_.id))
-      _ <- instance.dataset(doi).awaitUnlock()
-    } yield id
-    result.map(_.getOrElse(throw new IllegalStateException("Could not get DataFile ID from response")))
-  }
-
-  protected def addFiles2(persistentId: String, files: List[FileInfo], prestagedFiles: Set[BasicFileMeta] = Set.empty): Try[Map[Int, FileInfo]] = {
-    trace(persistentId, files)
-    files
-      .map(f => {
-        debug(s"Adding file, directoryLabel = ${ f.metadata.directoryLabel }, label = ${ f.metadata.label }")
-        for {
-          id <- addFile2(persistentId, f, prestagedFiles)
-          _ <- instance.dataset(persistentId).awaitUnlock()
-        } yield (id -> f)
-      }).collectResults.map(_.toMap)
-  }
-
-  private def addFile2(doi: String, fileInfo: FileInfo, prestagedFiles: Set[BasicFileMeta]): Try[Int] = {
+  private def addFile(doi: String, fileInfo: FileInfo, prestagedFiles: Set[BasicFileMeta]): Try[Int] = {
     val result = for {
       r <- getPrestagedFileFor(fileInfo, prestagedFiles).map { prestagedFile =>
         debug(s"Adding prestaged file: $fileInfo")
@@ -89,7 +67,7 @@ abstract class DatasetEditor(instance: DataverseInstance) extends DebugEnhancedL
     result.map(_.getOrElse(throw new IllegalStateException("Could not get DataFile ID from response")))
   }
 
-  private def getPrestagedFileFor(fileInfo: FileInfo, basicFileMetas: Set[BasicFileMeta]): Option[PrestagedFile] = {
+  protected def getPrestagedFileFor(fileInfo: FileInfo, basicFileMetas: Set[BasicFileMeta]): Option[PrestagedFile] = {
     val matchingChecksums = basicFileMetas.filter(_.prestagedFile.checksum.`@value` == fileInfo.checksum)
     if (matchingChecksums.size == 1) Option(matchingChecksums.head.prestagedFile)
     else if (matchingChecksums.isEmpty) Option.empty
