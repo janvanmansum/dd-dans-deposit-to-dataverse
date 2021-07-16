@@ -23,10 +23,6 @@ trait BlockArchaeologySpecific {
   val ARCHIS_NUMBER_ID = "dansArchisNumberId"
 
   val ABR_RAPPORT_TYPE = "dansAbrRapportType"
-//  val ABR_RAPPORT_TYPE_VOCABULARY = "dansAbrRapportTypeVocabulary"
-//  val ABR_RAPPORT_TYPE_VOCABULARY_URI = "dansAbrRapportTypeVocabularyURI"
-//  val ABR_RAPPORT_TYPE_TERM = "dansAbrRapportTypeTerm"
-//  val ABR_RAPPORT_TYPE_TERM_URI = "dansAbrRapportTypeTermURI"
 
   val ABR_RAPPORT_NUMMER = "dansAbrRapportNummer"
 
